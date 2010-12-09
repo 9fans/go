@@ -159,7 +159,7 @@ func (f *Fcall) Bytes() ([]byte, os.Error) {
 		if len(f.Wqid) > MAXWELEM {
 			return nil, ProtocolError("too many qid in walk")
 		}
-		b = pbit32(b, uint32(len(f.Wqid)))
+		b = pbit16(b, uint16(len(f.Wqid)))
 		for i := range f.Wqid {
 			b = pqid(b, f.Wqid[i])
 		}
