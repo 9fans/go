@@ -10,11 +10,10 @@ import (
 	"bytes"
 	"io/ioutil"
 	"fmt"
-	"once"
+	"sync"
 	"os"
 	"strconv"
 	"strings"
-
 	"goplan9.googlecode.com/hg/plan9"
 	"goplan9.googlecode.com/hg/plan9/client"
 )
@@ -47,7 +46,8 @@ func mountAcme() {
 
 // New creates a new window.
 func New() (*Win, os.Error) {
-	once.Do(mountAcme)
+	config := new(sync.Once)
+	config.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
 	}
@@ -78,7 +78,8 @@ func New() (*Win, os.Error) {
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
 func Open(id int, ctl *client.Fid) (*Win, os.Error) {
-	once.Do(mountAcme)
+	config := new(sync.Once)
+	config.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
 	}
@@ -106,7 +107,7 @@ func Open(id int, ctl *client.Fid) (*Win, os.Error) {
 
 // Addr writes format, ... to the window's addr file.
 func (w *Win) Addr(format string, args ...interface{}) os.Error {
-	return w.Printf("addr", format, args)
+	return w.Printf("addr", format, args...)
 }
 
 // CloseFiles closes all the open files associated with the window w.
@@ -137,7 +138,7 @@ func (w *Win) CloseFiles() {
 
 // Ctl writes the command format, ... to the window's ctl file.
 func (w *Win) Ctl(format string, args ...interface{}) os.Error {
-	return w.Printf("ctl", format + "\n", args)
+	return w.Printf("ctl", format + "\n", args...)
 }
 
 // Winctl deletes the window, writing `del' (or, if sure is true, `delete') to the ctl file.
@@ -196,7 +197,7 @@ func (w *Win) ReadAll(file string) ([]byte, os.Error) {
 }
 
 func (w *Win) Name(format string, args ...interface{}) os.Error {
-	return w.Ctl("name " + format, args)
+	return w.Ctl("name " + format, args...)
 }
 
 func (w *Win) Printf(file, format string, args ...interface{}) os.Error {
@@ -205,7 +206,7 @@ func (w *Win) Printf(file, format string, args ...interface{}) os.Error {
 		return err
 	}
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, format, args)
+	fmt.Fprintf(&buf, format, args...)
 	_, err = f.Write(buf.Bytes())
 	return err
 }

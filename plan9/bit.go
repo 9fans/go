@@ -1,7 +1,5 @@
 package plan9
 
-import "bytes"
-
 func gbit8(b []byte) (uint8, []byte) {
 	return uint8(b[0]), b[1:]
 }
@@ -76,6 +74,6 @@ func pstring(b []byte, s string) []byte {
 		panic(ProtocolError("string too long"))
 	}
 	b = pbit16(b, uint16(len(s)))
-	b = bytes.Add(b, []byte(s))
+	b = append(b, []byte(s)...)
 	return b
 }

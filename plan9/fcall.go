@@ -1,7 +1,6 @@
 package plan9
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -130,7 +129,7 @@ func (f *Fcall) Bytes() ([]byte, os.Error) {
 		b = pbit32(b, f.Fid)
 		b = pbit64(b, f.Offset)
 		b = pbit32(b, uint32(len(f.Data)))
-		b = bytes.Add(b, f.Data)
+		b = append(b, f.Data...)
 
 	case Tclunk, Tremove, Tstat:
 		b = pbit32(b, f.Fid)
@@ -138,7 +137,7 @@ func (f *Fcall) Bytes() ([]byte, os.Error) {
 	case Twstat:
 		b = pbit32(b, f.Fid)
 		b = pbit16(b, uint16(len(f.Stat)))
-		b = bytes.Add(b, f.Stat)
+		b = append(b, f.Stat...)
 	
 	case Rversion:
 		b = pbit32(b, f.Msize)
@@ -171,14 +170,14 @@ func (f *Fcall) Bytes() ([]byte, os.Error) {
 
 	case Rread:
 		b = pbit32(b, uint32(len(f.Data)))
-		b = bytes.Add(b, f.Data)
+		b = append(b, f.Data...)
 	
 	case Rwrite:
 		b = pbit32(b, f.Count)
 	
 	case Rstat:
 		b = pbit16(b, uint16(len(f.Stat)))
-		b = bytes.Add(b, f.Stat)
+		b = append(b, f.Stat...)
 	}
 	
 	pbit32(b[0:0], uint32(len(b)))
