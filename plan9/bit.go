@@ -13,8 +13,8 @@ func gbit32(b []byte) (uint32, []byte) {
 }
 
 func gbit64(b []byte) (uint64, []byte) {
-	hi, b := gbit32(b)
 	lo, b := gbit32(b)
+	hi, b := gbit32(b)
 	return uint64(hi)<<32 | uint64(lo), b
 }
 

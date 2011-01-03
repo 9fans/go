@@ -62,7 +62,7 @@ func pdir(b []byte, d *Dir) []byte {
 	b = pstring(b, d.Uid)
 	b = pstring(b, d.Gid)
 	b = pstring(b, d.Muid)
-	pbit32(b[0:n], uint32(len(b)-(n+2)))
+	pbit16(b[0:n], uint16(len(b)-(n+2)))
 	return b
 }
 
