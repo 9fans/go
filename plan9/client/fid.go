@@ -13,12 +13,12 @@ import (
 func getuser() string { return os.Getenv("USER") }
 
 type Fid struct {
-	c *Conn
-	qid plan9.Qid
-	fid uint32
-	mode uint8
+	c      *Conn
+	qid    plan9.Qid
+	fid    uint32
+	mode   uint8
 	offset int64
-	f sync.Mutex
+	f      sync.Mutex
 }
 
 func (fid *Fid) Close() os.Error {
@@ -72,7 +72,7 @@ func dirUnpack(b []byte) ([]*plan9.Dir, os.Error) {
 			err = io.ErrUnexpectedEOF
 			break
 		}
-		d, err := plan9.UnmarshalDir(b[0:n+2])
+		d, err := plan9.UnmarshalDir(b[0 : n+2])
 		if err != nil {
 			break
 		}
@@ -83,7 +83,7 @@ func dirUnpack(b []byte) ([]*plan9.Dir, os.Error) {
 			dirs = ndirs
 		}
 		n = len(dirs)
-		dirs = dirs[0:n+1]
+		dirs = dirs[0 : n+1]
 		dirs[n] = d
 	}
 	return dirs, err
@@ -153,7 +153,7 @@ func (fid *Fid) Seek(n int64, whence int) (int64, os.Error) {
 		fid.f.Lock()
 		fid.offset = n
 		fid.f.Unlock()
-		
+
 	case 1:
 		fid.f.Lock()
 		n += fid.offset
@@ -163,7 +163,7 @@ func (fid *Fid) Seek(n int64, whence int) (int64, os.Error) {
 		}
 		fid.offset = n
 		fid.f.Unlock()
-	
+
 	case 2:
 		d, err := fid.Stat()
 		if err != nil {
@@ -176,11 +176,11 @@ func (fid *Fid) Seek(n int64, whence int) (int64, os.Error) {
 		fid.f.Lock()
 		fid.offset = n
 		fid.f.Unlock()
-	
+
 	default:
 		return 0, Error("bad whence in seek")
 	}
-	
+
 	return n, nil
 }
 
@@ -199,9 +199,9 @@ func (fid *Fid) Walk(name string) (*Fid, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Split, delete empty strings and dot.
-	elem := strings.Split(name, "/", -1)
+	elem := strings.Split(name, "/")
 	j := 0
 	for _, e := range elem {
 		if e != "" && e != "." {
@@ -211,7 +211,7 @@ func (fid *Fid) Walk(name string) (*Fid, os.Error) {
 	}
 	elem = elem[0:j]
 
-	for nwalk := 0;; nwalk++ {
+	for nwalk := 0; ; nwalk++ {
 		n := len(elem)
 		if n > plan9.MAXWELEM {
 			n = plan9.MAXWELEM
@@ -224,7 +224,7 @@ func (fid *Fid) Walk(name string) (*Fid, os.Error) {
 		}
 		rx, err := fid.c.rpc(tx)
 		if err == nil && len(rx.Wqid) != n {
-			err = Error("file '"+name+"' not found")
+			err = Error("file '" + name + "' not found")
 		}
 		if err != nil {
 			if nwalk > 0 {

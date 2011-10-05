@@ -20,19 +20,19 @@ import (
 
 // A Win represents a single acme window and its control files.
 type Win struct {
-	id	int
-	ctl	*client.Fid
-	tag	*client.Fid
-	body	*client.Fid
-	addr	*client.Fid
-	event	*client.Fid
-	data	*client.Fid
-	xdata	*client.Fid
-	ebuf	*bufio.Reader
-	c	chan *Event
-	next, prev	*Win
-	buf	[]byte
-	e2, e3, e4	Event
+	id         int
+	ctl        *client.Fid
+	tag        *client.Fid
+	body       *client.Fid
+	addr       *client.Fid
+	event      *client.Fid
+	data       *client.Fid
+	xdata      *client.Fid
+	ebuf       *bufio.Reader
+	c          chan *Event
+	next, prev *Win
+	buf        []byte
+	e2, e3, e4 Event
 }
 
 var windows, last *Win
@@ -90,7 +90,7 @@ func Open(id int, ctl *client.Fid) (*Win, os.Error) {
 			return nil, err
 		}
 	}
-	
+
 	w := new(Win)
 	w.id = id
 	w.ctl = ctl
@@ -115,30 +115,30 @@ func (w *Win) Addr(format string, args ...interface{}) os.Error {
 func (w *Win) CloseFiles() {
 	w.ctl.Close()
 	w.ctl = nil
-	
+
 	w.body.Close()
 	w.body = nil
-	
+
 	w.addr.Close()
 	w.addr = nil
-	
+
 	w.tag.Close()
 	w.tag = nil
-	
+
 	w.event.Close()
 	w.event = nil
 	w.ebuf = nil
-	
+
 	w.data.Close()
 	w.data = nil
-	
+
 	w.xdata.Close()
-	w.xdata = nil	
+	w.xdata = nil
 }
 
 // Ctl writes the command format, ... to the window's ctl file.
 func (w *Win) Ctl(format string, args ...interface{}) os.Error {
-	return w.Printf("ctl", format + "\n", args...)
+	return w.Printf("ctl", format+"\n", args...)
 }
 
 // Winctl deletes the window, writing `del' (or, if sure is true, `delete') to the ctl file.
@@ -152,7 +152,7 @@ func (w *Win) Del(sure bool) os.Error {
 
 // DeleteAll deletes all windows.
 func DeleteAll() {
-	for w := windows; w != nil; w=w.next {
+	for w := windows; w != nil; w = w.next {
 		w.Ctl("delete")
 	}
 }
@@ -197,7 +197,7 @@ func (w *Win) ReadAll(file string) ([]byte, os.Error) {
 }
 
 func (w *Win) Name(format string, args ...interface{}) os.Error {
-	return w.Ctl("name " + format, args...)
+	return w.Ctl("name "+format, args...)
 }
 
 func (w *Win) Printf(file, format string, args ...interface{}) os.Error {
@@ -231,12 +231,12 @@ func (w *Win) ReadAddr() (q0, q1 int, err os.Error) {
 	}
 	a := strings.Fields(string(buf[0:n]))
 	if len(a) < 2 {
-		return 0, 0, os.ErrorString("short read from acme addr")
+		return 0, 0, os.NewError("short read from acme addr")
 	}
 	q0, err0 := strconv.Atoi(a[0])
 	q1, err1 := strconv.Atoi(a[1])
 	if err0 != nil || err1 != nil {
-		return 0, 0, os.ErrorString("invalid read from acme addr")
+		return 0, 0, os.NewError("invalid read from acme addr")
 	}
 	return q0, q1, nil
 }
@@ -264,34 +264,34 @@ const eventSize = 256
 // See http://swtch.com/plan9port/man/man4/acme.html for details.
 type Event struct {
 	// The two event characters, indicating origin and type of action
-	C1, C2	int
+	C1, C2 int
 
 	// The character addresses of the action.
 	// If the original event had an empty selection (OrigQ0=OrigQ1)
 	// and was accompanied by an expansion (the 2 bit is set in Flag),
 	// then Q0 and Q1 will indicate the expansion rather than the
 	// original event.
-	Q0, Q1	int
-	
+	Q0, Q1 int
+
 	// The Q0 and Q1 of the original event, even if it was expanded.
 	// If there was no expansion, OrigQ0=Q0 and OrigQ1=Q1.
-	OrigQ0, OrigQ1	int
-	
+	OrigQ0, OrigQ1 int
+
 	// The flag bits.
-	Flag	int
-	
+	Flag int
+
 	// The number of bytes in the optional text.
-	Nb	int
-	
+	Nb int
+
 	// The number of characters (UTF-8 sequences) in the optional text.
-	Nr	int
-	
+	Nr int
+
 	// The optional text itself, encoded in UTF-8.
 	Text []byte
-	
+
 	// The chorded argument, if present (the 8 bit is set in the flag).
 	Arg []byte
-	
+
 	// The chorded location, if present (the 8 bit is set in the flag).
 	Loc []byte
 }
@@ -304,16 +304,16 @@ func (w *Win) ReadEvent() (e *Event, err os.Error) {
 			err = os.NewError("malformed acme event: " + v.(string))
 		}
 	}()
-	
+
 	if _, err = w.fid("event"); err != nil {
 		return nil, err
 	}
-	
+
 	e = new(Event)
 	w.gete(e)
 	e.OrigQ0 = e.Q0
 	e.OrigQ1 = e.Q1
-	
+
 	// expansion
 	if e.Flag&2 != 0 {
 		e2 := new(Event)
@@ -335,7 +335,7 @@ func (w *Win) ReadEvent() (e *Event, err os.Error) {
 		e.Arg = e3.Text
 		e.Loc = e4.Text
 	}
-	
+
 	return e, nil
 }
 
@@ -418,4 +418,3 @@ func (w *Win) eventReader() {
 	}
 	close(w.c)
 }
-

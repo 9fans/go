@@ -17,7 +17,7 @@ var dicts []dict.Dict
 func main() {
 	w, err := acme.New()
 	if err != nil {
-		log.Exit(err)
+		log.Fatal(err)
 	}
 	w.Name("/dict/")
 	d, err = dict.Dial("tcp", "216.93.242.2:dict")
@@ -44,7 +44,7 @@ func main() {
 func lookup(word string) {
 	defs, err := d.Define("!", word)
 	if err != nil {
-		log.Stderr(err)
+		log.Print(err)
 		return
 	}
 	for _, def := range defs {
@@ -55,7 +55,7 @@ func lookup(word string) {
 func wordwin(def *dict.Defn) {
 	w, err := acme.New()
 	if err != nil {
-		log.Exit(err)
+		log.Fatal(err)
 	}
 	w.Name("/dict/%s/%s", def.Dict.Name, def.Word)
 	w.Write("body", def.Text)
