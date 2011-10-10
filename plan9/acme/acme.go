@@ -157,6 +157,11 @@ func DeleteAll() {
 	}
 }
 
+func (w *Win) OpenEvent() os.Error {
+	_, err := w.fid("event")
+	return err
+}
+
 func (w *Win) fid(name string) (*client.Fid, os.Error) {
 	var f **client.Fid
 	switch name {
@@ -190,6 +195,7 @@ func (w *Win) fid(name string) (*client.Fid, os.Error) {
 // ReadAll 
 func (w *Win) ReadAll(file string) ([]byte, os.Error) {
 	f, err := w.fid(file)
+	f.Seek(0, 0)
 	if err != nil {
 		return nil, err
 	}
