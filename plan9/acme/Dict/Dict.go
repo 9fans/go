@@ -22,14 +22,14 @@ func main() {
 	w.Name("/dict/")
 	d, err = dict.Dial("tcp", "216.93.242.2:dict")
 	if err != nil {
-		w.Write("body", []byte(err.String()))
+		w.Write("body", []byte(err.Error()))
 		return
 	}
 	w.Ctl("clean")
 	go func() {
 		dicts, err = d.Dicts()
 		if err != nil {
-			w.Write("body", []byte(err.String()))
+			w.Write("body", []byte(err.Error()))
 			return
 		}
 		for _, dict := range dicts {
@@ -70,12 +70,12 @@ func events(w *acme.Win) <-chan string {
 	go func() {
 		for e := range w.EventChan() {
 			switch e.C2 {
-			case 'x', 'X':	// execute
+			case 'x', 'X': // execute
 				if string(e.Text) == "Del" {
 					w.Ctl("delete")
 				}
 				w.WriteEvent(e)
-			case 'l', 'L':	// look
+			case 'l', 'L': // look
 				w.Ctl("clean")
 				c <- string(e.Text)
 			}

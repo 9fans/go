@@ -1,7 +1,6 @@
 package client
 
 import (
-	"os"
 	"strings"
 
 	"goplan9.googlecode.com/hg/plan9"
@@ -11,7 +10,7 @@ type Fsys struct {
 	root *Fid
 }
 
-func (c *Conn) Auth(uname, aname string) (*Fid, os.Error) {
+func (c *Conn) Auth(uname, aname string) (*Fid, error) {
 	afid, err := c.newfid()
 	if err != nil {
 		return nil, err
@@ -26,7 +25,7 @@ func (c *Conn) Auth(uname, aname string) (*Fid, os.Error) {
 	return afid, nil
 }
 
-func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, os.Error) {
+func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, error) {
 	fid, err := c.newfid()
 	if err != nil {
 		return nil, err
@@ -44,18 +43,18 @@ func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, os.Error) {
 	return &Fsys{fid}, nil
 }
 
-var accessOmode = [8]uint8 {
+var accessOmode = [8]uint8{
 	0,
 	plan9.OEXEC,
 	plan9.OWRITE,
 	plan9.ORDWR,
 	plan9.OREAD,
-	plan9.OEXEC,	// only approximate
+	plan9.OEXEC, // only approximate
 	plan9.ORDWR,
-	plan9.ORDWR,	// only approximate
+	plan9.ORDWR, // only approximate
 }
 
-func (fs *Fsys) Access(name string, mode int) os.Error {
+func (fs *Fsys) Access(name string, mode int) error {
 	if mode == plan9.AEXIST {
 		_, err := fs.Stat(name)
 		return err
@@ -67,7 +66,7 @@ func (fs *Fsys) Access(name string, mode int) os.Error {
 	return err
 }
 
-func (fs *Fsys) Create(name string, mode uint8, perm plan9.Perm) (*Fid, os.Error) {
+func (fs *Fsys) Create(name string, mode uint8, perm plan9.Perm) (*Fid, error) {
 	i := strings.LastIndex(name, "/")
 	var dir, elem string
 	if i < 0 {
@@ -87,7 +86,7 @@ func (fs *Fsys) Create(name string, mode uint8, perm plan9.Perm) (*Fid, os.Error
 	return fid, nil
 }
 
-func (fs *Fsys) Open(name string, mode uint8) (*Fid, os.Error) {
+func (fs *Fsys) Open(name string, mode uint8) (*Fid, error) {
 	fid, err := fs.root.Walk(name)
 	if err != nil {
 		return nil, err
@@ -100,7 +99,7 @@ func (fs *Fsys) Open(name string, mode uint8) (*Fid, os.Error) {
 	return fid, nil
 }
 
-func (fs *Fsys) Remove(name string) os.Error {
+func (fs *Fsys) Remove(name string) error {
 	fid, err := fs.root.Walk(name)
 	if err != nil {
 		return err
@@ -108,7 +107,7 @@ func (fs *Fsys) Remove(name string) os.Error {
 	return fid.Remove()
 }
 
-func (fs *Fsys) Stat(name string) (*plan9.Dir, os.Error) {
+func (fs *Fsys) Stat(name string) (*plan9.Dir, error) {
 	fid, err := fs.root.Walk(name)
 	if err != nil {
 		return nil, err
@@ -118,7 +117,7 @@ func (fs *Fsys) Stat(name string) (*plan9.Dir, os.Error) {
 	return d, err
 }
 
-func (fs *Fsys) Wstat(name string, d *plan9.Dir) os.Error {
+func (fs *Fsys) Wstat(name string, d *plan9.Dir) error {
 	fid, err := fs.root.Walk(name)
 	if err != nil {
 		return err

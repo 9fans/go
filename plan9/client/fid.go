@@ -21,7 +21,7 @@ type Fid struct {
 	f      sync.Mutex
 }
 
-func (fid *Fid) Close() os.Error {
+func (fid *Fid) Close() error {
 	if fid == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func (fid *Fid) Close() os.Error {
 	return err
 }
 
-func (fid *Fid) Create(name string, mode uint8, perm plan9.Perm) os.Error {
+func (fid *Fid) Create(name string, mode uint8, perm plan9.Perm) error {
 	tx := &plan9.Fcall{Type: plan9.Tcreate, Fid: fid.fid, Name: name, Mode: mode, Perm: perm}
 	rx, err := fid.c.rpc(tx)
 	if err != nil {
@@ -42,7 +42,7 @@ func (fid *Fid) Create(name string, mode uint8, perm plan9.Perm) os.Error {
 	return nil
 }
 
-func (fid *Fid) Dirread() ([]*plan9.Dir, os.Error) {
+func (fid *Fid) Dirread() ([]*plan9.Dir, error) {
 	buf := make([]byte, plan9.STATMAX)
 	n, err := fid.Read(buf)
 	if err != nil {
@@ -51,7 +51,7 @@ func (fid *Fid) Dirread() ([]*plan9.Dir, os.Error) {
 	return dirUnpack(buf[0:n])
 }
 
-func (fid *Fid) Dirreadall() ([]*plan9.Dir, os.Error) {
+func (fid *Fid) Dirreadall() ([]*plan9.Dir, error) {
 	buf, err := ioutil.ReadAll(fid)
 	if len(buf) == 0 {
 		return nil, err
@@ -59,8 +59,8 @@ func (fid *Fid) Dirreadall() ([]*plan9.Dir, os.Error) {
 	return dirUnpack(buf)
 }
 
-func dirUnpack(b []byte) ([]*plan9.Dir, os.Error) {
-	var err os.Error
+func dirUnpack(b []byte) ([]*plan9.Dir, error) {
+	var err error
 	dirs := make([]*plan9.Dir, 0, 10)
 	for len(b) > 0 {
 		if len(b) < 2 {
@@ -89,7 +89,7 @@ func dirUnpack(b []byte) ([]*plan9.Dir, os.Error) {
 	return dirs, err
 }
 
-func (fid *Fid) Open(mode uint8) os.Error {
+func (fid *Fid) Open(mode uint8) error {
 	tx := &plan9.Fcall{Type: plan9.Topen, Fid: fid.fid, Mode: mode}
 	_, err := fid.c.rpc(tx)
 	if err != nil {
@@ -103,11 +103,11 @@ func (fid *Fid) Qid() plan9.Qid {
 	return fid.qid
 }
 
-func (fid *Fid) Read(b []byte) (n int, err os.Error) {
+func (fid *Fid) Read(b []byte) (n int, err error) {
 	return fid.ReadAt(b, -1)
 }
 
-func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err os.Error) {
+func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err error) {
 	msize := fid.c.msize - plan9.IOHDRSZ
 	n = len(b)
 	if uint32(n) > msize {
@@ -125,7 +125,7 @@ func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err os.Error) {
 		return 0, err
 	}
 	if len(rx.Data) == 0 {
-		return 0, os.EOF
+		return 0, io.EOF
 	}
 	copy(b, rx.Data)
 	if offset == -1 {
@@ -136,18 +136,18 @@ func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err os.Error) {
 	return len(rx.Data), nil
 }
 
-func (fid *Fid) ReadFull(b []byte) (n int, err os.Error) {
+func (fid *Fid) ReadFull(b []byte) (n int, err error) {
 	return io.ReadFull(fid, b)
 }
 
-func (fid *Fid) Remove() os.Error {
+func (fid *Fid) Remove() error {
 	tx := &plan9.Fcall{Type: plan9.Tremove, Fid: fid.fid}
 	_, err := fid.c.rpc(tx)
 	fid.c.putfid(fid)
 	return err
 }
 
-func (fid *Fid) Seek(n int64, whence int) (int64, os.Error) {
+func (fid *Fid) Seek(n int64, whence int) (int64, error) {
 	switch whence {
 	case 0:
 		fid.f.Lock()
@@ -184,7 +184,7 @@ func (fid *Fid) Seek(n int64, whence int) (int64, os.Error) {
 	return n, nil
 }
 
-func (fid *Fid) Stat() (*plan9.Dir, os.Error) {
+func (fid *Fid) Stat() (*plan9.Dir, error) {
 	tx := &plan9.Fcall{Type: plan9.Tstat, Fid: fid.fid}
 	rx, err := fid.c.rpc(tx)
 	if err != nil {
@@ -194,7 +194,7 @@ func (fid *Fid) Stat() (*plan9.Dir, os.Error) {
 }
 
 // TODO(rsc): Could use ...string instead?
-func (fid *Fid) Walk(name string) (*Fid, os.Error) {
+func (fid *Fid) Walk(name string) (*Fid, error) {
 	wfid, err := fid.c.newfid()
 	if err != nil {
 		return nil, err
@@ -247,11 +247,11 @@ func (fid *Fid) Walk(name string) (*Fid, os.Error) {
 	return wfid, nil
 }
 
-func (fid *Fid) Write(b []byte) (n int, err os.Error) {
+func (fid *Fid) Write(b []byte) (n int, err error) {
 	return fid.WriteAt(b, -1)
 }
 
-func (fid *Fid) WriteAt(b []byte, offset int64) (n int, err os.Error) {
+func (fid *Fid) WriteAt(b []byte, offset int64) (n int, err error) {
 	msize := fid.c.msize - plan9.IOHDRSIZE
 	tot := 0
 	n = len(b)
@@ -274,7 +274,7 @@ func (fid *Fid) WriteAt(b []byte, offset int64) (n int, err os.Error) {
 	return tot, nil
 }
 
-func (fid *Fid) writeAt(b []byte, offset int64) (n int, err os.Error) {
+func (fid *Fid) writeAt(b []byte, offset int64) (n int, err error) {
 	o := offset
 	if o == -1 {
 		fid.f.Lock()
@@ -294,7 +294,7 @@ func (fid *Fid) writeAt(b []byte, offset int64) (n int, err os.Error) {
 	return int(rx.Count), nil
 }
 
-func (fid *Fid) Wstat(d *plan9.Dir) os.Error {
+func (fid *Fid) Wstat(d *plan9.Dir) error {
 	b, err := d.Bytes()
 	if err != nil {
 		return err

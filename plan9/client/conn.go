@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"goplan9.googlecode.com/hg/plan9"
@@ -11,42 +10,41 @@ import (
 
 type Error string
 
-func (e Error) String() string { return string(e) }
-
+func (e Error) Error() string { return string(e) }
 
 type Conn struct {
-	rwc io.ReadWriteCloser
-	err os.Error
-	tagmap map[uint16] chan *plan9.Fcall
-	freetag map[uint16] bool
-	freefid map[uint32] bool
+	rwc     io.ReadWriteCloser
+	err     error
+	tagmap  map[uint16]chan *plan9.Fcall
+	freetag map[uint16]bool
+	freefid map[uint32]bool
 	nexttag uint16
 	nextfid uint32
-	msize uint32
+	msize   uint32
 	version string
 	r, w, x sync.Mutex
-	muxer bool
+	muxer   bool
 }
 
-func NewConn(rwc io.ReadWriteCloser) (*Conn, os.Error) {
+func NewConn(rwc io.ReadWriteCloser) (*Conn, error) {
 	c := &Conn{
-		rwc: rwc,
-		tagmap: make(map[uint16] chan *plan9.Fcall),
-		freetag: make(map[uint16] bool),
-		freefid: make(map[uint32] bool),
+		rwc:     rwc,
+		tagmap:  make(map[uint16]chan *plan9.Fcall),
+		freetag: make(map[uint16]bool),
+		freefid: make(map[uint32]bool),
 		nexttag: 1,
 		nextfid: 1,
-		msize: 131072,
+		msize:   131072,
 		version: "9P2000",
 	}
-	
-//	XXX raw messages, not c.rpc
+
+	//	XXX raw messages, not c.rpc
 	tx := &plan9.Fcall{Type: plan9.Tversion, Msize: c.msize, Version: c.version}
 	rx, err := c.rpc(tx)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if rx.Msize > c.msize {
 		return nil, plan9.ProtocolError(fmt.Sprintf("invalid msize %d in Rversion", rx.Msize))
 	}
@@ -56,7 +54,7 @@ func NewConn(rwc io.ReadWriteCloser) (*Conn, os.Error) {
 	return c, nil
 }
 
-func (c *Conn) newfid() (*Fid, os.Error) {
+func (c *Conn) newfid() (*Fid, error) {
 	c.x.Lock()
 	defer c.x.Unlock()
 	var fidnum uint32
@@ -82,7 +80,7 @@ func (c *Conn) putfid(f *Fid) {
 	}
 }
 
-func (c *Conn) newtag(ch chan *plan9.Fcall) (uint16, os.Error) {
+func (c *Conn) newtag(ch chan *plan9.Fcall) (uint16, error) {
 	c.x.Lock()
 	defer c.x.Unlock()
 	var tagnum uint16
@@ -129,7 +127,7 @@ func (c *Conn) mux(rx *plan9.Fcall) {
 	ch <- rx
 }
 
-func (c *Conn) read() (*plan9.Fcall, os.Error) {
+func (c *Conn) read() (*plan9.Fcall, error) {
 	if err := c.getErr(); err != nil {
 		return nil, err
 	}
@@ -141,7 +139,7 @@ func (c *Conn) read() (*plan9.Fcall, os.Error) {
 	return f, nil
 }
 
-func (c *Conn) write(f *plan9.Fcall) os.Error {
+func (c *Conn) write(f *plan9.Fcall) error {
 	if err := c.getErr(); err != nil {
 		return err
 	}
@@ -154,7 +152,7 @@ func (c *Conn) write(f *plan9.Fcall) os.Error {
 
 var yourTurn plan9.Fcall
 
-func (c *Conn) rpc(tx *plan9.Fcall) (rx *plan9.Fcall, err os.Error) {
+func (c *Conn) rpc(tx *plan9.Fcall) (rx *plan9.Fcall, err error) {
 	ch := make(chan *plan9.Fcall, 1)
 	tx.Tag, err = c.newtag(ch)
 	if err != nil {
@@ -166,7 +164,7 @@ func (c *Conn) rpc(tx *plan9.Fcall) (rx *plan9.Fcall, err os.Error) {
 		return nil, err
 	}
 	c.w.Unlock()
-	
+
 	for rx = range ch {
 		if rx != &yourTurn {
 			break
@@ -190,18 +188,18 @@ func (c *Conn) rpc(tx *plan9.Fcall) (rx *plan9.Fcall, err os.Error) {
 	return rx, nil
 }
 
-func (c *Conn) Close() os.Error {
+func (c *Conn) Close() error {
 	return c.rwc.Close()
 }
 
-func (c *Conn) getErr() os.Error {
+func (c *Conn) getErr() error {
 	c.x.Lock()
 	err := c.err
 	c.x.Unlock()
 	return err
 }
 
-func (c *Conn) setErr(err os.Error) {
+func (c *Conn) setErr(err error) {
 	c.x.Lock()
 	c.err = err
 	c.x.Unlock()

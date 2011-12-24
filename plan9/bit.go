@@ -30,7 +30,7 @@ func pbit8(b []byte, x uint8) []byte {
 		copy(nb, b)
 		b = nb
 	}
-	b = b[0:n+1]
+	b = b[0 : n+1]
 	b[n] = x
 	return b
 }
@@ -42,9 +42,9 @@ func pbit16(b []byte, x uint16) []byte {
 		copy(nb, b)
 		b = nb
 	}
-	b = b[0:n+2]
+	b = b[0 : n+2]
 	b[n] = byte(x)
-	b[n+1] = byte(x>>8)
+	b[n+1] = byte(x >> 8)
 	return b
 }
 
@@ -55,11 +55,11 @@ func pbit32(b []byte, x uint32) []byte {
 		copy(nb, b)
 		b = nb
 	}
-	b = b[0:n+4]
+	b = b[0 : n+4]
 	b[n] = byte(x)
-	b[n+1] = byte(x>>8)
-	b[n+2] = byte(x>>16)
-	b[n+3] = byte(x>>24)
+	b[n+1] = byte(x >> 8)
+	b[n+2] = byte(x >> 16)
+	b[n+3] = byte(x >> 24)
 	return b
 }
 

@@ -2,13 +2,12 @@ package plan9
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 )
 
 type ProtocolError string
 
-func (e ProtocolError) String() string {
+func (e ProtocolError) Error() string {
 	return string(e)
 }
 
@@ -17,17 +16,17 @@ const (
 )
 
 type Dir struct {
-	Type uint16
-	Dev uint32
-	Qid Qid
-	Mode Perm
-	Atime uint32
-	Mtime uint32
+	Type   uint16
+	Dev    uint32
+	Qid    Qid
+	Mode   Perm
+	Atime  uint32
+	Mtime  uint32
 	Length uint64
-	Name string
-	Uid string
-	Gid string
-	Muid string
+	Name   string
+	Uid    string
+	Gid    string
+	Muid   string
 }
 
 var nullDir = Dir{
@@ -50,7 +49,7 @@ func (d *Dir) Null() {
 
 func pdir(b []byte, d *Dir) []byte {
 	n := len(b)
-	b = pbit16(b, 0)	// length, filled in later
+	b = pbit16(b, 0) // length, filled in later
 	b = pbit16(b, d.Type)
 	b = pbit32(b, d.Dev)
 	b = pqid(b, d.Qid)
@@ -66,11 +65,11 @@ func pdir(b []byte, d *Dir) []byte {
 	return b
 }
 
-func (d *Dir) Bytes() ([]byte, os.Error) {
+func (d *Dir) Bytes() ([]byte, error) {
 	return pdir(nil, d), nil
 }
 
-func UnmarshalDir(b []byte) (d *Dir, err os.Error) {
+func UnmarshalDir(b []byte) (d *Dir, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			d = nil
@@ -81,7 +80,7 @@ func UnmarshalDir(b []byte) (d *Dir, err os.Error) {
 	n, b := gbit16(b)
 	if int(n) != len(b) {
 		panic(1)
-	}	
+	}
 
 	d = new(Dir)
 	d.Type, b = gbit16(b)
@@ -112,7 +111,7 @@ func dumpsome(b []byte) string {
 	if len(b) > 64 {
 		b = b[0:64]
 	}
-	
+
 	printable := true
 	for _, c := range b {
 		if c != 0 && c < 32 || c > 127 {
@@ -120,7 +119,7 @@ func dumpsome(b []byte) string {
 			break
 		}
 	}
-	
+
 	if printable {
 		return strconv.Quote(string(b))
 	}
@@ -131,7 +130,7 @@ type Perm uint32
 
 type permChar struct {
 	bit Perm
-	c int
+	c   int
 }
 
 var permChars = []permChar{
@@ -200,16 +199,16 @@ type Qid struct {
 
 func (q Qid) String() string {
 	t := ""
-	if q.Type & QTDIR != 0 {
+	if q.Type&QTDIR != 0 {
 		t += "d"
 	}
-	if q.Type & QTAPPEND != 0 {
+	if q.Type&QTAPPEND != 0 {
 		t += "a"
 	}
-	if q.Type & QTEXCL != 0 {
+	if q.Type&QTEXCL != 0 {
 		t += "l"
 	}
-	if q.Type & QTAUTH != 0 {
+	if q.Type&QTAUTH != 0 {
 		t += "A"
 	}
 	return fmt.Sprintf("(%.16x %d %s)", q.Path, q.Vers, t)
@@ -229,4 +228,3 @@ func pqid(b []byte, q Qid) []byte {
 	b = pbit8(b, q.Type)
 	return b
 }
-

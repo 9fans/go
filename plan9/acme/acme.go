@@ -8,14 +8,14 @@ package acme
 import (
 	"bufio"
 	"bytes"
-	"io/ioutil"
+	"errors"
 	"fmt"
-	"sync"
-	"os"
-	"strconv"
-	"strings"
 	"goplan9.googlecode.com/hg/plan9"
 	"goplan9.googlecode.com/hg/plan9/client"
+	"io/ioutil"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 // A Win represents a single acme window and its control files.
@@ -38,14 +38,14 @@ type Win struct {
 var windows, last *Win
 
 var fsys *client.Fsys
-var fsysErr os.Error
+var fsysErr error
 
 func mountAcme() {
 	fsys, fsysErr = client.MountService("acme")
 }
 
 // New creates a new window.
-func New() (*Win, os.Error) {
+func New() (*Win, error) {
 	config := new(sync.Once)
 	config.Do(mountAcme)
 	if fsysErr != nil {
@@ -64,12 +64,12 @@ func New() (*Win, os.Error) {
 	a := strings.Fields(string(buf[0:n]))
 	if len(a) == 0 {
 		fid.Close()
-		return nil, os.NewError("short read from acme/new/ctl")
+		return nil, errors.New("short read from acme/new/ctl")
 	}
 	id, err := strconv.Atoi(a[0])
 	if err != nil {
 		fid.Close()
-		return nil, os.NewError("invalid window id in acme/new/ctl: " + a[0])
+		return nil, errors.New("invalid window id in acme/new/ctl: " + a[0])
 	}
 	return Open(id, fid)
 }
@@ -77,14 +77,14 @@ func New() (*Win, os.Error) {
 // Open connects to the existing window with the given id.
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
-func Open(id int, ctl *client.Fid) (*Win, os.Error) {
+func Open(id int, ctl *client.Fid) (*Win, error) {
 	config := new(sync.Once)
 	config.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
 	}
 	if ctl == nil {
-		var err os.Error
+		var err error
 		ctl, err = fsys.Open(fmt.Sprintf("%d/ctl", id), plan9.ORDWR)
 		if err != nil {
 			return nil, err
@@ -106,7 +106,7 @@ func Open(id int, ctl *client.Fid) (*Win, os.Error) {
 }
 
 // Addr writes format, ... to the window's addr file.
-func (w *Win) Addr(format string, args ...interface{}) os.Error {
+func (w *Win) Addr(format string, args ...interface{}) error {
 	return w.Printf("addr", format, args...)
 }
 
@@ -137,12 +137,12 @@ func (w *Win) CloseFiles() {
 }
 
 // Ctl writes the command format, ... to the window's ctl file.
-func (w *Win) Ctl(format string, args ...interface{}) os.Error {
+func (w *Win) Ctl(format string, args ...interface{}) error {
 	return w.Printf("ctl", format+"\n", args...)
 }
 
 // Winctl deletes the window, writing `del' (or, if sure is true, `delete') to the ctl file.
-func (w *Win) Del(sure bool) os.Error {
+func (w *Win) Del(sure bool) error {
 	cmd := "del"
 	if sure {
 		cmd = "delete"
@@ -157,12 +157,12 @@ func DeleteAll() {
 	}
 }
 
-func (w *Win) OpenEvent() os.Error {
+func (w *Win) OpenEvent() error {
 	_, err := w.fid("event")
 	return err
 }
 
-func (w *Win) fid(name string) (*client.Fid, os.Error) {
+func (w *Win) fid(name string) (*client.Fid, error) {
 	var f **client.Fid
 	switch name {
 	case "addr":
@@ -180,10 +180,10 @@ func (w *Win) fid(name string) (*client.Fid, os.Error) {
 	case "xdata":
 		f = &w.xdata
 	default:
-		return nil, os.NewError("unknown acme file: " + name)
+		return nil, errors.New("unknown acme file: " + name)
 	}
 	if *f == nil {
-		var err os.Error
+		var err error
 		*f, err = fsys.Open(fmt.Sprintf("%d/%s", w.id, name), plan9.ORDWR)
 		if err != nil {
 			return nil, err
@@ -193,7 +193,7 @@ func (w *Win) fid(name string) (*client.Fid, os.Error) {
 }
 
 // ReadAll 
-func (w *Win) ReadAll(file string) ([]byte, os.Error) {
+func (w *Win) ReadAll(file string) ([]byte, error) {
 	f, err := w.fid(file)
 	f.Seek(0, 0)
 	if err != nil {
@@ -202,11 +202,11 @@ func (w *Win) ReadAll(file string) ([]byte, os.Error) {
 	return ioutil.ReadAll(f)
 }
 
-func (w *Win) Name(format string, args ...interface{}) os.Error {
+func (w *Win) Name(format string, args ...interface{}) error {
 	return w.Ctl("name "+format, args...)
 }
 
-func (w *Win) Printf(file, format string, args ...interface{}) os.Error {
+func (w *Win) Printf(file, format string, args ...interface{}) error {
 	f, err := w.fid(file)
 	if err != nil {
 		return err
@@ -217,7 +217,7 @@ func (w *Win) Printf(file, format string, args ...interface{}) os.Error {
 	return err
 }
 
-func (w *Win) Read(file string, b []byte) (n int, err os.Error) {
+func (w *Win) Read(file string, b []byte) (n int, err error) {
 	f, err := w.fid(file)
 	if err != nil {
 		return 0, err
@@ -225,7 +225,7 @@ func (w *Win) Read(file string, b []byte) (n int, err os.Error) {
 	return f.Read(b)
 }
 
-func (w *Win) ReadAddr() (q0, q1 int, err os.Error) {
+func (w *Win) ReadAddr() (q0, q1 int, err error) {
 	f, err := w.fid("addr")
 	if err != nil {
 		return 0, 0, err
@@ -237,17 +237,17 @@ func (w *Win) ReadAddr() (q0, q1 int, err os.Error) {
 	}
 	a := strings.Fields(string(buf[0:n]))
 	if len(a) < 2 {
-		return 0, 0, os.NewError("short read from acme addr")
+		return 0, 0, errors.New("short read from acme addr")
 	}
 	q0, err0 := strconv.Atoi(a[0])
 	q1, err1 := strconv.Atoi(a[1])
 	if err0 != nil || err1 != nil {
-		return 0, 0, os.NewError("invalid read from acme addr")
+		return 0, 0, errors.New("invalid read from acme addr")
 	}
 	return q0, q1, nil
 }
 
-func (w *Win) Seek(file string, offset int64, whence int) (int64, os.Error) {
+func (w *Win) Seek(file string, offset int64, whence int) (int64, error) {
 	f, err := w.fid(file)
 	if err != nil {
 		return 0, err
@@ -255,7 +255,7 @@ func (w *Win) Seek(file string, offset int64, whence int) (int64, os.Error) {
 	return f.Seek(offset, whence)
 }
 
-func (w *Win) Write(file string, b []byte) (n int, err os.Error) {
+func (w *Win) Write(file string, b []byte) (n int, err error) {
 	f, err := w.fid(file)
 	if err != nil {
 		return 0, nil
@@ -303,11 +303,11 @@ type Event struct {
 }
 
 // ReadEvent reads the next event from the window's event file.
-func (w *Win) ReadEvent() (e *Event, err os.Error) {
+func (w *Win) ReadEvent() (e *Event, err error) {
 	defer func() {
 		if v := recover(); v != nil {
 			e = nil
-			err = os.NewError("malformed acme event: " + v.(string))
+			err = errors.New("malformed acme event: " + v.(string))
 		}
 	}()
 
@@ -371,7 +371,7 @@ func (w *Win) gete(e *Event) {
 func (w *Win) getec() int {
 	c, _, err := w.ebuf.ReadRune()
 	if err != nil {
-		panic(err.String())
+		panic(err.Error())
 	}
 	return c
 }
@@ -393,7 +393,7 @@ func (w *Win) geten() int {
 
 // WriteEvent writes an event back to the window's event file,
 // indicating to acme that the event should be handled internally.
-func (w *Win) WriteEvent(e *Event) os.Error {
+func (w *Win) WriteEvent(e *Event) error {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, "%c%c%d %d \n", e.C1, e.C2, e.Q0, e.Q1)
 	_, err := w.Write("event", buf.Bytes())
