@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"goplan9.googlecode.com/hg/plan9"
+	"code.google.com/p/goplan9/plan9"
 )
 
 type Error string
@@ -59,7 +59,7 @@ func (c *Conn) newfid() (*Fid, error) {
 	defer c.x.Unlock()
 	var fidnum uint32
 	for fidnum, _ = range c.freefid {
-		c.freefid[fidnum] = false, false
+		delete(c.freefid, fidnum)
 		goto found
 	}
 	fidnum = c.nextfid
@@ -85,7 +85,7 @@ func (c *Conn) newtag(ch chan *plan9.Fcall) (uint16, error) {
 	defer c.x.Unlock()
 	var tagnum uint16
 	for tagnum, _ = range c.freetag {
-		c.freetag[tagnum] = false, false
+		delete(c.freetag, tagnum)
 		goto found
 	}
 	tagnum = c.nexttag
@@ -106,7 +106,7 @@ func (c *Conn) puttag(tag uint16) chan *plan9.Fcall {
 	c.x.Lock()
 	defer c.x.Unlock()
 	ch := c.tagmap[tag]
-	c.tagmap[tag] = nil, false
+	delete(c.tagmap, tag)
 	c.freetag[tag] = true
 	return ch
 }
@@ -116,7 +116,7 @@ func (c *Conn) mux(rx *plan9.Fcall) {
 	defer c.x.Unlock()
 
 	ch := c.tagmap[rx.Tag]
-	c.tagmap[rx.Tag] = nil, false
+	delete(c.tagmap, rx.Tag)
 	c.freetag[rx.Tag] = true
 	c.muxer = false
 	for _, ch2 := range c.tagmap {

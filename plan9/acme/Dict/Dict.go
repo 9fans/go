@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/dict"
 
-	"goplan9.googlecode.com/hg/plan9/acme"
+	"code.google.com/p/goplan9/plan9/acme"
 )
 
 var dictx = flag.String("d", "", "dictionary")

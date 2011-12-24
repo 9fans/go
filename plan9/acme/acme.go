@@ -8,10 +8,10 @@ package acme
 import (
 	"bufio"
 	"bytes"
+	"code.google.com/p/goplan9/plan9"
+	"code.google.com/p/goplan9/plan9/client"
 	"errors"
 	"fmt"
-	"goplan9.googlecode.com/hg/plan9"
-	"goplan9.googlecode.com/hg/plan9/client"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -270,7 +270,7 @@ const eventSize = 256
 // See http://swtch.com/plan9port/man/man4/acme.html for details.
 type Event struct {
 	// The two event characters, indicating origin and type of action
-	C1, C2 int
+	C1, C2 rune
 
 	// The character addresses of the action.
 	// If the original event had an empty selection (OrigQ0=OrigQ1)
@@ -358,7 +358,7 @@ func (w *Win) gete(e *Event) {
 	if e.Nr > eventSize {
 		panic("event string too long")
 	}
-	r := make([]int, e.Nr)
+	r := make([]rune, e.Nr)
 	for i := 0; i < e.Nr; i++ {
 		r[i] = w.getec()
 	}
@@ -368,7 +368,7 @@ func (w *Win) gete(e *Event) {
 	}
 }
 
-func (w *Win) getec() int {
+func (w *Win) getec() rune {
 	c, _, err := w.ebuf.ReadRune()
 	if err != nil {
 		panic(err.Error())
@@ -377,13 +377,16 @@ func (w *Win) getec() int {
 }
 
 func (w *Win) geten() int {
-	var c, n int
+	var (
+		c rune
+		n int
+	)
 	for {
 		c = w.getec()
 		if c < '0' || c > '9' {
 			break
 		}
-		n = n*10 + c - '0'
+		n = n*10 + int(c) - '0'
 	}
 	if c != ' ' {
 		panic("event number syntax")
