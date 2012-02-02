@@ -1,9 +1,9 @@
 package main
 
 import (
+	"code.google.com/p/go.net/dict"
 	"flag"
 	"log"
-	"net/dict"
 
 	"code.google.com/p/goplan9/plan9/acme"
 )
