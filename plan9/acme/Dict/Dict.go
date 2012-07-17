@@ -33,7 +33,7 @@ func main() {
 			return
 		}
 		for _, dict := range dicts {
-			w.Printf("body", "%s\t%s\n", dict.Name, dict.Desc)
+			w.Fprintf("body", "%s\t%s\n", dict.Name, dict.Desc)
 		}
 	}()
 	for word := range events(w) {

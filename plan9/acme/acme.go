@@ -107,7 +107,7 @@ func Open(id int, ctl *client.Fid) (*Win, error) {
 
 // Addr writes format, ... to the window's addr file.
 func (w *Win) Addr(format string, args ...interface{}) error {
-	return w.Printf("addr", format, args...)
+	return w.Fprintf("addr", format, args...)
 }
 
 // CloseFiles closes all the open files associated with the window w.
@@ -138,7 +138,7 @@ func (w *Win) CloseFiles() {
 
 // Ctl writes the command format, ... to the window's ctl file.
 func (w *Win) Ctl(format string, args ...interface{}) error {
-	return w.Printf("ctl", format+"\n", args...)
+	return w.Fprintf("ctl", format+"\n", args...)
 }
 
 // Winctl deletes the window, writing `del' (or, if sure is true, `delete') to the ctl file.
@@ -206,7 +206,7 @@ func (w *Win) Name(format string, args ...interface{}) error {
 	return w.Ctl("name "+format, args...)
 }
 
-func (w *Win) Printf(file, format string, args ...interface{}) error {
+func (w *Win) Fprintf(file, format string, args ...interface{}) error {
 	f, err := w.fid(file)
 	if err != nil {
 		return err
