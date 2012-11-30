@@ -1,3 +1,18 @@
+// Package draw is a port of Plan 9's libdraw to Go.
+// It connects to the 'devdraw' binary built as part of Plan 9 from User Space (http://swtch.com/plan9port/).
+//
+// For now, see http://plan9.bell-labs.com/magic/man2html/2/graphics and associated pages
+// for documentation. Not everything is implemented.
+//
+// Notable Changes
+//
+// The pixel descriptions like "r8g8b8" and their integer equivalents are referred to as chans in Plan 9.
+// To avoid confusion, this package refers to them as type Pix instead.
+//
+// Most top-level functions are methods on an appropriate type (Display, Image, Font).
+//
+// Getwindow, called during resize, is now Display.Attach.
+//
 package draw
 
 import (
