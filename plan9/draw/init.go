@@ -231,6 +231,7 @@ func (d *Display) flush() error {
 	_, err := d.conn.WriteDraw(d.buf)
 	d.buf = d.buf[:0]
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "draw flush: %v\n", err)
 		return err
 	}
 	return nil

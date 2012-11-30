@@ -14,7 +14,7 @@ func _allocimage(ai *Image, d *Display, r image.Rectangle, pix Pix, repl bool, v
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("allocimage %v %v: %v", r, pix, err)
-			// freeimage(i)
+			i.Free()
 			i = nil
 		}
 	}()
@@ -58,7 +58,11 @@ func _allocimage(ai *Image, d *Display, r image.Rectangle, pix Pix, repl bool, v
 		return
 	}
 
-	i = &Image{
+	i = ai
+	if i == nil {
+		i = new(Image)
+	}
+	*i = Image{
 		Display: d,
 		ID:      id,
 		Pix:     pix,
