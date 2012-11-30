@@ -1,0 +1,53 @@
+package draw
+
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"strings"
+)
+
+func (d *Display) OpenFont(name string) (*Font, error) {
+	data, err := ioutil.ReadFile(name)
+
+	if err != nil && strings.HasPrefix(name, "/lib/font/bit/") {
+		root := os.Getenv("PLAN9")
+		if root == "" {
+			root = "/usr/local/plan9"
+		}
+		name1 := root + "/font/" + name[len("/lib/font/bit/"):]
+		data1, err1 := ioutil.ReadFile(name1)
+		name, data, err = name1, data1, err1
+	}
+
+	if err != nil && strings.HasPrefix(name, "/mnt/font/") {
+		data1, err1 := fontPipe(name[len("/mnt/font/"):])
+		if err1 == nil {
+			data, err = data1, err1
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return d.BuildFont(data, name)
+}
+
+func fontPipe(name string) ([]byte, error) {
+	data, err := exec.Command("fontsrv", "-pp", name).CombinedOutput()
+
+	// Success marked with leading \001. Otherwise an error happened.
+	if len(data) > 0 && data[0] != '\001' {
+		i := bytes.IndexByte(data, '\n')
+		if i >= 0 {
+			data = data[:i]
+		}
+		return nil, fmt.Errorf("fontsrv -pp %s: %v", name, data)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return data[1:], nil
+}
