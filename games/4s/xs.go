@@ -317,7 +317,7 @@ func canfit(p *Piece) bool {
 
 func score(p int) {
 	points += p
-	buf := fmt.Sprintf("%.6ld", points)
+	buf := fmt.Sprintf("%.6d", points)
 	screen.Draw(image.Rectangle{pscore, pscore.Add(scoresz)}, display.White, nil, image.ZP)
 	screen.String(pscore, display.Black, image.ZP, display.DefaultFont, buf)
 }
@@ -728,6 +728,7 @@ func Play(pp []Piece, d *draw.Display) {
 	timerc = time.Tick(time.Duration(tsleep/2) * time.Millisecond)
 	suspc = make(chan bool)
 	mousec = make(chan draw.Mouse)
+	kbdc = make(chan rune)
 	go suspproc()
 	redraw(false)
 	play()
