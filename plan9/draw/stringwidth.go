@@ -12,7 +12,7 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 	var in input
 	in.init(s, b, r)
 	twid := 0
-	for {
+	for !in.done {
 		max := Max
 		n := 0
 		var sf *Subfont

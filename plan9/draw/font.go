@@ -82,7 +82,7 @@ const pjw = 0 /* use NUL==pjw for invisible characters */
 
 func cachechars(f *Font, in *input, cp []uint16, max int) (n, wid int, subfontname string) {
 	var i int
-println("cachechars", i<max, in.done)
+	//println("cachechars", i<max, in.done)
 Loop:
 	for ; i < max && !in.done; in.next() {
 		r := in.ch
@@ -91,7 +91,7 @@ Loop:
 			a                  uint32
 			sh, esh, h, th, ld int
 		)
-println("LOOP", r)
+		//println("LOOP", r)
 
 		sh = (17 * int(r)) & (len(f.cache) - NFLOOK - 1)
 		esh = sh + NFLOOK
@@ -144,7 +144,7 @@ println("LOOP", r)
 		c = &f.cache[h]
 
 	Found:
-println("FOUND")
+		//println("FOUND")
 		wid += int(c.width)
 		c.age = f.age
 		cp[i] = uint16(h)
@@ -421,7 +421,7 @@ type input struct {
 }
 
 func (in *input) init(s string, b []byte, r []rune) {
-println("init:", s)
+	//println("init:", s)
 	in.s = s
 	in.b = b
 	in.r = r
@@ -461,5 +461,5 @@ func (in *input) next() {
 		in.ch = in.r[0]
 		in.size = 1
 	}
-println("next is ", in.ch, in.done)
+	//println("next is ", in.ch, in.done)
 }

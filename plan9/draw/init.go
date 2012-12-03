@@ -121,7 +121,7 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	if fontname == "" {
 		buf := []byte(fmt.Sprintf("%d %d\n0 %d\t%s\n", df.Height, df.Ascent,
 			df.N-1, deffontname))
-fmt.Printf("%q\n", buf)
+		//fmt.Printf("%q\n", buf)
 		//BUG: Need something better for this	installsubfont("*default*", df);
 		font, err = d.BuildFont(buf, deffontname)
 	} else {
