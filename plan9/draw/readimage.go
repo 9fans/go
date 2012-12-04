@@ -7,7 +7,11 @@ import (
 	"strings"
 )
 
-func (d *Display) ReadImage(rd io.Reader, dolock bool) (*Image, error) {
+func (d *Display) ReadImage(rd io.Reader) (*Image, error) {
+	return d.readImage(rd, true)
+}
+
+func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
 	fd := rd
 	hdr := make([]byte, 5*12)
 

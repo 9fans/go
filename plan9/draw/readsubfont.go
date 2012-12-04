@@ -5,12 +5,12 @@ import (
 	"io"
 )
 
-func (d *Display) readsubfonti(name string, fd io.Reader, ai *Image, dolock bool) (*Subfont, error) {
+func (d *Display) readSubfont(name string, fd io.Reader, ai *Image, dolock bool) (*Subfont, error) {
 	hdr := make([]byte, 3*12+4)
 	i := ai
 	if i == nil {
 		var err error
-		i, err = d.ReadImage(fd, dolock)
+		i, err = d.readImage(fd, dolock)
 		if err != nil {
 			return nil, err
 		}
@@ -50,8 +50,8 @@ Err:
 	return nil, err
 }
 
-func (d *Display) ReadSubfont(name string, fd io.Reader, dolock bool) (*Subfont, error) {
-	return d.readsubfonti(name, fd, nil, dolock)
+func (d *Display) ReadSubfont(name string, fd io.Reader) (*Subfont, error) {
+	return d.readSubfont(name, fd, nil, true)
 }
 
 func unpackinfo(fc []Fontchar, p []byte, n int) {

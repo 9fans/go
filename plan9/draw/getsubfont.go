@@ -30,7 +30,7 @@ func getsubfont(d *Display, name string) (*Subfont, error) {
 	if dolock {
 		//unlockdisplay(d)
 	}
-	f, err := d.ReadSubfont(name, bytes.NewReader(data), dolock)
+	f, err := d.readSubfont(name, bytes.NewReader(data), nil, dolock)
 	if dolock {
 		//lockdisplay(d);
 	}
