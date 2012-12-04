@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"code.google.com/p/goplan9/plan9/drawfcall"
+	"code.google.com/p/goplan9/draw/drawfcall"
 )
 
 // A Display represents a connection to a display.
