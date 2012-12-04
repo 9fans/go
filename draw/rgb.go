@@ -45,10 +45,7 @@ func rgb2cmap(cr, cg, cb int) int {
 	best := 0
 	bestsq := 0x7FFFFFFF
 	for i := 0; i < 256; i++ {
-		rgb := cmap2rgb(i)
-		r := (rgb >> 16) & 0xFF
-		g := (rgb >> 8) & 0xFF
-		b := (rgb >> 0) & 0xFF
+		r, g, b := cmap2rgb(i)
 		sq := (r-cr)*(r-cr) + (g-cg)*(g-cg) + (b-cb)*(b-cb)
 		if sq < bestsq {
 			bestsq = sq
@@ -58,12 +55,12 @@ func rgb2cmap(cr, cg, cb int) int {
 	return best
 }
 
-func cmap2rgb(c int) int {
-	r := c >> 6
+func cmap2rgb(c int) (r, g, b int) {
+	r = c >> 6
 	v := (c >> 4) & 3
 	j := (c - v + r) & 15
-	g := j >> 2
-	b := j & 3
+	g = j >> 2
+	b = j & 3
 	den := r
 	if g > den {
 		den = g
@@ -71,17 +68,18 @@ func cmap2rgb(c int) int {
 	if b > den {
 		den = b
 	}
-	var rgb int
 	if den == 0 {
 		v *= 17
-		rgb = (v << 16) | (v << 8) | v
-	} else {
-		num := 17 * (4*den + v)
-		rgb = ((r * num / den) << 16) | ((g * num / den) << 8) | (b * num / den)
+		return v, v, v
 	}
-	return rgb
+	num := 17 * (4*den + v)
+	r = r * num / den
+	g = g * num / den
+	b = b * num / den
+	return
 }
 
 func cmap2rgba(c int) Color {
-	return Color(cmap2rgb(c))<<8 | 0xFF
+	r, g, b := cmap2rgb(c)
+	return Color(r<<24 | g<<16 | b<<8 | 0xFF)
 }
