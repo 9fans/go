@@ -37,19 +37,23 @@ func (i *Image) At(x, y int) color.Color {
 		return color.White
 	case GREY2:
 		// CGrey, 2
-		c := uint16(buf[0])
+		off := uint(3 - x&3)
+		// Place pixel at bottom of word.
+		c := (uint16(buf[0]) >> (off << 1)) & 0x3
+		// Replicate throughout.
 		c |= c << 2
-		c |= c >> 2
 		c |= c << 4
-		c |= c >> 4
-		c |= c << 8
 		return color.Gray16{c}
 	case GREY4:
 		// CGrey 4
+		// Place pixel at bottom of word.
 		c := uint16(buf[0])
+		if x&1 == 0 {
+			c >>= 4
+		}
+		c &= 0xF
+		// Replicate throughout.
 		c |= c << 4
-		c |= c >> 4
-		c |= c << 8
 		return color.Gray16{c}
 	case GREY8:
 		// CGrey, 8

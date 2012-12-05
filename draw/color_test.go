@@ -145,3 +145,54 @@ func TestAt(t *testing.T) {
 		}
 	}
 }
+
+// Functions to create a pixel value that depends on x.
+// The value is replicated so the same setting works for GREY2 and GREY4.
+// For example, if x == 1, the pixel bits are 01010101, or 0x55.
+func val(x int) int {
+	c := x
+	c |= c << 2
+	return c | c<<4
+}
+
+func col(x int) Color {
+	value := val(x)
+	return Color(value<<24 | value<<16 | value<<8 | 0xFF)
+}
+
+func rgba(x int) color.Color {
+	val := uint8(val(x))
+	return color.RGBA{val, val, val, 0xFF}
+}
+
+func TestAtGrey2(t *testing.T) {
+	i := alloc(image.Rect(0, 0, 4, 1), GREY2, false, 0)
+	for x := 0; x < 4; x++ {
+		bit := alloc(r1, GREY2, false, col(x))
+		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+	}
+	for x := 0; x < 4; x++ {
+		r, g, b, a := i.At(x, 0).RGBA()
+		got := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+		want := rgba(x)
+		if got != want {
+			t.Errorf("%d: got %x want %x", x, got, want)
+		}
+	}
+}
+
+func TestAtGrey4(t *testing.T) {
+	i := alloc(image.Rect(0, 0, 4, 1), GREY4, false, 0)
+	for x := 0; x < 4; x++ {
+		bit := alloc(r1, GREY4, false, col(x))
+		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+	}
+	for x := 0; x < 4; x++ {
+		r, g, b, a := i.At(x, 0).RGBA()
+		got := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+		want := rgba(x)
+		if got != want {
+			t.Errorf("%d: got %x want %x", x, got, want)
+		}
+	}
+}
