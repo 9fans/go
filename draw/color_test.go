@@ -45,7 +45,7 @@ var atTests = []AtTest{
 	{alloc(r1, GREY8, true, AB), p0, 0xAB, 0xAB, 0xAB, 0xFF},
 	{alloc(r1, GREY8, true, AA), p0, 0xAA, 0xAA, 0xAA, 0xFF},
 	{alloc(r2, GREY8, true, AB), p1, 0xAB, 0xAB, 0xAB, 0xFF},
-	// CMAP8Cannot represent all 8-bit values accurately.
+	// CMAP8 Cannot represent all 8-bit values accurately.
 	{alloc(r1, CMAP8, true, DRed), p0, 0xFF, 0x00, 0x00, 0xFF},
 	{alloc(r1, CMAP8, true, DGreen), p0, 0x00, 0xFF, 0x00, 0xFF},
 	{alloc(r1, CMAP8, true, DBlue), p0, 0x00, 0x00, 0xFF, 0xFF},
@@ -65,10 +65,10 @@ var atTests = []AtTest{
 	{alloc(r1, RGB16, true, DRed), p0, 0xFF, 0x00, 0x00, 0xFF},
 	{alloc(r1, RGB16, true, DGreen), p0, 0x00, 0xFF, 0x00, 0xFF},
 	{alloc(r1, RGB16, true, DBlue), p0, 0x00, 0x00, 0xFF, 0xFF},
-	{alloc(r1, RGB16, true, top), p0, 0x8C, 0x42, 0x21, 0xFF},
-	{alloc(r1, RGB16, true, bot), p0, 0x73, 0x31, 0x10, 0xFF},
-	{alloc(r1, RGB16, true, gry), p0, 0x31, 0x31, 0x31, 0xFF},
-	{alloc(r2, RGB16, true, top), p1, 0x8C, 0x42, 0x21, 0xFF},
+	{alloc(r1, RGB16, true, top), p0, 0x8C, 0x45, 0x21, 0xFF},
+	{alloc(r1, RGB16, true, bot), p0, 0x73, 0x30, 0x10, 0xFF},
+	{alloc(r1, RGB16, true, gry), p0, 0x31, 0x30, 0x31, 0xFF},
+	{alloc(r2, RGB16, true, top), p1, 0x8C, 0x45, 0x21, 0xFF},
 	// RGB24
 	{alloc(r1, RGB24, true, DRed), p0, 0xFF, 0x00, 0x00, 0xFF},
 	{alloc(r1, RGB24, true, DGreen), p0, 0x00, 0xFF, 0x00, 0xFF},
@@ -142,6 +142,32 @@ func TestAt(t *testing.T) {
 		want := color.RGBA{test.r, test.g, test.b, test.a}
 		if got != want {
 			t.Errorf("%d: got %x want %x", i, got, want)
+		}
+	}
+}
+
+func TestAtGrey1(t *testing.T) {
+	col := func(x int) Color {
+		c := Color(0x000000FF)
+		if x&1 != 0 {
+			c = Color(0xFFFFFFFF)
+		}
+		return c
+	}
+	i := alloc(image.Rect(0, 0, 4, 1), GREY1, false, 0)
+	for x := 0; x < 4; x++ {
+		bit := alloc(r1, GREY2, false, col(x))
+		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+	}
+	for x := 0; x < 4; x++ {
+		r, g, b, a := i.At(x, 0).RGBA()
+		got := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+		want := color.RGBA{0, 0, 0, 0xFF}
+		if x&1 != 0 {
+			want = color.RGBA{0xFF, 0xFF, 0xFF, 0xFF}
+		}
+		if got != want {
+			t.Errorf("%d: got %x want %x", x, got, want)
 		}
 	}
 }
