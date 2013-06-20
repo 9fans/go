@@ -196,7 +196,6 @@ func collide(pt image.Point, p *Piece) bool {
 		pt.Y += q.Y
 		if pt.X < 0 || pt.X >= NX || pt.Y < 0 || pt.Y >= NY {
 			return true
-			continue
 		}
 		if board[pt.Y][pt.X] != 0 {
 			return true

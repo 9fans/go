@@ -90,7 +90,6 @@ func (i *Image) At(x, y int) color.Color {
 	default:
 		panic("unknown color")
 	}
-	panic("unimplemented image type for At")
 }
 
 func (i *Image) Bounds() image.Rectangle {

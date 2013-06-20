@@ -378,7 +378,6 @@ func fontresize(f *Font, wid, ncache, depth int) int {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "font cache resize failed\n")
 		panic("resize")
-		goto Return
 	}
 	d.Flush(false) // flush any pending errors
 	b = d.bufimage(1 + 4 + 4 + 1)

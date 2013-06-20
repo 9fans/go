@@ -23,13 +23,13 @@ func (d *Display) readSubfont(name string, fd io.Reader, ai *Image, dolock bool)
 		err error
 	)
 	if _, err = io.ReadFull(fd, hdr[:3*12]); err != nil {
-		err = fmt.Errorf("rdsubfontfile: header read error: %r")
+		err = fmt.Errorf("rdsubfontfile: header read error: %v", err)
 		goto Err
 	}
 	n = atoi(hdr)
 	p = make([]byte, 6*(n+1))
 	if _, err = io.ReadFull(fd, p); err != nil {
-		err = fmt.Errorf("rdsubfontfile: fontchar read error: %r")
+		err = fmt.Errorf("rdsubfontfile: fontchar read error: %v", err)
 		goto Err
 	}
 	fc = make([]Fontchar, n+1)

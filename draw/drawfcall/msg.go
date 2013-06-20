@@ -322,7 +322,7 @@ func (m *Msg) String() string {
 	case Trdkbd:
 		s += fmt.Sprintf("Trdkbd")
 	case Rrdkbd:
-		s += fmt.Sprintf("Rrdkbd rune=%C", m.Rune)
+		s += fmt.Sprintf("Rrdkbd rune=%c", m.Rune)
 	case Tlabel:
 		s += fmt.Sprintf("Tlabel label='%s'", m.Label)
 	case Rlabel:

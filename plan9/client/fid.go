@@ -72,7 +72,8 @@ func dirUnpack(b []byte) ([]*plan9.Dir, error) {
 			err = io.ErrUnexpectedEOF
 			break
 		}
-		d, err := plan9.UnmarshalDir(b[0 : n+2])
+		var d *plan9.Dir
+		d, err = plan9.UnmarshalDir(b[0 : n+2])
 		if err != nil {
 			break
 		}
