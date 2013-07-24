@@ -48,6 +48,7 @@ func NewConn(rwc io.ReadWriteCloser) (*Conn, error) {
 	if rx.Msize > c.msize {
 		return nil, plan9.ProtocolError(fmt.Sprintf("invalid msize %d in Rversion", rx.Msize))
 	}
+	c.msize = rx.Msize
 	if rx.Version != "9P2000" {
 		return nil, plan9.ProtocolError(fmt.Sprintf("invalid version %s in Rversion", rx.Version))
 	}
