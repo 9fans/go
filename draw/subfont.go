@@ -1,6 +1,12 @@
 package draw
 
-func AllocSubfont(name string, height, ascent int, info []Fontchar, i *Image) *Subfont {
+func (d *Display) AllocSubfont(name string, height, ascent int, info []Fontchar, i *Image) *Subfont {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.allocSubfont(name, height, ascent, info, i)
+}
+
+func (d *Display) allocSubfont(name string, height, ascent int, info []Fontchar, i *Image) *Subfont {
 	f := &Subfont{
 		Name:   name,
 		N:      len(info) - 1,

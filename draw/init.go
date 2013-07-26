@@ -12,9 +12,14 @@ import (
 	"code.google.com/p/goplan9/draw/drawfcall"
 )
 
+// Display locking:
+// The Exported methods of Display, being entry points for clients, lock the Display structure.
+// The unexported ones do not.
+// The methods for Font, Image and Screen also lock the associated display by the same rules.
+
 // A Display represents a connection to a display.
 type Display struct {
-	mu      sync.Mutex
+	mu      sync.Mutex // See comment above.
 	conn    *drawfcall.Conn
 	errch   chan<- error
 	bufsize int
@@ -76,6 +81,11 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 		errch:   errch,
 		bufsize: 10000,
 	}
+
+	// Lock Display so we maintain the contract within this library.
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.buf = make([]byte, 0, d.bufsize+5) // 5 for final flush
 	if err := c.Init(label, winsize); err != nil {
 		c.Close()
@@ -89,11 +99,11 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	d.Image = i
-	d.White, err = d.AllocImage(image.Rect(0, 0, 1, 1), GREY1, true, DWhite)
+	d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DWhite)
 	if err != nil {
 		return nil, err
 	}
-	d.Black, err = d.AllocImage(image.Rect(0, 0, 1, 1), GREY1, true, DBlack)
+	d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DBlack)
 	if err != nil {
 		return nil, err
 	}
@@ -133,22 +143,22 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 	d.DefaultFont = font
 
-	d.Screen, err = i.AllocScreen(d.White, false)
+	d.Screen, err = i.allocScreen(d.White, false)
 	if err != nil {
 		return nil, err
 	}
 	d.ScreenImage = d.Image // temporary, for d.ScreenImage.Pix
-	d.ScreenImage, err = _allocwindow(nil, d.Screen, i.R, 0, DWhite)
+	d.ScreenImage, err = allocwindow(nil, d.Screen, i.R, 0, DWhite)
 	if err != nil {
 		return nil, err
 	}
-	if err := d.Flush(true); err != nil {
+	if err := d.flush(true); err != nil {
 		log.Fatal(err)
 	}
 
 	screen := d.ScreenImage
-	screen.Draw(screen.R, d.White, nil, image.ZP)
-	if err := d.Flush(true); err != nil {
+	screen.draw(screen.R, d.White, nil, image.ZP)
+	if err := d.flush(true); err != nil {
 		log.Fatal(err)
 	}
 
@@ -157,14 +167,14 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 
 func (d *Display) getimage0(i *Image) (*Image, error) {
 	if i != nil {
-		_freeimage1(i)
+		i.free()
 		*i = Image{}
 	}
 
 	a := d.bufimage(2)
 	a[0] = 'J'
 	a[1] = 'I'
-	if err := d.Flush(false); err != nil {
+	if err := d.flush(false); err != nil {
 		fmt.Fprintf(os.Stderr, "cannot read screen info: %v\n", err)
 		return nil, err
 	}
@@ -195,19 +205,21 @@ func (d *Display) getimage0(i *Image) (*Image, error) {
 }
 
 func (d *Display) Attach(ref int) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	oi := d.Image
 	i, err := d.getimage0(oi)
 	if err != nil {
 		return err
 	}
 	d.Image = i
-	d.Screen.Free()
-	d.Screen, err = i.AllocScreen(d.White, false)
+	d.Screen.free()
+	d.Screen, err = i.allocScreen(d.White, false)
 	if err != nil {
 		return err
 	}
-	_freeimage1(d.ScreenImage)
-	d.ScreenImage, err = _allocwindow(d.ScreenImage, d.Screen, i.R, ref, DWhite)
+	d.ScreenImage.free()
+	d.ScreenImage, err = allocwindow(d.ScreenImage, d.Screen, i.R, ref, DWhite)
 	if err != nil {
 		log.Fatal("aw", err)
 	}
@@ -215,17 +227,17 @@ func (d *Display) Attach(ref int) error {
 }
 
 func (d *Display) Close() error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if d == nil {
 		return nil
 	}
 	return d.conn.Close()
 }
 
-// TODO: lockdisplay unlockdisplay locking
-
 // TODO: drawerror
 
-func (d *Display) flush() error {
+func (d *Display) flushBuffer() error {
 	if len(d.buf) == 0 {
 		return nil
 	}
@@ -238,7 +250,13 @@ func (d *Display) flush() error {
 	return nil
 }
 
-func (d *Display) Flush(visible bool) error {
+func (d *Display) Flush() error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.flush(true)
+}
+
+func (d *Display) flush(visible bool) error {
 	if visible {
 		d.bufsize++
 		a := d.bufimage(1)
@@ -246,7 +264,7 @@ func (d *Display) Flush(visible bool) error {
 		a[0] = 'v'
 	}
 
-	return d.flush()
+	return d.flushBuffer()
 }
 
 func (d *Display) bufimage(n int) []byte {
@@ -254,7 +272,7 @@ func (d *Display) bufimage(n int) []byte {
 		panic("bad count in bufimage")
 	}
 	if len(d.buf)+n > d.bufsize {
-		if err := d.flush(); err != nil {
+		if err := d.flushBuffer(); err != nil {
 			panic("bufimage flush: " + err.Error())
 		}
 	}

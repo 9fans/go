@@ -53,7 +53,7 @@ func mouseproc(mc *Mousectl, d *Display, ch chan Mouse, rch chan bool) {
 }
 
 func (mc *Mousectl) Read() Mouse {
-	mc.Display.Flush(true)
+	mc.Display.Flush()
 	m := <-mc.C
 	mc.Mouse = m
 	return m

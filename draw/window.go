@@ -8,6 +8,12 @@ import (
 var screenid uint32
 
 func (i *Image) AllocScreen(fill *Image, public bool) (*Screen, error) {
+	i.Display.mu.Lock()
+	defer i.Display.mu.Unlock()
+	return i.allocScreen(fill, public)
+}
+
+func (i *Image) allocScreen(fill *Image, public bool) (*Screen, error) {
 	d := i.Display
 	if d != fill.Display {
 		return nil, fmt.Errorf("allocscreen: image and fill on different displays")
@@ -27,7 +33,7 @@ func (i *Image) AllocScreen(fill *Image, public bool) (*Screen, error) {
 		if public {
 			a[13] = 1
 		}
-		if err := d.Flush(false); err == nil {
+		if err := d.flush(false); err == nil {
 			break
 		}
 	}
@@ -57,6 +63,12 @@ func publicscreen(d *Display, id, pix uint32) (*Screen, error) {
 */
 
 func (s *Screen) Free() error {
+	s.Display.mu.Lock()
+	defer s.Display.mu.Unlock()
+	return s.free()
+}
+
+func (s *Screen) free() error {
 	if s == nil {
 		return nil
 	}
@@ -66,21 +78,12 @@ func (s *Screen) Free() error {
 	bplong(a[1:], s.ID)
 	// flush(true) because screen is likely holding the last reference to window,
 	// and we want it to disappear visually.
-	if err := d.Flush(true); err != nil {
-		return err
-	}
-	return nil
+	return d.flush(true)
 }
 
-/*
-func allocwindow(s *Screen, r image.Rectangle, ref int, val uint32) (*Image, error) {
-	return _allocwindow(nil, s, r, ref, val)
-}
-*/
-
-func _allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
+func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
 	d := s.Display
-	i, err := _allocimage(i, d, r, d.ScreenImage.Pix, false, val, s.ID, ref)
+	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.ID, ref)
 	if err != nil {
 		return nil, err
 	}

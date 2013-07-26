@@ -3,10 +3,18 @@ package draw
 import "image"
 
 func (dst *Image) Line(p0, p1 image.Point, end0, end1, radius int, src *Image, sp image.Point) {
-	dst.LineOp(p0, p1, end0, end1, radius, src, sp, SoverD)
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	dst.lineOp(p0, p1, end0, end1, radius, src, sp, SoverD)
 }
 
 func (dst *Image) LineOp(p0, p1 image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	dst.lineOp(p0, p1, end0, end1, radius, src, sp, op)
+}
+
+func (dst *Image) lineOp(p0, p1 image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
 	setdrawop(dst.Display, op)
 	a := dst.Display.bufimage(1 + 4 + 2*4 + 2*4 + 4 + 4 + 4 + 4 + 2*4)
 	a[0] = 'L'

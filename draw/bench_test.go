@@ -33,7 +33,7 @@ func TestBenchmarkString(t *testing.T) {
 		im.String(im.R.Min, testDisplay.Black, im.R.Min, testDisplay.DefaultFont, aHundredChars)
 		nchars += 100
 	}
-	testDisplay.Flush(true)
+	testDisplay.Flush()
 	end := time.Now()
 	fmt.Println("time for one char:", end.Sub(start)/nchars)
 }

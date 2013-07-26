@@ -51,7 +51,7 @@ func setdrawop(d *Display, op Op) {
 	}
 }
 
-func draw1(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
+func draw(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
 	setdrawop(dst.Display, op)
 
 	a := dst.Display.bufimage(1 + 4 + 4 + 4 + 4*4 + 2*4 + 2*4)
@@ -75,18 +75,30 @@ func draw1(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Imag
 	bplong(a[41:], uint32(p1.Y))
 }
 
+func (dst *Image) draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
+	draw(dst, r, src, p1, mask, p1, SoverD)
+}
+
 func (dst *Image) Draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
-	draw1(dst, r, src, p1, mask, p1, SoverD)
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	draw(dst, r, src, p1, mask, p1, SoverD)
 }
 
 func (dst *Image) DrawOp(r image.Rectangle, src, mask *Image, p1 image.Point, op Op) {
-	draw1(dst, r, src, p1, mask, p1, op)
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	draw(dst, r, src, p1, mask, p1, op)
 }
 
 func (dst *Image) GenDraw(r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point) {
-	draw1(dst, r, src, p0, mask, p1, SoverD)
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	draw(dst, r, src, p0, mask, p1, SoverD)
 }
 
 func GenDrawOp(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
-	draw1(dst, r, src, p0, mask, p1, op)
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	draw(dst, r, src, p0, mask, p1, op)
 }

@@ -22,33 +22,49 @@ func doellipse(cmd byte, dst *Image, c image.Point, xr, yr, thick int, src *Imag
 }
 
 func (dst *Image) Ellipse(c image.Point, a, b, thick int, src *Image, sp image.Point) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
 }
 
 func (dst *Image) EllipseOp(c image.Point, a, b, thick int, src *Image, sp image.Point, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, op)
 }
 
 func (dst *Image) FillEllipse(c image.Point, a, b, thick int, src *Image, sp image.Point) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
 }
 
 func (dst *Image) FillEllipseOp(c image.Point, a, b, thick int, src *Image, sp image.Point, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, op)
 }
 
 func (dst *Image) Arc(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
 }
 
 func (dst *Image) ArcOp(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)
 }
 
 func (dst *Image) FillArc(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
 }
 
 func (dst *Image) FillArcOp(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)
 }

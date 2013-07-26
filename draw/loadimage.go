@@ -6,6 +6,12 @@ import (
 )
 
 func (dst *Image) Load(r image.Rectangle, data []byte) (int, error) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return dst.load(r, data)
+}
+
+func (dst *Image) load(r image.Rectangle, data []byte) (int, error) {
 	i := dst
 	chunk := i.Display.bufsize - 64
 	if !r.In(i.R) {
@@ -38,7 +44,7 @@ func (dst *Image) Load(r image.Rectangle, data []byte) (int, error) {
 		data = data[n:]
 		r.Min.Y += dy
 	}
-	if err := i.Display.Flush(false); err != nil {
+	if err := i.Display.flush(false); err != nil {
 		return ndata, err
 	}
 	return ndata, nil

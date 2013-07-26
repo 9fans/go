@@ -7,10 +7,16 @@ import (
 
 // AllocImage allocates a new Image on display d.
 func (d *Display) AllocImage(r image.Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
-	return _allocimage(nil, d, r, pix, repl, val, 0, 0)
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return allocImage(d, nil, r, pix, repl, val, 0, 0)
 }
 
-func _allocimage(ai *Image, d *Display, r image.Rectangle, pix Pix, repl bool, val Color, screenid uint32, refresh int) (i *Image, err error) {
+func (d *Display) allocImage(r image.Rectangle, pix Pix, repl bool, val Color) (i *Image, err error) {
+	return allocImage(d, nil, r, pix, repl, val, 0, 0)
+}
+
+func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, val Color, screenid uint32, refresh int) (i *Image, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("allocimage %v %v: %v", r, pix, err)
@@ -26,7 +32,7 @@ func _allocimage(ai *Image, d *Display, r image.Rectangle, pix Pix, repl bool, v
 	}
 
 	// flush pending data so we don't get error allocating the image
-	d.Flush(false)
+	d.flush(false)
 	a := d.bufimage(1 + 4 + 4 + 1 + 4 + 1 + 4*4 + 4*4 + 4)
 	d.imageid++
 	id := d.imageid
@@ -54,7 +60,7 @@ func _allocimage(ai *Image, d *Display, r image.Rectangle, pix Pix, repl bool, v
 	bplong(a[39:], uint32(clipr.Max.X))
 	bplong(a[43:], uint32(clipr.Max.Y))
 	bplong(a[47:], uint32(val))
-	if err = d.Flush(false); err != nil {
+	if err = d.flush(false); err != nil {
 		return
 	}
 
@@ -92,14 +98,14 @@ func nameimage(i *Image, name string, in bool) error {
 }
 */
 
-func _freeimage1(i *Image) error {
+func (i *Image) free() error {
 	if i == nil || i.Display == nil {
 		return nil
 	}
 	// make sure no refresh events occur on this if we block in the write
 	d := i.Display
 	// flush pending data so we don't get error deleting the image
-	d.Flush(false)
+	d.flush(false)
 	a := d.bufimage(1 + 4)
 	a[0] = 'f'
 	bplong(a[1:], i.ID)
@@ -116,7 +122,7 @@ func _freeimage1(i *Image) error {
 			}
 		}
 	}
-	return d.Flush(i.Screen != nil)
+	return d.flush(i.Screen != nil)
 }
 
 func (i *Image) Free() error {
@@ -126,5 +132,7 @@ func (i *Image) Free() error {
 	if i == i.Display.ScreenImage {
 		panic("freeimage of ScreenImage")
 	}
-	return _freeimage1(i)
+	i.Display.mu.Lock()
+	defer i.Display.mu.Unlock()
+	return i.free()
 }

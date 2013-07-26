@@ -80,6 +80,12 @@ Errbad:
 }
 
 func (f *Font) Free() {
+	f.Display.mu.Lock()
+	defer f.Display.mu.Unlock()
+	f.free()
+}
+
+func (f *Font) free() {
 	if f == nil {
 		return
 	}
@@ -90,5 +96,5 @@ func (f *Font) Free() {
 			s.Free()
 		}
 	}
-	f.cacheimage.Free()
+	f.cacheimage.free()
 }

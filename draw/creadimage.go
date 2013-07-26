@@ -13,7 +13,7 @@ var ldepthToPix = []Pix{
 	CMAP8,
 }
 
-func (d *Display) creadimage(rd io.Reader, dolock bool) (*Image, error) {
+func (d *Display) creadimage(rd io.Reader) (*Image, error) {
 	fd := rd
 	hdr := make([]byte, 5*12)
 
@@ -57,13 +57,7 @@ func (d *Display) creadimage(rd io.Reader, dolock bool) (*Image, error) {
 
 	var i *Image
 	if d != nil {
-		if dolock {
-			// XXX
-		}
-		i, err = d.AllocImage(r, pix, false, 0)
-		if dolock {
-			//	XXX
-		}
+		i, err = d.allocImage(r, pix, false, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -92,13 +86,10 @@ func (d *Display) creadimage(rd io.Reader, dolock bool) (*Image, error) {
 			goto Errout
 		}
 		if d != nil {
-			if dolock {
-				// XXX lockdisplay
-			}
 			a := d.bufimage(21 + nb)
 			// XXX err
 			if err != nil {
-				goto Erroutlock
+				goto Errout
 			}
 			a[0] = 'Y'
 			bplong(a[1:], i.ID)
@@ -110,24 +101,14 @@ func (d *Display) creadimage(rd io.Reader, dolock bool) (*Image, error) {
 				twiddlecompressed(buf[:nb])
 			}
 			copy(a[21:], buf)
-			if dolock {
-				// XXX unlock
-			}
 		}
 		miny = maxy
 	}
 	return i, nil
 
 Errout:
-	if dolock && d != nil {
-		// XXX lock
-	}
-Erroutlock:
 	if d != nil {
-		i.Free()
-		if dolock {
-			// XXX unlcok
-		}
+		i.free()
 	}
 	return nil, err
 }

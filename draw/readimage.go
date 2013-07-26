@@ -8,10 +8,12 @@ import (
 )
 
 func (d *Display) ReadImage(rd io.Reader) (*Image, error) {
-	return d.readImage(rd, true)
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.readImage(rd)
 }
 
-func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
+func (d *Display) readImage(rd io.Reader) (*Image, error) {
 	fd := rd
 	hdr := make([]byte, 5*12)
 
@@ -20,7 +22,7 @@ func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
 		return nil, fmt.Errorf("reading image header: %v", err)
 	}
 	if string(hdr[:11]) == "compressed\n" {
-		return d.creadimage(rd, dolock)
+		return d.creadimage(rd)
 	}
 
 	_, err = io.ReadFull(fd, hdr[11:])
@@ -72,13 +74,7 @@ func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
 	l := BytesPerLine(r, pix.Depth())
 	var i *Image
 	if d != nil {
-		if dolock {
-			// XXX
-		}
-		i, err = d.AllocImage(r, pix, false, 0)
-		if dolock {
-			//	XXX
-		}
+		i, err = d.allocImage(r, pix, false, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -109,14 +105,8 @@ func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
 			}
 		}
 		if d != nil {
-			if dolock {
-				// XXX lockdisplay
-			}
-			if _, err = i.Load(image.Rect(r.Min.X, miny, r.Max.X, miny+dy), tmp[:n]); err != nil {
-				goto Err1
-			}
-			if dolock {
-				// XXX unlockdisplay
+			if _, err = i.load(image.Rect(r.Min.X, miny, r.Max.X, miny+dy), tmp[:n]); err != nil {
+				goto Err
 			}
 		}
 		miny += dy
@@ -124,15 +114,8 @@ func (d *Display) readImage(rd io.Reader, dolock bool) (*Image, error) {
 	return i, nil
 
 Err:
-	if dolock {
-		// XXX
-	}
-Err1:
 	if d != nil {
-		i.Free()
-		if dolock {
-			// XXX
-		}
+		i.free()
 	}
 	return nil, err
 }

@@ -6,6 +6,8 @@ import (
 )
 
 func (dst *Image) Cload(r image.Rectangle, data []byte) (int, error) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	i := dst
 	if !r.In(i.R) {
 		return 0, fmt.Errorf("cloadimage: bad rectangle")

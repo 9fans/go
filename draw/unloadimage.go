@@ -6,6 +6,8 @@ import (
 )
 
 func (src *Image) Unload(r image.Rectangle, data []byte) (n int, err error) {
+	src.Display.mu.Lock()
+	defer src.Display.mu.Unlock()
 	i := src
 	if !r.In(i.R) {
 		return 0, fmt.Errorf("unloadimage: bad rectangle")
@@ -16,7 +18,7 @@ func (src *Image) Unload(r image.Rectangle, data []byte) (n int, err error) {
 	}
 
 	d := i.Display
-	d.Flush(false) // make sure next flush is only us
+	d.flush(false) // make sure next flush is only us
 	ntot := 0
 	for r.Min.Y < r.Max.Y {
 		a := d.bufimage(1 + 4 + 4*4)
@@ -33,7 +35,7 @@ func (src *Image) Unload(r image.Rectangle, data []byte) (n int, err error) {
 		bplong(a[9:], uint32(r.Min.Y))
 		bplong(a[13:], uint32(r.Max.X))
 		bplong(a[17:], uint32(r.Min.Y+dy))
-		if err := d.Flush(false); err != nil {
+		if err := d.flush(false); err != nil {
 			return ntot, err
 		}
 		n, err := d.conn.ReadDraw(data[ntot:])

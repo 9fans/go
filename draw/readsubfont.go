@@ -5,12 +5,12 @@ import (
 	"io"
 )
 
-func (d *Display) readSubfont(name string, fd io.Reader, ai *Image, dolock bool) (*Subfont, error) {
+func (d *Display) readSubfont(name string, fd io.Reader, ai *Image) (*Subfont, error) {
 	hdr := make([]byte, 3*12+4)
 	i := ai
 	if i == nil {
 		var err error
-		i, err = d.readImage(fd, dolock)
+		i, err = d.readImage(fd)
 		if err != nil {
 			return nil, err
 		}
@@ -22,7 +22,11 @@ func (d *Display) readSubfont(name string, fd io.Reader, ai *Image, dolock bool)
 		f   *Subfont
 		err error
 	)
-	if _, err = io.ReadFull(fd, hdr[:3*12]); err != nil {
+	// Release lock for the I/O - could take a long time.
+	d.mu.Unlock()
+	_, err = io.ReadFull(fd, hdr[:3*12])
+	d.mu.Lock()
+	if err != nil {
 		err = fmt.Errorf("rdsubfontfile: header read error: %v", err)
 		goto Err
 	}
@@ -34,24 +38,20 @@ func (d *Display) readSubfont(name string, fd io.Reader, ai *Image, dolock bool)
 	}
 	fc = make([]Fontchar, n+1)
 	unpackinfo(fc, p, n)
-	if dolock {
-		// XXX
-	}
-	f = AllocSubfont(name, atoi(hdr[12:]), atoi(hdr[24:]), fc, i)
-	if dolock {
-		// XXX
-	}
+	f = d.allocSubfont(name, atoi(hdr[12:]), atoi(hdr[24:]), fc, i)
 	return f, nil
 
 Err:
 	if ai == nil {
-		i.Free()
+		i.free()
 	}
 	return nil, err
 }
 
 func (d *Display) ReadSubfont(name string, fd io.Reader) (*Subfont, error) {
-	return d.readSubfont(name, fd, nil, true)
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.readSubfont(name, fd, nil)
 }
 
 func unpackinfo(fc []Fontchar, p []byte, n int) {

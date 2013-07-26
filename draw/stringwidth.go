@@ -28,12 +28,12 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 				if name == "" {
 					name = "unnamed font"
 				}
-				sf.Free()
+				sf.free()
 				fmt.Fprintf(os.Stderr, "stringwidth: bad character set for rune %U in %s\n", r, name)
 				return twid
 			}
 			if subfontname != "" {
-				sf.Free()
+				sf.free()
 				var err error
 				sf, err = getsubfont(f.Display, subfontname)
 				if err != nil {
@@ -49,7 +49,7 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 				 */
 			}
 		}
-		sf.Free()
+		sf.free()
 		agefont(f)
 		twid += wid
 	}
@@ -57,14 +57,20 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 }
 
 func (f *Font) StringWidth(s string) int {
+	f.Display.mu.Lock()
+	defer f.Display.mu.Unlock()
 	return stringnwidth(f, s, nil, nil)
 }
 
 func (f *Font) BytesWidth(b []byte) int {
+	f.Display.mu.Lock()
+	defer f.Display.mu.Unlock()
 	return stringnwidth(f, "", b, nil)
 }
 
 func (f *Font) RunesWidth(r []rune) int {
+	f.Display.mu.Lock()
+	defer f.Display.mu.Unlock()
 	return stringnwidth(f, "", nil, r)
 }
 

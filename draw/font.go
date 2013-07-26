@@ -252,7 +252,7 @@ Found:
 	if subf.f != nil {
 		if f.age-subf.age > SUBFAGE || len(f.subf) > MAXSUBF {
 			// ancient data; toss
-			subf.f.Free()
+			subf.f.free()
 			subf.cf = nil
 			subf.f = nil
 			subf.age = 0
@@ -280,8 +280,8 @@ Found:
 		/* must prevent c.top from going negative when loading cache */
 		d := subf.f.Ascent - f.Ascent
 		b := subf.f.Bits
-		b.Draw(b.R, b, nil, b.R.Min.Add(image.Pt(0, d)))
-		b.Draw(image.Rect(b.R.Min.X, b.R.Max.Y-d, b.R.Max.X, b.R.Max.Y), f.Display.Black, nil, b.R.Min)
+		b.draw(b.R, b, nil, b.R.Min.Add(image.Pt(0, d)))
+		b.draw(image.Rect(b.R.Min.X, b.R.Max.Y-d, b.R.Max.X, b.R.Max.Y), f.Display.Black, nil, b.R.Min)
 		for i := 0; i < subf.f.N; i++ {
 			t := int(subf.f.Info[i].Top) - d
 			if t < 0 {
@@ -339,7 +339,7 @@ Found2:
 	if f.Display == nil {
 		return 1, ""
 	}
-	f.Display.Flush(false) /* flush any pending errors */
+	f.Display.flush(false) /* flush any pending errors */
 	b = f.Display.bufimage(37)
 	b[0] = 'l'
 	bplong(b[1:], uint32(f.cacheimage.ID))
@@ -374,23 +374,23 @@ func fontresize(f *Font, wid, ncache, depth int) int {
 	if d == nil {
 		goto Nodisplay
 	}
-	new, err = d.AllocImage(image.Rect(0, 0, ncache*wid, f.Height), MakePix(CGrey, depth), false, 0)
+	new, err = d.allocImage(image.Rect(0, 0, ncache*wid, f.Height), MakePix(CGrey, depth), false, 0)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "font cache resize failed\n")
 		panic("resize")
 	}
-	d.Flush(false) // flush any pending errors
+	d.flush(false) // flush any pending errors
 	b = d.bufimage(1 + 4 + 4 + 1)
 	b[0] = 'i'
 	bplong(b[1:], new.ID)
 	bplong(b[5:], uint32(ncache))
 	b[9] = byte(f.Ascent)
-	if err := d.Flush(false); err != nil {
+	if err := d.flush(false); err != nil {
 		fmt.Fprintf(os.Stderr, "resize: init failed\n")
-		new.Free()
+		new.free()
 		goto Return
 	}
-	f.cacheimage.Free()
+	f.cacheimage.free()
 	f.cacheimage = new
 
 Nodisplay:

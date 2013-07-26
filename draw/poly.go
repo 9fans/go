@@ -43,17 +43,25 @@ func dopoly(cmd byte, dst *Image, pp []image.Point, end0, end1, radius int, src 
 }
 
 func (dst *Image) Poly(p []image.Point, end0, end1, radius int, src *Image, sp image.Point) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	dopoly('p', dst, p, end0, end1, radius, src, sp, SoverD)
 }
 
 func (dst *Image) PolyOp(p []image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	dopoly('p', dst, p, end0, end1, radius, src, sp, op)
 }
 
 func (dst *Image) FillPoly(p []image.Point, end0, end1, radius int, src *Image, sp image.Point) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	dopoly('P', dst, p, end0, end1, radius, src, sp, SoverD)
 }
 
 func (dst *Image) FillPolyOp(p []image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	dopoly('P', dst, p, end0, end1, radius, src, sp, op)
 }

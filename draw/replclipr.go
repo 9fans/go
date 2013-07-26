@@ -3,6 +3,8 @@ package draw
 import "image"
 
 func (dst *Image) ReplClipr(repl bool, clipr image.Rectangle) {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
 	b := dst.Display.bufimage(22)
 	b[0] = 'c'
 	bplong(b[1:], uint32(dst.ID))

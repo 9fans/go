@@ -20,20 +20,7 @@ func getsubfont(d *Display, name string) (*Subfont, error) {
 		fmt.Fprintf(os.Stderr, "getsubfont: %v\n", err)
 		return nil, err
 	}
-	/*
-	 * unlock display so i/o happens with display released, unless
-	 * user is doing his own locking, in which case this could break things.
-	 * _getsubfont is called only from string.c and stringwidth.c,
-	 * which are known to be safe to have this done.
-	 */
-	dolock := d != nil && d.locking
-	if dolock {
-		//unlockdisplay(d)
-	}
-	f, err := d.readSubfont(name, bytes.NewReader(data), nil, dolock)
-	if dolock {
-		//lockdisplay(d);
-	}
+	f, err := d.readSubfont(name, bytes.NewReader(data), nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "getsubfont: can't read %s: %v\n", name, err)
 	}
