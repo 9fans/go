@@ -173,7 +173,7 @@ func (m *SpacewarPDP1) flush() {
 			m.pix[y][x] >>= 1
 		}
 	}
-	m.disp.Flush(true)
+	m.disp.Flush()
 }
 
 func (m *SpacewarPDP1) pollInput() {

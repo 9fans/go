@@ -358,7 +358,7 @@ func choosepiece() {
 		}
 	}
 	drawpiece()
-	display.Flush(true)
+	display.Flush()
 }
 
 func movepiece() bool {
@@ -371,7 +371,7 @@ func movepiece() bool {
 	}
 	screen.Draw(br2.Add(pos), bb2, mask, bb2.R.Min)
 	pos.Y += DY
-	display.Flush(true)
+	display.Flush()
 	return true
 }
 
@@ -388,11 +388,11 @@ func suspend(s bool) {
 		drawpiece()
 	}
 	drawboard()
-	display.Flush(true)
+	display.Flush()
 }
 
 func pause(t int) {
-	display.Flush(true)
+	display.Flush()
 	for {
 		select {
 		case s := <-suspc:
@@ -439,7 +439,7 @@ func horiz() bool {
 		r.Min.Y = rboard.Min.Y + lev[j]*pcsz
 		r.Max.Y = r.Min.Y + pcsz
 		screen.Draw(r, display.White, whitemask, image.ZP)
-		display.Flush(true)
+		display.Flush()
 	}
 	for i := 0; i < 3; i++ {
 		pause(250)
@@ -452,7 +452,7 @@ func horiz() bool {
 			r.Max.Y = r.Min.Y + pcsz
 			screen.Draw(r, display.White, whitemask, image.ZP)
 		}
-		display.Flush(true)
+		display.Flush()
 	}
 	r = rboard
 	for j := 0; j < h; j++ {
@@ -468,7 +468,7 @@ func horiz() bool {
 		}
 		board[0] = [NX]byte{}
 	}
-	display.Flush(true)
+	display.Flush()
 	return true
 }
 
@@ -477,7 +477,7 @@ func mright() {
 		undrawpiece()
 		pos.X += pcsz
 		drawpiece()
-		display.Flush(true)
+		display.Flush()
 	}
 }
 
@@ -486,7 +486,7 @@ func mleft() {
 		undrawpiece()
 		pos.X -= pcsz
 		drawpiece()
-		display.Flush(true)
+		display.Flush()
 	}
 }
 
@@ -494,7 +494,7 @@ func rright() {
 	if canfit(piece.right) {
 		setpiece(piece.right)
 		drawpiece()
-		display.Flush(true)
+		display.Flush()
 	}
 }
 
@@ -502,7 +502,7 @@ func rleft() {
 	if canfit(piece.left) {
 		setpiece(piece.left)
 		drawpiece()
-		display.Flush(true)
+		display.Flush()
 	}
 }
 
@@ -706,7 +706,7 @@ func redraw(new bool) {
 	}
 	lastmx = movemouse()
 	newscreen = true
-	display.Flush(true)
+	display.Flush()
 }
 
 func Play(pp []Piece, d *draw.Display) {
