@@ -20,7 +20,7 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("allocimage %v %v: %v", r, pix, err)
-			i.Free()
+			i.free()
 			i = nil
 		}
 	}()

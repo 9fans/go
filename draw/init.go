@@ -133,9 +133,9 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 			df.N-1, deffontname))
 		//fmt.Printf("%q\n", buf)
 		//BUG: Need something better for this	installsubfont("*default*", df);
-		font, err = d.BuildFont(buf, deffontname)
+		font, err = d.buildFont(buf, deffontname)
 	} else {
-		font, err = d.OpenFont(fontname) // BUG: grey fonts
+		font, err = d.openFont(fontname) // BUG: grey fonts
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "imageinit: can't open default font %s: %v\n", fontname, err)

@@ -28,7 +28,7 @@ func (d *Display) allocSubfont(name string, height, ascent int, info []Fontchar,
 		if cf == nil {
 			installsubfont(name, f)
 		} else {
-			cf.Free() /* drop ref we just picked up */
+			cf.free() /* drop ref we just picked up */
 		}
 	}
 	return f

@@ -27,6 +27,12 @@ func strtol(b []byte) (int, []byte) {
 }
 
 func (d *Display) BuildFont(buf []byte, name string) (*Font, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.buildFont(buf, name)
+}
+
+func (d *Display) buildFont(buf []byte, name string) (*Font, error) {
 	fnt := &Font{
 		Display: d,
 		Name:    name,
@@ -93,7 +99,7 @@ func (f *Font) free() {
 	for _, subf := range f.subf {
 		s := subf.f
 		if s != nil && (f.Display == nil || s != f.Display.DefaultSubfont) {
-			s.Free()
+			s.free()
 		}
 	}
 	f.cacheimage.free()

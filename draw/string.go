@@ -88,7 +88,7 @@ func _string(dst *Image, pt image.Point, src *Image, sp image.Point, f *Font, s 
 			agefont(f)
 		}
 		if subfontname != "" {
-			sf.Free()
+			sf.free()
 			var err error
 			sf, err = getsubfont(f.Display, subfontname)
 			if err != nil {

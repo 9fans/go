@@ -18,5 +18,5 @@ func (f *Subfont) free() {
 		return
 	}
 	uninstallsubfont(f)
-	f.Bits.Free()
+	f.Bits.free()
 }

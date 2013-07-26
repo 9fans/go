@@ -10,6 +10,12 @@ import (
 )
 
 func (d *Display) OpenFont(name string) (*Font, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.openFont(name)
+}
+
+func (d *Display) openFont(name string) (*Font, error) {
 	data, err := ioutil.ReadFile(name)
 
 	if err != nil && strings.HasPrefix(name, "/lib/font/bit/") {
@@ -32,7 +38,7 @@ func (d *Display) OpenFont(name string) (*Font, error) {
 		return nil, err
 	}
 
-	return d.BuildFont(data, name)
+	return d.buildFont(data, name)
 }
 
 func fontPipe(name string) ([]byte, error) {

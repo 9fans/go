@@ -172,7 +172,7 @@ func agefont(f *Font) {
 				if s.age < SUBFAGE && s.cf.name != "" {
 					/* clean up */
 					if f.Display == nil || s.f != f.Display.DefaultSubfont {
-						s.f.Free()
+						s.f.free()
 					}
 					s.cf = nil
 					s.f = nil
