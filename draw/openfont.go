@@ -10,8 +10,12 @@ import (
 )
 
 func (d *Display) OpenFont(name string) (*Font, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	// nil display is allowed, for querying font metrics
+	// in non-draw program.
+	if d != nil {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+	}
 	return d.openFont(name)
 }
 

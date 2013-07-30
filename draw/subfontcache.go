@@ -1,33 +1,42 @@
 package draw
 
+import "sync"
+
 /*
  * Easy versions of the cache routines; may be substituted by fancier ones for other purposes
  */
 
-var (
-	lastname    string
-	lastsubfont *Subfont
-)
+var lastfont struct {
+	sync.Mutex
+	name string
+	sub  *Subfont
+}
 
 func lookupsubfont(d *Display, name string) *Subfont {
 	if d != nil && name == "*default*" {
 		return d.DefaultSubfont
 	}
-	if lastname == name && d == lastsubfont.Bits.Display {
-		lastsubfont.Ref++
-		return lastsubfont
+	lastfont.Lock()
+	defer lastfont.Unlock()
+	if lastfont.name == name && d == lastfont.sub.Bits.Display {
+		lastfont.sub.Ref++
+		return lastfont.sub
 	}
 	return nil
 }
 
 func installsubfont(name string, subfont *Subfont) {
-	lastname = name
-	lastsubfont = subfont /* notice we don't free the old one; that's your business */
+	lastfont.Lock()
+	defer lastfont.Unlock()
+	lastfont.name = name
+	lastfont.sub = subfont /* notice we don't free the old one; that's your business */
 }
 
 func uninstallsubfont(subfont *Subfont) {
-	if subfont == lastsubfont {
-		lastname = ""
-		lastsubfont = nil
+	lastfont.Lock()
+	defer lastfont.Unlock()
+	if subfont == lastfont.sub {
+		lastfont.name = ""
+		lastfont.sub = nil
 	}
 }

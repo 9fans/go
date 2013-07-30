@@ -86,8 +86,11 @@ Errbad:
 }
 
 func (f *Font) Free() {
-	f.Display.mu.Lock()
-	defer f.Display.mu.Unlock()
+	if f == nil {
+		return
+	}
+	f.lock()
+	defer f.unlock()
 	f.free()
 }
 
@@ -95,7 +98,6 @@ func (f *Font) free() {
 	if f == nil {
 		return
 	}
-
 	for _, subf := range f.subf {
 		s := subf.f
 		if s != nil && (f.Display == nil || s != f.Display.DefaultSubfont) {

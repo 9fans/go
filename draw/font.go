@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"os"
+	"sync"
 	"unicode/utf8"
 )
 
@@ -13,13 +14,30 @@ type Font struct {
 	Height  int // max height of image, interline spacing
 	Ascent  int // top of image to baseline
 
-	width      int    // widest so far; used in caching only
-	age        uint32 // increasing counter; used for LUR
-	maxdepth   int    // maximum depth of all loaded subfonts
+	mu         sync.Mutex // only used if Display == nil
+	width      int        // widest so far; used in caching only
+	age        uint32     // increasing counter; used for LUR
+	maxdepth   int        // maximum depth of all loaded subfonts
 	cache      []cacheinfo
 	subf       []cachesubf
 	sub        []*cachefont // as read from file
 	cacheimage *Image
+}
+
+func (f *Font) lock() {
+	if f.Display != nil {
+		f.Display.mu.Lock()
+	} else {
+		f.mu.Lock()
+	}
+}
+
+func (f *Font) unlock() {
+	if f.Display != nil {
+		f.Display.mu.Unlock()
+	} else {
+		f.mu.Unlock()
+	}
 }
 
 type cachefont struct {

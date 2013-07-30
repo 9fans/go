@@ -23,9 +23,13 @@ func (d *Display) readSubfont(name string, fd io.Reader, ai *Image) (*Subfont, e
 		err error
 	)
 	// Release lock for the I/O - could take a long time.
-	d.mu.Unlock()
+	if d != nil {
+		d.mu.Unlock()
+	}
 	_, err = io.ReadFull(fd, hdr[:3*12])
-	d.mu.Lock()
+	if d != nil {
+		d.mu.Lock()
+	}
 	if err != nil {
 		err = fmt.Errorf("rdsubfontfile: header read error: %v", err)
 		goto Err

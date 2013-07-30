@@ -57,20 +57,20 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 }
 
 func (f *Font) StringWidth(s string) int {
-	f.Display.mu.Lock()
-	defer f.Display.mu.Unlock()
+	f.lock()
+	defer f.unlock()
 	return stringnwidth(f, s, nil, nil)
 }
 
 func (f *Font) BytesWidth(b []byte) int {
-	f.Display.mu.Lock()
-	defer f.Display.mu.Unlock()
+	f.lock()
+	defer f.unlock()
 	return stringnwidth(f, "", b, nil)
 }
 
 func (f *Font) RunesWidth(r []rune) int {
-	f.Display.mu.Lock()
-	defer f.Display.mu.Unlock()
+	f.lock()
+	defer f.unlock()
 	return stringnwidth(f, "", nil, r)
 }
 
