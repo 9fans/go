@@ -39,6 +39,7 @@ var windows, last *Win
 
 var fsys *client.Fsys
 var fsysErr error
+var fsysOnce sync.Once
 
 func mountAcme() {
 	fsys, fsysErr = client.MountService("acme")
@@ -46,8 +47,7 @@ func mountAcme() {
 
 // New creates a new window.
 func New() (*Win, error) {
-	config := new(sync.Once)
-	config.Do(mountAcme)
+	fsysOnce.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
 	}
@@ -192,7 +192,7 @@ func (w *Win) fid(name string) (*client.Fid, error) {
 	return *f, nil
 }
 
-// ReadAll 
+// ReadAll
 func (w *Win) ReadAll(file string) ([]byte, error) {
 	f, err := w.fid(file)
 	f.Seek(0, 0)
