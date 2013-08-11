@@ -189,13 +189,14 @@ func (c *Conn) Label(label string) error {
 	return c.RPC(tx, rx)
 }
 
-func (c *Conn) ReadSnarf() ([]byte, error) {
+func (c *Conn) ReadSnarf(b []byte) (int, error) {
 	tx := &Msg{Type: Trdsnarf}
 	rx := &Msg{}
 	if err := c.RPC(tx, rx); err != nil {
-		return nil, err
+		return 0, err
 	}
-	return append([]byte(nil), rx.Snarf...), nil
+	n := copy(b, rx.Snarf)
+	return n, nil
 }
 
 func (c *Conn) WriteSnarf(snarf []byte) error {
