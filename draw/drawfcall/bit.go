@@ -25,6 +25,11 @@ func gstring(b []byte) (string, []byte) {
 	return string(b[0:n]), b[n:]
 }
 
+func gbytes(b []byte) ([]byte, []byte) {
+	n, b := gbit32(b)
+	return b[0:n], b[n:]
+}
+
 func pbit8(b []byte, x uint8) []byte {
 	n := len(b)
 	if n+1 > cap(b) {
@@ -75,5 +80,11 @@ func pbit64(b []byte, x uint64) []byte {
 func pstring(b []byte, s string) []byte {
 	b = pbit32(b, len(s))
 	b = append(b, []byte(s)...)
+	return b
+}
+
+func pbytes(b, s []byte) []byte {
+	b = pbit32(b, len(s))
+	b = append(b, s...)
 	return b
 }

@@ -5,17 +5,21 @@ import (
 	"os"
 )
 
-func (d *Display) ReadSnarf() (string, error) {
-	str, err := d.conn.ReadSnarf()
+func (d *Display) ReadSnarf() ([]byte, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	data, err := d.conn.ReadSnarf()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ReadSnarf: %v\n", err)
-		return "", err
+		return nil, err
 	}
-	return str, nil
+	return data, nil
 }
 
-func (d *Display) WriteSnarf(str string) error {
-	err := d.conn.WriteSnarf(str)
+func (d *Display) WriteSnarf(data []byte) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	err := d.conn.WriteSnarf(data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "WriteSnarf: %v\n", err)
 		return err

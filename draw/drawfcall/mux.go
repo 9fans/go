@@ -189,16 +189,16 @@ func (c *Conn) Label(label string) error {
 	return c.RPC(tx, rx)
 }
 
-func (c *Conn) ReadSnarf() (string, error) {
+func (c *Conn) ReadSnarf() ([]byte, error) {
 	tx := &Msg{Type: Trdsnarf}
 	rx := &Msg{}
 	if err := c.RPC(tx, rx); err != nil {
-		return "", err
+		return nil, err
 	}
-	return rx.Snarf, nil
+	return append([]byte(nil), rx.Snarf...), nil
 }
 
-func (c *Conn) WriteSnarf(snarf string) error {
+func (c *Conn) WriteSnarf(snarf []byte) error {
 	tx := &Msg{Type: Twrsnarf, Snarf: snarf}
 	rx := &Msg{}
 	return c.RPC(tx, rx)

@@ -50,7 +50,7 @@ type Msg struct {
 	Rune    rune
 	Winsize string
 	Label   string
-	Snarf   string
+	Snarf   []byte
 	Error   string
 	Data    []byte
 	Count   int
@@ -71,6 +71,10 @@ type Cursor struct {
 
 func stringsize(s string) int {
 	return 4 + len(s)
+}
+
+func bytesize(b []byte) int {
+	return 4 + len(b)
 }
 
 func (m *Msg) Size() int {
@@ -106,10 +110,10 @@ func (m *Msg) Size() int {
 		return 4 + 1 + 1 + stringsize(m.Winsize) + stringsize(m.Label)
 	case Rrdsnarf,
 		Twrsnarf:
-		return 4 + 1 + 1 + stringsize(m.Snarf)
+		return 4 + 1 + 1 + bytesize(m.Snarf)
 	case Rrddraw,
 		Twrdraw:
-		return 4 + 1 + 1 + 4 + len(m.Data)
+		return 4 + 1 + 1 + bytesize(m.Data)
 	case Trddraw,
 		Rwrdraw:
 		return 4 + 1 + 1 + 4
@@ -160,7 +164,7 @@ func (m *Msg) Marshal() []byte {
 		b = pstring(b, m.Winsize)
 		b = pstring(b, m.Label)
 	case Rrdsnarf, Twrsnarf:
-		b = pstring(b, m.Snarf)
+		b = pbytes(b, m.Snarf)
 	case Rrddraw, Twrdraw:
 		b = pbit32(b, len(m.Data))
 		b = append(b, m.Data...)
@@ -270,7 +274,7 @@ func (m *Msg) Unmarshal(b []byte) error {
 		m.Label, b = gstring(b)
 	case Rrdsnarf,
 		Twrsnarf:
-		m.Snarf, b = gstring(b)
+		m.Snarf, b = gbytes(b)
 	case Rrddraw,
 		Twrdraw:
 		var n int
