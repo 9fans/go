@@ -189,14 +189,18 @@ func (c *Conn) Label(label string) error {
 	return c.RPC(tx, rx)
 }
 
-func (c *Conn) ReadSnarf(b []byte) (int, error) {
+// Return values are bytes copied, actual size, error.
+func (c *Conn) ReadSnarf(b []byte) (int, int, error) {
 	tx := &Msg{Type: Trdsnarf}
 	rx := &Msg{}
 	if err := c.RPC(tx, rx); err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	n := copy(b, rx.Snarf)
-	return n, nil
+	if n < len(rx.Snarf) {
+		return 0, n, nil
+	}
+	return n, n, nil
 }
 
 func (c *Conn) WriteSnarf(snarf []byte) error {
