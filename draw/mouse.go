@@ -1,8 +1,10 @@
 package draw
 
 import (
+	"fmt"
 	"image"
 	"log"
+	"os"
 )
 
 type Mouse struct {
@@ -57,4 +59,15 @@ func (mc *Mousectl) Read() Mouse {
 	m := <-mc.C
 	mc.Mouse = m
 	return m
+}
+
+func (d *Display) MoveTo(pt image.Point) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	err := d.conn.MoveTo(pt)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "MoveTo: %v\n", err)
+		return err
+	}
+	return nil
 }
