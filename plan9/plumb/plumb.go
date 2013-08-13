@@ -56,16 +56,18 @@ func Open(name string, mode int) (*client.Fid, error) {
 	return fid, nil
 }
 
-// Send writes the message to the writer. The message may be sent with
-// multiple calls to Write.
+// Send writes the message to the writer. The message will be sent with
+// a single call to Write.
 func (m *Message) Send(w io.Writer) error {
-	fmt.Fprintf(w, "%s\n", m.Src)
-	fmt.Fprintf(w, "%s\n", m.Dst)
-	fmt.Fprintf(w, "%s\n", m.Dir)
-	fmt.Fprintf(w, "%s\n", m.Type)
-	m.Attr.send(w)
-	fmt.Fprintf(w, "%d\n", len(m.Data))
-	_, err := w.Write(m.Data) // We assume the last write will give us any error.
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "%s\n", m.Src)
+	fmt.Fprintf(&buf, "%s\n", m.Dst)
+	fmt.Fprintf(&buf, "%s\n", m.Dir)
+	fmt.Fprintf(&buf, "%s\n", m.Type)
+	m.Attr.send(&buf)
+	fmt.Fprintf(&buf, "%d\n", len(m.Data))
+	buf.Write(m.Data)
+	_, err := w.Write(buf.Bytes())
 	return err
 }
 
@@ -102,8 +104,9 @@ func quoteAttribute(s string) string {
 	return string(b)
 }
 
-// Recv reads a message from the reader. Since the messages are properly
-// delimited, Recv will not read any data beyond the message itself.
+// Recv reads a message from the reader and stores it in the Message.
+// Since encoded messages are properly delimited, Recv will not read
+// any data beyond the message itself.
 func (m *Message) Recv(r io.ByteReader) error {
 	reader := newReader(r)
 	m.Src = reader.readLine()
