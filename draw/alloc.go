@@ -3,6 +3,7 @@ package draw
 import (
 	"fmt"
 	"image"
+	"runtime"
 )
 
 // AllocImage allocates a new Image on display d.
@@ -77,6 +78,7 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 		Clipr:   clipr,
 		Repl:    repl,
 	}
+	runtime.SetFinalizer(i, (*Image).Free)
 	return i, nil
 }
 
@@ -122,6 +124,8 @@ func (i *Image) free() error {
 			}
 		}
 	}
+	i.Display = nil // So a second free (perhaps through a Finalizer) will be OK.
+	runtime.SetFinalizer(i, nil)
 	return d.flush(i.Screen != nil)
 }
 
@@ -129,7 +133,7 @@ func (i *Image) Free() error {
 	if i == nil {
 		return nil
 	}
-	if i == i.Display.ScreenImage {
+	if i.Display != nil && i == i.Display.ScreenImage {
 		panic("freeimage of ScreenImage")
 	}
 	i.Display.mu.Lock()
