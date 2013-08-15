@@ -72,9 +72,6 @@ func (m *Message) Send(w io.Writer) error {
 }
 
 func (attr *Attribute) send(w io.Writer) {
-	if attr == nil {
-		return
-	}
 	for a := attr; a != nil; a = a.Next {
 		if a != attr {
 			fmt.Fprint(w, " ")
