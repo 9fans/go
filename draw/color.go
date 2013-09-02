@@ -278,7 +278,7 @@ func crgb16Model(c color.Color) color.Color {
 	return CRGB15{uint16(r | g | b)}
 }
 
-// ColorModel returns the color model of the Image.
+// ColorModel returns the standard color model of the Image.
 func (i *Image) ColorModel() color.Model {
 	switch i.Pix {
 	case GREY1:

@@ -19,7 +19,7 @@ func lookupsubfont(d *Display, name string) *Subfont {
 	lastfont.Lock()
 	defer lastfont.Unlock()
 	if lastfont.name == name && d == lastfont.sub.Bits.Display {
-		lastfont.sub.Ref++
+		lastfont.sub.ref++
 		return lastfont.sub
 	}
 	return nil

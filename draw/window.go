@@ -28,8 +28,8 @@ func (i *Image) allocScreen(fill *Image, public bool) (*Screen, error) {
 		id = screenid
 		a[0] = 'A'
 		bplong(a[1:], id)
-		bplong(a[5:], i.ID)
-		bplong(a[9:], fill.ID)
+		bplong(a[5:], i.id)
+		bplong(a[9:], fill.id)
 		if public {
 			a[13] = 1
 		}
@@ -39,8 +39,7 @@ func (i *Image) allocScreen(fill *Image, public bool) (*Screen, error) {
 	}
 	s := &Screen{
 		Display: d,
-		ID:      id,
-		Image:   i,
+		id:      id,
 		Fill:    fill,
 	}
 	return s, nil
@@ -62,6 +61,7 @@ func publicscreen(d *Display, id, pix uint32) (*Screen, error) {
 }
 */
 
+// Free frees the server resources associated with the screen.
 func (s *Screen) Free() error {
 	s.Display.mu.Lock()
 	defer s.Display.mu.Unlock()
@@ -75,7 +75,7 @@ func (s *Screen) free() error {
 	d := s.Display
 	a := d.bufimage(1 + 4)
 	a[0] = 'F'
-	bplong(a[1:], s.ID)
+	bplong(a[1:], s.id)
 	// flush(true) because screen is likely holding the last reference to window,
 	// and we want it to disappear visually.
 	return d.flush(true)
@@ -83,12 +83,12 @@ func (s *Screen) free() error {
 
 func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
 	d := s.Display
-	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.ID, ref)
+	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.id, ref)
 	if err != nil {
 		return nil, err
 	}
 	i.Screen = s
-	i.Next = s.Display.Windows
+	i.next = s.Display.Windows
 	s.Display.Windows = i
 	return i, nil
 }

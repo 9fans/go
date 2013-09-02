@@ -4,11 +4,11 @@ import "image"
 
 // Compressed image file parameters.
 const (
-	NMATCH  = 3             /* shortest match possible */
-	NRUN    = (NMATCH + 31) /* longest match possible */
-	NMEM    = 1024          /* window size */
-	NDUMP   = 128           /* maximum length of dump */
-	NCBLOCK = 6000          /* size of compressed blocks */
+	_NMATCH  = 3              /* shortest match possible */
+	_NRUN    = (_NMATCH + 31) /* longest match possible */
+	_NMEM    = 1024           /* window size */
+	_NDUMP   = 128            /* maximum length of dump */
+	_NCBLOCK = 6000           /* size of compressed blocks */
 )
 
 /*
@@ -37,8 +37,8 @@ func twiddlecompressed(buf []byte) {
 func compblocksize(r image.Rectangle, depth int) int {
 	bpl := BytesPerLine(r, depth)
 	bpl = 2 * bpl /* add plenty extra for blocking, etc. */
-	if bpl < NCBLOCK {
-		return NCBLOCK
+	if bpl < _NCBLOCK {
+		return _NCBLOCK
 	}
 	return bpl
 }

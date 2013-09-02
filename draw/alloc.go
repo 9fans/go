@@ -6,7 +6,11 @@ import (
 	"runtime"
 )
 
-// AllocImage allocates a new Image on display d.
+// AllocImage allocates a new Image on display d. The arguments are:
+// - the rectangle representing the size
+// - the pixel descriptor: RGBA32 etc.
+// - whether the image is to be replicated (tiled)
+// - the starting background color for the image
 func (d *Display) AllocImage(r image.Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -71,7 +75,7 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 	}
 	*i = Image{
 		Display: d,
-		ID:      id,
+		id:      id,
 		Pix:     pix,
 		Depth:   pix.Depth(),
 		R:       r,
@@ -110,15 +114,15 @@ func (i *Image) free() error {
 	d.flush(false)
 	a := d.bufimage(1 + 4)
 	a[0] = 'f'
-	bplong(a[1:], i.ID)
+	bplong(a[1:], i.id)
 	if i.Screen != nil {
 		w := d.Windows
 		if w == i {
-			d.Windows = i.Next
+			d.Windows = i.next
 		} else {
-			for ; w != nil; w = w.Next {
-				if w.Next == i {
-					w.Next = i.Next
+			for ; w != nil; w = w.next {
+				if w.next == i {
+					w.next = i.next
 					break
 				}
 			}
@@ -129,6 +133,9 @@ func (i *Image) free() error {
 	return d.flush(i.Screen != nil)
 }
 
+// Free frees the server resources for the image. Images have a finalizer that
+// calls Free automatically, if necessary, for garbage collected Images, but it
+// is more efficient to be explicit.
 func (i *Image) Free() error {
 	if i == nil {
 		return nil

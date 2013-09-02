@@ -1,5 +1,6 @@
 package draw
 
+// SetDebug enables debugging for the remote devdraw server.
 func (d *Display) SetDebug(debug bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()

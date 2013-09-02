@@ -52,10 +52,12 @@ Err:
 	return nil, err
 }
 
-func (d *Display) ReadSubfont(name string, fd io.Reader) (*Subfont, error) {
+// ReadSubfont reads the subfont data from the reader and returns the subfont
+// it describes, giving it the specified name.
+func (d *Display) ReadSubfont(name string, r io.Reader) (*Subfont, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return d.readSubfont(name, fd, nil)
+	return d.readSubfont(name, r, nil)
 }
 
 func unpackinfo(fc []Fontchar, p []byte, n int) {

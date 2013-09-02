@@ -34,34 +34,37 @@ type Display struct {
 	Windows     *Image
 	DPI         int // TODO fill in
 
-	White       *Image
-	Black       *Image
-	Opaque      *Image
-	Transparent *Image
+	White       *Image // Pre-allocated color.
+	Black       *Image // Pre-allocated color.
+	Opaque      *Image // Pre-allocated color.
+	Transparent *Image // Pre-allocated color.
 
 	DefaultFont    *Font
 	DefaultSubfont *Subfont
 }
 
+// An Image represents an image on the server, possibly visible on the display.
 type Image struct {
 	Display *Display
-	ID      uint32
-	Pix     Pix
-	Depth   int
-	Repl    bool
-	R       image.Rectangle
-	Clipr   image.Rectangle
-	Next    *Image
-	Screen  *Screen
+	id      uint32
+	Pix     Pix             // The pixel format for the image.
+	Depth   int             // The depth of the pixels in bits.
+	Repl    bool            // Whether the image is replicated (tiles the rectangle).
+	R       image.Rectangle // The extent of the image.
+	Clipr   image.Rectangle // The clip region.
+	next    *Image
+	Screen  *Screen // If non-nil, the associated screen; this is a window.
 }
 
+// A Screen is a collection of windows that are visible on an image.
 type Screen struct {
-	Display *Display
-	ID      uint32
-	Image   *Image
-	Fill    *Image
+	Display *Display // Display connected to the server.
+	id      uint32
+	Fill    *Image // Background image behind the windows.
 }
 
+// Refresh algorithms to execute when a window is resized or uncovered.
+// Refmesg is almost always the correct one to use.
 const (
 	Refbackup = 0
 	Refnone   = 1
@@ -70,7 +73,13 @@ const (
 
 const deffontname = "*default*"
 
-// Init connects to a display.
+// Init starts and connects to a server and returns a Display structure through
+// which all graphics will be mediated. The arguments are an error channel on
+// which to deliver errors (currently unused), the name of the font to use (the
+// empty string may be used to represent the default font), the window label,
+// and the window size as a string in the form XxY, as in "1000x500"; the units
+// are pixels.
+// TODO: Use the error channel.
 func Init(errch chan<- error, fontname, label, winsize string) (*Display, error) {
 	c, err := drawfcall.New()
 	if err != nil {
@@ -99,11 +108,11 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	d.Image = i
-	d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DWhite)
+	d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, White)
 	if err != nil {
 		return nil, err
 	}
-	d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, DBlack)
+	d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, Black)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +157,7 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 		return nil, err
 	}
 	d.ScreenImage = d.Image // temporary, for d.ScreenImage.Pix
-	d.ScreenImage, err = allocwindow(nil, d.Screen, i.R, 0, DWhite)
+	d.ScreenImage, err = allocwindow(nil, d.Screen, i.R, 0, White)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +203,7 @@ func (d *Display) getimage0(i *Image) (*Image, error) {
 	}
 	*i = Image{
 		Display: d,
-		ID:      0,
+		id:      0,
 		Pix:     pix,
 		Depth:   pix.Depth(),
 		Repl:    atoi(info[3*12:]) > 0,
@@ -204,6 +213,8 @@ func (d *Display) getimage0(i *Image) (*Image, error) {
 	return i, nil
 }
 
+// Attach (re-)attaches to a display, typically after a resize, updating the
+// display's associated image, screen, and screen image data structures.
 func (d *Display) Attach(ref int) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -219,13 +230,14 @@ func (d *Display) Attach(ref int) error {
 		return err
 	}
 	d.ScreenImage.free()
-	d.ScreenImage, err = allocwindow(d.ScreenImage, d.Screen, i.R, ref, DWhite)
+	d.ScreenImage, err = allocwindow(d.ScreenImage, d.Screen, i.R, ref, White)
 	if err != nil {
 		log.Fatal("aw", err)
 	}
 	return err
 }
 
+// Close closes the Display.
 func (d *Display) Close() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -250,6 +262,7 @@ func (d *Display) flushBuffer() error {
 	return nil
 }
 
+// Flush flushes pending I/O to the server, making any drawing changes visible.
 func (d *Display) Flush() error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -283,6 +296,7 @@ func (d *Display) bufimage(n int) []byte {
 
 const DefaultDPI = 133
 
+// TODO: Document.
 func (d *Display) Scale(n int) int {
 	if d == nil || d.DPI <= DefaultDPI {
 		return n

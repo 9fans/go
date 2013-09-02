@@ -133,7 +133,7 @@ type reader struct {
 func newReader(r io.ByteReader) *reader {
 	return &reader{
 		r:   r,
-		buf: make([]byte, 32),
+		buf: make([]byte, 128),
 	}
 }
 

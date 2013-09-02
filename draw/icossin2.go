@@ -220,6 +220,8 @@ var cosinus1 = [...]int16{
 	720,  /* 1.01 */
 }
 
+// IntCosSin returns an approximation of the cosine and sine of the angle
+// represented by (x, y). The result values are scaled up by 1024.
 func IntCosSin2(x, y int) (cos, sin int) {
 	if x == 0 {
 		if y >= 0 {

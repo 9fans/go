@@ -1,13 +1,15 @@
 // Package draw is a port of Plan 9's libdraw to Go.
 // It connects to the 'devdraw' binary built as part of Plan 9 from User Space (http://swtch.com/plan9port/).
+// All graphics operations are done in the remote server. The functions
+// in this package typically send a message to the server.
 //
-// For now, see http://plan9.bell-labs.com/magic/man2html/2/graphics and associated pages
+// For background, see http://plan9.bell-labs.com/magic/man2html/2/graphics and associated pages
 // for documentation. Not everything is implemented.
 //
 // Notable Changes
 //
 // The pixel descriptions like "r8g8b8" and their integer equivalents are referred to as chans in Plan 9.
-// To avoid confusion, this package refers to them as type Pix instead.
+// To avoid confusion, this package refers to them as type Pix.
 //
 // Most top-level functions are methods on an appropriate type (Display, Image, Font).
 //
@@ -19,6 +21,7 @@ import (
 	"image"
 )
 
+// Op represents a Porter-Duff compositing operator.
 type Op int
 
 const (
@@ -62,9 +65,9 @@ func draw(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image
 		mask = dst.Display.Opaque
 	}
 	a[0] = 'd'
-	bplong(a[1:], dst.ID)
-	bplong(a[5:], src.ID)
-	bplong(a[9:], mask.ID)
+	bplong(a[1:], dst.id)
+	bplong(a[5:], src.id)
+	bplong(a[9:], mask.id)
 	bplong(a[13:], uint32(r.Min.X))
 	bplong(a[17:], uint32(r.Min.Y))
 	bplong(a[21:], uint32(r.Max.X))
@@ -79,24 +82,40 @@ func (dst *Image) draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
 	draw(dst, r, src, p1, mask, p1, SoverD)
 }
 
+// Draw copies the source image with upper left corner p1 to the destination
+// rectangle r, through the specified mask using operation SoverD. The
+// coordinates are aligned so p1 in src and mask both correspond to r.min in
+// the destination.
 func (dst *Image) Draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p1, mask, p1, SoverD)
 }
 
+// DrawOp copies the source image with upper left corner p1 to the destination
+// rectangle r, through the specified mask using the specified operation. The
+// coordinates are aligned so p1 in src and mask both correspond to r.min in
+// the destination.
 func (dst *Image) DrawOp(r image.Rectangle, src, mask *Image, p1 image.Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p1, mask, p1, op)
 }
 
+// GenDraw copies the source image with upper left corner p1 to the destination
+// rectangle r, through the specified mask using operation SoverD. The
+// coordinates are aligned so p1 in src and p0 in mask both correspond to r.min in
+// the destination.
 func (dst *Image) GenDraw(r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p0, mask, p1, SoverD)
 }
 
+// GenDrawOp copies the source image with upper left corner p1 to the destination
+// rectangle r, through the specified mask using the specified operation. The
+// coordinates are aligned so p1 in src and p0 in mask both correspond to r.min in
+// the destination.
 func GenDrawOp(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()

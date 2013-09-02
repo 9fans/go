@@ -1,5 +1,8 @@
 package draw
 
+// AllocSubfont allocates a subfont on the server. The subfont will have the
+// specified name, total height, ascent (height above the baseline), and
+// character info.
 func (d *Display) AllocSubfont(name string, height, ascent int, info []Fontchar, i *Image) *Subfont {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -13,7 +16,7 @@ func (d *Display) allocSubfont(name string, height, ascent int, info []Fontchar,
 		Height: height,
 		Ascent: ascent,
 		Bits:   i,
-		Ref:    1,
+		ref:    1,
 		Info:   info,
 	}
 	if name != "" {

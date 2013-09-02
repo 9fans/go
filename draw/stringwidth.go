@@ -56,32 +56,44 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 	return twid
 }
 
+// StringWidth returns the number of horizontal pixels that would be occupied
+// by the string if it were drawn using the font.
 func (f *Font) StringWidth(s string) int {
 	f.lock()
 	defer f.unlock()
 	return stringnwidth(f, s, nil, nil)
 }
 
+// ByteWidth returns the number of horizontal pixels that would be occupied by
+// the byte slice if it were drawn using the font.
 func (f *Font) BytesWidth(b []byte) int {
 	f.lock()
 	defer f.unlock()
 	return stringnwidth(f, "", b, nil)
 }
 
+// RuneWidth returns the number of horizontal pixels that would be occupied by
+// the rune slice if it were drawn using the font.
 func (f *Font) RunesWidth(r []rune) int {
 	f.lock()
 	defer f.unlock()
 	return stringnwidth(f, "", nil, r)
 }
 
+// StringSize returns the number of horizontal and vertical pixels that would
+// be occupied by the string if it were drawn using the font.
 func (f *Font) StringSize(s string) image.Point {
 	return image.Pt(f.StringWidth(s), f.Height)
 }
 
+// ByteSize returns the number of horizontal and vertical pixels that would be
+// occupied by the byte slice if it were drawn using the font.
 func (f *Font) BytesSize(b []byte) image.Point {
 	return image.Pt(f.BytesWidth(b), f.Height)
 }
 
+// RuneSize returns the number of horizontal and vertical pixels that would be
+// occupied by the rune slice if it were drawn using the font.
 func (f *Font) RunesSize(r []rune) image.Point {
 	return image.Pt(f.RunesWidth(r), f.Height)
 }

@@ -2,12 +2,13 @@ package draw
 
 import "image"
 
+// ReplClipr sets the replication boolean and clip rectangle for the specified image.
 func (dst *Image) ReplClipr(repl bool, clipr image.Rectangle) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	b := dst.Display.bufimage(22)
 	b[0] = 'c'
-	bplong(b[1:], uint32(dst.ID))
+	bplong(b[1:], uint32(dst.id))
 	byteRepl := byte(0)
 	if repl {
 		byteRepl = 1

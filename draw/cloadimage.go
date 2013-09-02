@@ -5,6 +5,7 @@ import (
 	"image"
 )
 
+// Cload is like Load, but uses image-compressed data.
 func (dst *Image) Cload(r image.Rectangle, data []byte) (int, error) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
@@ -30,7 +31,7 @@ func (dst *Image) Cload(r image.Rectangle, data []byte) (int, error) {
 		// TODO: error check?
 		a := i.Display.bufimage(21 + nb)
 		a[0] = 'Y'
-		bplong(a[1:], i.ID)
+		bplong(a[1:], i.id)
 		bplong(a[5:], uint32(r.Min.Y))
 		bplong(a[9:], uint32(miny))
 		bplong(a[13:], uint32(r.Max.Y))

@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// OpenFont reads the named file and returns the font it defines. The name may
+// be an absolute path, or identify a file in a standard font directory:
+// /lib/font/bit, /usr/local/plan9, /mnt/font, etc.
 func (d *Display) OpenFont(name string) (*Font, error) {
 	// nil display is allowed, for querying font metrics
 	// in non-draw program.

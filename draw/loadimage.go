@@ -5,6 +5,8 @@ import (
 	"image"
 )
 
+// Load copies the pixel data from the buffer to the specified rectangle of the image.
+// The buffer must be big enough to fill the rectangle.
 func (dst *Image) Load(r image.Rectangle, data []byte) (int, error) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
@@ -34,7 +36,7 @@ func (dst *Image) load(r image.Rectangle, data []byte) (int, error) {
 		n := dy * bpl
 		a := i.Display.bufimage(21 + n)
 		a[0] = 'y'
-		bplong(a[1:], uint32(i.ID))
+		bplong(a[1:], uint32(i.id))
 		bplong(a[5:], uint32(r.Min.X))
 		bplong(a[9:], uint32(r.Min.Y))
 		bplong(a[13:], uint32(r.Max.X))

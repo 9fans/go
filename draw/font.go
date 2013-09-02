@@ -8,11 +8,15 @@ import (
 	"unicode/utf8"
 )
 
+// A Font represents a font that may be used to draw on the display.
+// A Font is constructed by reading a font file that describes how to
+// create a full font from a collection of subfonts, each of which
+// covers a section of the Unicode code space.
 type Font struct {
 	Display *Display
-	Name    string
-	Height  int // max height of image, interline spacing
-	Ascent  int // top of image to baseline
+	Name    string // name, typically from file.
+	Height  int    // max height of image, interline spacing
+	Ascent  int    // top of image to baseline
 
 	mu         sync.Mutex // only used if Display == nil
 	width      int        // widest so far; used in caching only
@@ -62,38 +66,40 @@ type cachesubf struct {
 	f   *Subfont
 }
 
+// A Subfont represents a subfont, mapping a section of the Unicode code space to a set of glyphs.
 type Subfont struct {
-	Name   string
-	N      int
-	Height int
-	Ascent int
-	Info   []Fontchar
-	Bits   *Image
-	Ref    int
+	Name   string     // Name of the subfont, typically the file from which it was read.
+	N      int        // Number of characters in the subfont.
+	Height int        // Inter-line spacing.
+	Ascent int        // Height above the baseline.
+	Info   []Fontchar // Character descriptions.
+	Bits   *Image     // Image holding the glyphs.
+	ref    int
 }
 
+// A Fontchar descibes one character glyph in a font (really a subfont).
 type Fontchar struct {
-	X      int
-	Top    uint8
-	Bottom uint8
-	Left   int8
-	Width  uint8
+	X      int   // x position in the image holding the glyphs.
+	Top    uint8 // first non-zero scan line.
+	Bottom uint8 // last non-zero scan line.
+	Left   int8  // offset of baseline.
+	Width  uint8 // width of baseline.
 }
 
 const (
 	/* starting values */
-	LOG2NFCACHE = 6
-	NFCACHE     = (1 << LOG2NFCACHE) /* #chars cached */
-	NFLOOK      = 5                  /* #chars to scan in cache */
-	NFSUBF      = 2                  /* #subfonts to cache */
+	_LOG2NFCACHE = 6
+	_NFCACHE     = (1 << _LOG2NFCACHE) /* #chars cached */
+	_NFLOOK      = 5                   /* #chars to scan in cache */
+	_NFSUBF      = 2                   /* #subfonts to cache */
 	/* max value */
-	MAXFCACHE = 1024 + NFLOOK /* upper limit */
-	MAXSUBF   = 50            /* generous upper limit */
+	_MAXFCACHE = 1024 + _NFLOOK /* upper limit */
+	_MAXSUBF   = 50             /* generous upper limit */
 	/* deltas */
-	DSUBF = 4
+	_DSUBF = 4
 	/* expiry ages */
-	SUBFAGE  = 10000
-	CACHEAGE = 10000
+	_SUBFAGE  = 10000
+	_CACHEAGE = 10000
 )
 
 const pjw = 0 /* use NUL==pjw for invisible characters */
@@ -109,10 +115,9 @@ Loop:
 			a                  uint32
 			sh, esh, h, th, ld int
 		)
-		//println("LOOP", r)
 
-		sh = (17 * int(r)) & (len(f.cache) - NFLOOK - 1)
-		esh = sh + NFLOOK
+		sh = (17 * int(r)) & (len(f.cache) - _NFLOOK - 1)
+		esh = sh + _NFLOOK
 		h = sh
 		for h < esh {
 			c = &f.cache[h]
@@ -138,8 +143,8 @@ Loop:
 		}
 
 		if a != 0 && f.age-a < 500 { // kicking out too recent; resize
-			nc := 2*(len(f.cache)-NFLOOK) + NFLOOK
-			if nc <= MAXFCACHE {
+			nc := 2*(len(f.cache)-_NFLOOK) + _NFLOOK
+			if nc <= _MAXFCACHE {
 				if i == 0 {
 					fontresize(f, f.width, nc, f.maxdepth)
 				}
@@ -187,7 +192,7 @@ func agefont(f *Font) {
 		for i := range f.subf {
 			s := &f.subf[i]
 			if s.age > 0 {
-				if s.age < SUBFAGE && s.cf.name != "" {
+				if s.age < _SUBFAGE && s.cf.name != "" {
 					/* clean up */
 					if f.Display == nil || s.f != f.Display.DefaultSubfont {
 						s.f.free()
@@ -268,7 +273,7 @@ Found:
 	subf = &f.subf[oi]
 
 	if subf.f != nil {
-		if f.age-subf.age > SUBFAGE || len(f.subf) > MAXSUBF {
+		if f.age-subf.age > _SUBFAGE || len(f.subf) > _MAXSUBF {
 			// ancient data; toss
 			subf.f.free()
 			subf.cf = nil
@@ -276,7 +281,7 @@ Found:
 			subf.age = 0
 		} else { // too recent; grow instead
 			of := f.subf
-			f.subf = make([]cachesubf, len(f.subf)+DSUBF)
+			f.subf = make([]cachesubf, len(f.subf)+_DSUBF)
 			copy(f.subf, of)
 			subf = &f.subf[len(of)]
 		}
@@ -360,8 +365,8 @@ Found2:
 	f.Display.flush(false) /* flush any pending errors */
 	b = f.Display.bufimage(37)
 	b[0] = 'l'
-	bplong(b[1:], uint32(f.cacheimage.ID))
-	bplong(b[5:], uint32(subf.f.Bits.ID))
+	bplong(b[1:], uint32(f.cacheimage.id))
+	bplong(b[5:], uint32(subf.f.Bits.id))
 	bpshort(b[9:], uint16(h))
 	bplong(b[11:], uint32(c.x))
 	bplong(b[15:], uint32(top))
@@ -400,7 +405,7 @@ func fontresize(f *Font, wid, ncache, depth int) int {
 	d.flush(false) // flush any pending errors
 	b = d.bufimage(1 + 4 + 4 + 1)
 	b[0] = 'i'
-	bplong(b[1:], new.ID)
+	bplong(b[1:], new.id)
 	bplong(b[5:], uint32(ncache))
 	b[9] = byte(f.Ascent)
 	if err := d.flush(false); err != nil {

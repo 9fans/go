@@ -26,6 +26,8 @@ func strtol(b []byte) (int, []byte) {
 	return int(n), skip(b[i:])
 }
 
+// BuildFont builds a font of the given name using the description provided by
+// the buffer, typically read from a font file.
 func (d *Display) BuildFont(buf []byte, name string) (*Font, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -36,8 +38,8 @@ func (d *Display) buildFont(buf []byte, name string) (*Font, error) {
 	fnt := &Font{
 		Display: d,
 		Name:    name,
-		cache:   make([]cacheinfo, NFCACHE+NFLOOK),
-		subf:    make([]cachesubf, NFSUBF),
+		cache:   make([]cacheinfo, _NFCACHE+_NFLOOK),
+		subf:    make([]cachesubf, _NFSUBF),
 		age:     1,
 	}
 	s := buf
@@ -85,6 +87,10 @@ Errbad:
 	return nil, fmt.Errorf("bad font format: number expected (char position %d)", len(buf)-len(s))
 }
 
+/// Free frees the server resources for the Font. Fonts have a finalizer that
+// calls Free automatically, if necessary, for garbage collected Images, but it
+// is more efficient to be explicit.
+// TODO: Implement the Finalizer!
 func (f *Font) Free() {
 	if f == nil {
 		return

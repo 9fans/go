@@ -4,36 +4,48 @@ import (
 	"image"
 )
 
+// String draws the string in the specified font using SoverD on the image,
+// placing the upper left corner at p.
 func (dst *Image) String(pt image.Point, src *Image, sp image.Point, f *Font, s string) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, SoverD)
 }
 
+// StringOp draws the string in the specified font using the specified
+// operation on the image, placing the upper left corner at p.
 func (dst *Image) StringOp(pt image.Point, src *Image, sp image.Point, f *Font, s string, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, op)
 }
 
+// Runes draws the rune slice in the specified font using SoverD on the image,
+// placing the upper left corner at p.
 func (dst *Image) Runes(pt image.Point, src *Image, sp image.Point, f *Font, r []rune) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, SoverD)
 }
 
+// RunesOp draws the rune slice in the specified font using the specified
+// operation on the image, placing the upper left corner at p.
 func (dst *Image) RunesOp(pt image.Point, src *Image, sp image.Point, f *Font, r []rune, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, op)
 }
 
+// Bytes draws the byte slice in the specified font using SoverD on the image,
+// placing the upper left corner at p.
 func (dst *Image) Bytes(pt image.Point, src *Image, sp image.Point, f *Font, b []byte) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.ZP, SoverD)
 }
 
+// BytesOp draws the byte slice in the specified font using the specified
+// operation on the image, placing the upper left corner at p.
 func (dst *Image) BytesOp(pt image.Point, src *Image, sp image.Point, f *Font, b []byte, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
@@ -61,9 +73,9 @@ func _string(dst *Image, pt image.Point, src *Image, sp image.Point, f *Font, s 
 			} else {
 				b[0] = 's'
 			}
-			bplong(b[1:], uint32(dst.ID))
-			bplong(b[5:], uint32(src.ID))
-			bplong(b[9:], uint32(f.cacheimage.ID))
+			bplong(b[1:], uint32(dst.id))
+			bplong(b[5:], uint32(src.id))
+			bplong(b[9:], uint32(f.cacheimage.id))
 			bplong(b[13:], uint32(pt.X))
 			bplong(b[17:], uint32(pt.Y+f.Ascent))
 			bplong(b[21:], uint32(clipr.Min.X))
@@ -75,7 +87,7 @@ func _string(dst *Image, pt image.Point, src *Image, sp image.Point, f *Font, s 
 			bpshort(b[45:], uint16(n))
 			b = b[47:]
 			if bg != nil {
-				bplong(b, uint32(bg.ID))
+				bplong(b, uint32(bg.id))
 				bplong(b[4:], uint32(bgp.X))
 				bplong(b[8:], uint32(bgp.Y))
 				b = b[12:]

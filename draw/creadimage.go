@@ -92,7 +92,7 @@ func (d *Display) creadimage(rd io.Reader) (*Image, error) {
 				goto Errout
 			}
 			a[0] = 'Y'
-			bplong(a[1:], i.ID)
+			bplong(a[1:], i.id)
 			bplong(a[5:], uint32(r.Min.X))
 			bplong(a[9:], uint32(miny))
 			bplong(a[13:], uint32(r.Max.X))

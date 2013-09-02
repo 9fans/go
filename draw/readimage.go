@@ -7,10 +7,11 @@ import (
 	"strings"
 )
 
-func (d *Display) ReadImage(rd io.Reader) (*Image, error) {
+// ReadImage reads the image data from the reader and returns the image it describes.
+func (d *Display) ReadImage(r io.Reader) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return d.readImage(rd)
+	return d.readImage(r)
 }
 
 func (d *Display) readImage(rd io.Reader) (*Image, error) {

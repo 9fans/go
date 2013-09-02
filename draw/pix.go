@@ -4,40 +4,46 @@ import (
 	"fmt"
 )
 
+// A Color represents an RGBA value, 8 bits per element. Red is the high 8
+// bits, green the next 8 and so on.
 type Color uint32
 
 const (
-	DOpaque        Color = 0xFFFFFFFF
-	DTransparent   Color = 0x00000000 /* only useful for allocimage memfillcolor */
-	DBlack         Color = 0x000000FF
-	DWhite         Color = 0xFFFFFFFF
-	DRed           Color = 0xFF0000FF
-	DGreen         Color = 0x00FF00FF
-	DBlue          Color = 0x0000FFFF
-	DCyan          Color = 0x00FFFFFF
-	DMagenta       Color = 0xFF00FFFF
-	DYellow        Color = 0xFFFF00FF
-	DPaleyellow    Color = 0xFFFFAAFF
-	DDarkyellow    Color = 0xEEEE9EFF
-	DDarkgreen     Color = 0x448844FF
-	DPalegreen     Color = 0xAAFFAAFF
-	DMedgreen      Color = 0x88CC88FF
-	DDarkblue      Color = 0x000055FF
-	DPalebluegreen Color = 0xAAFFFFFF
-	DPaleblue      Color = 0x0000BBFF
-	DBluegreen     Color = 0x008888FF
-	DGreygreen     Color = 0x55AAAAFF
-	DPalegreygreen Color = 0x9EEEEEFF
-	DYellowgreen   Color = 0x99994CFF
-	DMedblue       Color = 0x000099FF
-	DGreyblue      Color = 0x005DBBFF
-	DPalegreyblue  Color = 0x4993DDFF
-	DPurpleblue    Color = 0x8888CCFF
+	Opaque        Color = 0xFFFFFFFF
+	Transparent   Color = 0x00000000 /* only useful for allocimage memfillcolor */
+	Black         Color = 0x000000FF
+	White         Color = 0xFFFFFFFF
+	Red           Color = 0xFF0000FF
+	Green         Color = 0x00FF00FF
+	Blue          Color = 0x0000FFFF
+	Cyan          Color = 0x00FFFFFF
+	Magenta       Color = 0xFF00FFFF
+	Yellow        Color = 0xFFFF00FF
+	Paleyellow    Color = 0xFFFFAAFF
+	Darkyellow    Color = 0xEEEE9EFF
+	Darkgreen     Color = 0x448844FF
+	Palegreen     Color = 0xAAFFAAFF
+	Medgreen      Color = 0x88CC88FF
+	Darkblue      Color = 0x000055FF
+	Palebluegreen Color = 0xAAFFFFFF
+	Paleblue      Color = 0x0000BBFF
+	Bluegreen     Color = 0x008888FF
+	Greygreen     Color = 0x55AAAAFF
+	Palegreygreen Color = 0x9EEEEEFF
+	Yellowgreen   Color = 0x99994CFF
+	Medblue       Color = 0x000099FF
+	Greyblue      Color = 0x005DBBFF
+	Palegreyblue  Color = 0x4993DDFF
+	Purpleblue    Color = 0x8888CCFF
 
-	DNotacolor Color = 0xFFFFFF00
-	DNofill    Color = DNotacolor
+	Notacolor Color = 0xFFFFFF00
+	Nofill    Color = Notacolor
 )
 
+// Pix represents a pixel format described simple notation: r8g8b8 for RB24, m8
+// for color-mapped 8 bits, etc. The representation is 8 bits per channel,
+// starting at the low end, with each byte represnted as a channel specifier
+// (CRed etc.) in the high 4 bits and the number of pixels in the low 4 bits.
 type Pix uint32
 
 const (
@@ -68,6 +74,7 @@ var (
 	XBGR32     = MakePix(CIgnore, 8, CBlue, 8, CGreen, 8, CRed, 8)
 )
 
+// MakePix returns a Pix by placing the successive integers into 4-bit nibbles, low bits first.
 func MakePix(list ...int) Pix {
 	var p Pix
 	for _, x := range list {
@@ -77,6 +84,7 @@ func MakePix(list ...int) Pix {
 	return p
 }
 
+// ParsePix is the reverse of String, turning a pixel string such as "r8g8b8" into a Pix value.
 func ParsePix(s string) (Pix, error) {
 	var p Pix
 	s0 := s
@@ -118,6 +126,7 @@ Malformed:
 	return 0, fmt.Errorf("malformed pix descriptor %q", s0)
 }
 
+// String prints the pixel format as a string: "r8g8b8" for example.
 func (p Pix) String() string {
 	var buf [8]byte
 	i := len(buf)

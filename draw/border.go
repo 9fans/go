@@ -2,6 +2,8 @@ package draw
 
 import "image"
 
+// BorderOp draws a retangular border of size r and width n, with n positive
+// meaning the border is inside r, drawn with the specified draw op.
 func (dst *Image) BorderOp(r image.Rectangle, n int, color *Image, sp image.Point, op Op) {
 	if n < 0 {
 		r = r.Inset(n)
@@ -23,6 +25,8 @@ func (dst *Image) BorderOp(r image.Rectangle, n int, color *Image, sp image.Poin
 		color, pt, nil, pt, op)
 }
 
+// Border draws a retangular border of size r and width n, with n positive
+// meaning the border is inside r. It uses SoverD.
 func (dst *Image) Border(r image.Rectangle, n int, color *Image, sp image.Point) {
 	dst.BorderOp(r, n, color, sp, SoverD)
 }
