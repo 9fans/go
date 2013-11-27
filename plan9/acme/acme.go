@@ -78,8 +78,7 @@ func New() (*Win, error) {
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
 func Open(id int, ctl *client.Fid) (*Win, error) {
-	config := new(sync.Once)
-	config.Do(mountAcme)
+	fsysOnce.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
 	}
