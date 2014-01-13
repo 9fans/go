@@ -268,7 +268,7 @@ func UnmarshalFcall(b []byte) (f *Fcall, err error) {
 		f.Fid, b = gbit32(b)
 		var n uint16
 		n, b = gbit16(b)
-		if len(b) != int(n)-2 {
+		if len(b) != int(n) {
 			panic(1)
 		}
 		f.Stat = b

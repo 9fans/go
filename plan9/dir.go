@@ -216,15 +216,15 @@ func (q Qid) String() string {
 
 func gqid(b []byte) (Qid, []byte) {
 	var q Qid
-	q.Path, b = gbit64(b)
-	q.Vers, b = gbit32(b)
 	q.Type, b = gbit8(b)
+	q.Vers, b = gbit32(b)
+	q.Path, b = gbit64(b)
 	return q, b
 }
 
 func pqid(b []byte, q Qid) []byte {
-	b = pbit64(b, q.Path)
-	b = pbit32(b, q.Vers)
 	b = pbit8(b, q.Type)
+	b = pbit32(b, q.Vers)
+	b = pbit64(b, q.Path)
 	return b
 }
