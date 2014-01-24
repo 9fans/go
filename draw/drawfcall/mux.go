@@ -198,7 +198,7 @@ func (c *Conn) ReadSnarf(b []byte) (int, int, error) {
 	}
 	n := copy(b, rx.Snarf)
 	if n < len(rx.Snarf) {
-		return 0, n, nil
+		return 0, len(rx.Snarf), nil
 	}
 	return n, n, nil
 }
