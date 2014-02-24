@@ -138,16 +138,16 @@ var txbits = [NCOL][32]byte{
 }
 
 var txpix = [NCOL]draw.Color{
-	draw.DYellow,    /* yellow */
-	draw.DCyan,      /* cyan */
-	draw.DGreen,     /* lime green */
-	draw.DGreyblue,  /* slate */
-	draw.DRed,       /* red */
-	draw.DGreygreen, /* olive green */
-	draw.DBlue,      /* blue */
-	0xFF55AAFF,      /* pink */
-	0xFFAAFFFF,      /* lavender */
-	0xBB005DFF,      /* maroon */
+	draw.Yellow,    /* yellow */
+	draw.Cyan,      /* cyan */
+	draw.Green,     /* lime green */
+	draw.Greyblue,  /* slate */
+	draw.Red,       /* red */
+	draw.Greygreen, /* olive green */
+	draw.Blue,      /* blue */
+	0xFF55AAFF,     /* pink */
+	0xFFAAFFFF,     /* lavender */
+	0xBB005DFF,     /* maroon */
 }
 
 var tx [NCOL]*draw.Image
