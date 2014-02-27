@@ -74,6 +74,38 @@ func New() (*Win, error) {
 	return Open(id, fid)
 }
 
+type WinInfo struct {
+	ID   int
+	Name string
+}
+
+// Windows returns a list of the existing acme windows.
+func Windows() ([]WinInfo, error) {
+	fsysOnce.Do(mountAcme)
+	if fsysErr != nil {
+		return nil, fsysErr
+	}
+	index, err := fsys.Open("index", plan9.OREAD)
+	if err != nil {
+		return nil, err
+	}
+	defer index.Close()
+	data, err := ioutil.ReadAll(index)
+	if err != nil {
+		return nil, err
+	}
+	var info []WinInfo
+	for _, line := range strings.Split(string(data), "\n") {
+		f := strings.Fields(line)
+		if len(f) < 6 {
+			continue
+		}
+		n, _ := strconv.Atoi(f[0])
+		info = append(info, WinInfo{n, f[5]})
+	}
+	return info, nil
+}
+
 // Open connects to the existing window with the given id.
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
