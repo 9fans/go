@@ -40,7 +40,7 @@ const (
 	Nofill    Color = Notacolor
 )
 
-// Pix represents a pixel format described simple notation: r8g8b8 for RB24, m8
+// Pix represents a pixel format described simple notation: r8g8b8 for RGB24, m8
 // for color-mapped 8 bits, etc. The representation is 8 bits per channel,
 // starting at the low end, with each byte represnted as a channel specifier
 // (CRed etc.) in the high 4 bits and the number of pixels in the low 4 bits.
