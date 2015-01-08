@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"code.google.com/p/goplan9/draw"
+	"9fans.net/go/draw"
 )
 
 /*

@@ -15,7 +15,7 @@
 //
 // Getwindow, called during resize, is now Display.Attach.
 //
-package draw
+package draw // import "9fans.net/go/draw"
 
 import (
 	"image"

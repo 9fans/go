@@ -1,11 +1,11 @@
-package client
+package client // import "9fans.net/go/plan9/client"
 
 import (
 	"fmt"
 	"io"
 	"sync"
 
-	"code.google.com/p/goplan9/plan9"
+	"9fans.net/go/plan9"
 )
 
 type Error string

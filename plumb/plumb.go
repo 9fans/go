@@ -1,5 +1,5 @@
 // Package plumb provides routines for sending and receiving messages for the plumber.
-package plumb
+package plumb // import "9fans.net/go/plumb"
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"code.google.com/p/goplan9/plan9/client"
+	"9fans.net/go/plan9/client"
 )
 
 // Message represents a message to or from the plumber.

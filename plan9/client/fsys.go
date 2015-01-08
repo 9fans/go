@@ -3,7 +3,7 @@ package client
 import (
 	"strings"
 
-	"code.google.com/p/goplan9/plan9"
+	"9fans.net/go/plan9"
 )
 
 type Fsys struct {
