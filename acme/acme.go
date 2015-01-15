@@ -281,6 +281,10 @@ func (w *Win) ReadAll(file string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+func (w *Win) ID() int {
+	return w.id
+}
+
 func (w *Win) Name(format string, args ...interface{}) error {
 	return w.Ctl("name "+format, args...)
 }
