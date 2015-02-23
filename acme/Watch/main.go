@@ -2,10 +2,21 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+// Watch runs a command each time files in the current directory change.
+//
+// Usage:
+//
+//	Watch cmd [args...]
+//
+// Watch opens a new acme window named for the current directory
+// with a suffix of /+watch. The window shows the execution of the given
+// command. Each time a file in that directory changes, Watch reexecutes
+// the command and updates the window.
+package main // import "9fans.net/go/acme/Watch"
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -49,9 +60,18 @@ func kadd(fd int) {
 	}
 }
 
+func usage() {
+	fmt.Fprintf(os.Stderr, "usage: Watch cmd args...\n")
+	os.Exit(2)
+}
+
 func main() {
+	flag.Usage = usage
 	flag.Parse()
 	args = flag.Args()
+	if len(args) == 0 {
+		usage()
+	}
 
 	var err error
 	win, err = acme.New()
