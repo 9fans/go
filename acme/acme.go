@@ -477,7 +477,7 @@ func (w *Win) geten() int {
 // indicating to acme that the event should be handled internally.
 func (w *Win) WriteEvent(e *Event) error {
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%c%c%d %d \n", e.C1, e.C2, e.Q0, e.Q1)
+	fmt.Fprintf(&buf, "%c%c%d %d \n", e.C1, e.C2, e.OrigQ0, e.OrigQ1)
 	_, err := w.Write("event", buf.Bytes())
 	return err
 }
