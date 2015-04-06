@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"9fans.net/go/draw"
+	"github.com/9fans/go/draw"
 )
 
 /*
