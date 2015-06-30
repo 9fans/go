@@ -50,7 +50,7 @@ func mouseproc(mc *Mousectl, d *Display, ch chan Mouse, rch chan bool) {
 		if resized {
 			rch <- true
 		}
-		mm := Mouse{image.Point{m.X, m.Y}, m.Buttons, uint32(m.Msec)}
+		mm := Mouse{image.Point{int(int32(m.X)), int(int32(m.Y))}, m.Buttons, uint32(m.Msec)}
 		ch <- mm
 		/*
 		 * See comment above.
