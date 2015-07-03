@@ -11,12 +11,14 @@ import (
  */
 
 func subfontname(cfname, fname string, maxdepth int) string {
+	scale, base := parsefontscale(fname)
+
 	t := cfname
 	if cfname == "*default*" {
 		return t
 	}
 	if !strings.HasPrefix(t, "/") {
-		dir := fname
+		dir := base
 		i := strings.LastIndex(dir, "/")
 		if i >= 0 {
 			dir = dir[:i]
@@ -35,15 +37,24 @@ func subfontname(cfname, fname string, maxdepth int) string {
 		// try i-bit grey
 		tmp2 := fmt.Sprintf("%s.%d", t, i)
 		if _, err := os.Stat(tmp2); err == nil {
+			if scale > 1 {
+				tmp2 = fmt.Sprintf("%d*%s", scale, tmp2)
+			}
 			return tmp2
 		}
 	}
 
 	// try default
 	if strings.HasPrefix(t, "/mnt/font/") {
+		if scale > 1 {
+			t = fmt.Sprintf("%d*%s", scale, t)
+		}
 		return t
 	}
 	if _, err := os.Stat(t); err == nil {
+		if scale > 1 {
+			t = fmt.Sprintf("%d*%s", scale, t)
+		}
 		return t
 	}
 

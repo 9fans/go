@@ -37,6 +37,7 @@ func (d *Display) BuildFont(buf []byte, name string) (*Font, error) {
 func (d *Display) buildFont(buf []byte, name string) (*Font, error) {
 	fnt := &Font{
 		Display: d,
+		Scale:   1,
 		Name:    name,
 		cache:   make([]cacheinfo, _NFCACHE+_NFLOOK),
 		subf:    make([]cachesubf, _NFSUBF),
@@ -97,6 +98,28 @@ func (f *Font) Free() {
 	}
 	f.lock()
 	defer f.unlock()
+
+	if f.ondisplaylist {
+		f.ondisplaylist = false
+		if f.next != nil {
+			f.next.prev = f.prev
+		} else {
+			f.Display.lastfont = f.prev
+		}
+		if f.prev != nil {
+			f.prev.next = f.next
+		} else {
+			f.Display.firstfont = f.next
+		}
+	}
+
+	if f.lodpi != f {
+		f.lodpi.Free()
+	}
+	if f.hidpi != f {
+		f.hidpi.Free()
+	}
+
 	f.free()
 }
 

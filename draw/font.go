@@ -17,7 +17,9 @@ type Font struct {
 	Name    string // name, typically from file.
 	Height  int    // max height of image, interline spacing
 	Ascent  int    // top of image to baseline
+	Scale   int    // pixel scaling
 
+	namespec   string
 	mu         sync.Mutex // only used if Display == nil
 	width      int        // widest so far; used in caching only
 	age        uint32     // increasing counter; used for LUR
@@ -26,6 +28,15 @@ type Font struct {
 	subf       []cachesubf
 	sub        []*cachefont // as read from file
 	cacheimage *Image
+
+	// doubly linked list of fonts known to display
+	ondisplaylist bool
+	next          *Font
+	prev          *Font
+
+	// on hi-dpi systems, one of these is f and the other is the other-dpi version of f
+	lodpi *Font
+	hidpi *Font
 }
 
 func (f *Font) lock() {

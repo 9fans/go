@@ -8,13 +8,15 @@ package draw
 // subfont will be rendered with rune value min.
 func (subfont *Subfont) MakeFont(min rune) *Font {
 	font := &Font{
-		Display: subfont.Bits.Display,
-		Name:    "<synthetic>",
-		Height:  subfont.Height,
-		Ascent:  subfont.Ascent,
-		cache:   make([]cacheinfo, _NFCACHE+_NFLOOK),
-		subf:    make([]cachesubf, _NFSUBF),
-		age:     1,
+		Display:  subfont.Bits.Display,
+		Name:     "<synthetic>",
+		namespec: "<synthetic>",
+		Height:   subfont.Height,
+		Ascent:   subfont.Ascent,
+		Scale:    1,
+		cache:    make([]cacheinfo, _NFCACHE+_NFLOOK),
+		subf:     make([]cachesubf, _NFSUBF),
+		age:      1,
 		sub: []*cachefont{{
 			min: min,
 			max: min + rune(subfont.N) - 1,

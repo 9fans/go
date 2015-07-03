@@ -32,7 +32,10 @@ type Display struct {
 	Screen      *Screen
 	ScreenImage *Image
 	Windows     *Image
-	DPI         int // TODO fill in
+	DPI         int
+
+	firstfont *Font
+	lastfont  *Font
 
 	White       *Image // Pre-allocated color.
 	Black       *Image // Pre-allocated color.
@@ -210,6 +213,18 @@ func (d *Display) getimage0(i *Image) (*Image, error) {
 		R:       ator(info[4*12:]),
 		Clipr:   ator(info[8*12:]),
 	}
+
+	a = d.bufimage(3)
+	a[0] = 'q'
+	a[1] = 1
+	a[2] = 'd'
+	d.DPI = 100
+	if err := d.flush(false); err == nil {
+		if n, _ := d.conn.ReadDraw(info[:12]); n == 12 {
+			d.DPI = atoi(info)
+		}
+	}
+
 	return i, nil
 }
 
@@ -234,7 +249,20 @@ func (d *Display) Attach(ref int) error {
 	if err != nil {
 		log.Fatal("aw", err)
 	}
-	return err
+
+	if d.DPI >= DefaultDPI*3/2 {
+		for f := d.firstfont; f != nil; f = f.next {
+			loadhidpi(f)
+		}
+	} else {
+		for f := d.firstfont; f != nil; f = f.next {
+			if f.lodpi != nil && f.lodpi != f {
+				swapfont(f, &f.hidpi, &f.lodpi)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Close closes the Display.
@@ -330,4 +358,11 @@ func bplong(b []byte, n uint32) {
 
 func bpshort(b []byte, n uint16) {
 	binary.LittleEndian.PutUint16(b, n)
+}
+
+func (d *Display) ScaleSize(n int) int {
+	if d == nil || d.DPI <= DefaultDPI {
+		return n
+	}
+	return (n*d.DPI + DefaultDPI/2) / DefaultDPI
 }
