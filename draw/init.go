@@ -250,7 +250,7 @@ func (d *Display) Attach(ref int) error {
 		log.Fatal("aw", err)
 	}
 
-	if d.DPI >= DefaultDPI*3/2 {
+	if d.HiDPI() {
 		for f := d.firstfont; f != nil; f = f.next {
 			loadhidpi(f)
 		}
@@ -358,6 +358,10 @@ func bplong(b []byte, n uint32) {
 
 func bpshort(b []byte, n uint16) {
 	binary.LittleEndian.PutUint16(b, n)
+}
+
+func (d *Display) HiDPI() bool {
+	return d.DPI >= DefaultDPI*3/2 
 }
 
 func (d *Display) ScaleSize(n int) int {

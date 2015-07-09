@@ -188,7 +188,7 @@ func (d *Display) openFont(name string) (*Font, error) {
 		d.lastfont = f
 
 		// if this is a hi-dpi display, find hi-dpi version and swap
-		if d.DPI >= DefaultDPI*3/2 {
+		if d.HiDPI() {
 			loadhidpi(f)
 		}
 	}
