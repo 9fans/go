@@ -59,14 +59,7 @@ func reformat(id int, name string) {
 	new, err := exec.Command("goimports", name).CombinedOutput()
 	if err != nil {
 		// Probably a syntax error, use the compiler for better message.
-		// For now use 'go build file.go' and strip the package header.
-		// We run it in /var/run so that paths do not get shortened
-		// (assuming /var/run exists and no one is editing go files under that path).
-		// A better fix to both would be to use go tool 6g, but we don't know
-		// whether 6g is the right architecture. Could parse 'go env' output.
-		// Or maybe the go command should have 'go tool compile' and 'go tool link'.
-		cmd := exec.Command("go", "build", name)
-		cmd.Dir = "/var/run"
+		cmd := exec.Command("go", "tool", "compile", "-o", "/dev/null", name)
 		out, _ := cmd.CombinedOutput()
 		start := []byte("# command-line-arguments\n")
 		if !bytes.HasPrefix(out, start) {
