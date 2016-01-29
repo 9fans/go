@@ -2,7 +2,6 @@ package client
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -52,11 +51,17 @@ func (fid *Fid) Dirread() ([]*plan9.Dir, error) {
 }
 
 func (fid *Fid) Dirreadall() ([]*plan9.Dir, error) {
-	buf, err := ioutil.ReadAll(fid)
-	if len(buf) == 0 {
-		return nil, err
+	dirs := make([]*plan9.Dir, 0, 20)
+	for {
+		dir, err := fid.Dirread()
+		if err != nil && err == io.EOF {
+			return dirs, nil
+		} else if err != nil {
+			return dirs, err
+		}
+		dirs = append(dirs, dir...)
 	}
-	return dirUnpack(buf)
+	return dirs, nil
 }
 
 func dirUnpack(b []byte) ([]*plan9.Dir, error) {
