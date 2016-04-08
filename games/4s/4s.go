@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main // import "9fans.net/go/games/4s"
+package main // import "github.com/9fans/go/games/4s"
 
 import (
 	"log"
 	"os"
 
-	"9fans.net/go/draw"
+	"github.com/9fans/go/draw"
 )
 
 func main() {

@@ -20,7 +20,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"9fans.net/go/acme"
+	"github.com/9fans/go/acme"
 )
 
 var gofmt = flag.Bool("f", false, "run gofmt on the entire file after Put")
