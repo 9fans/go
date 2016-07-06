@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -106,6 +107,18 @@ func (fid *Fid) Qid() plan9.Qid {
 
 func (fid *Fid) Read(b []byte) (n int, err error) {
 	return fid.ReadAt(b, -1)
+}
+
+func (fid *Fid) ReadByte() (c byte, err error) {
+	b := make([]byte, 1)
+	n, err := fid.Read(b)
+	if err != nil {
+		return 0, err
+	}
+	if n == 0 {
+		return 0, fmt.Errorf("Unknown error reading byte")
+	}
+	return b[0], nil
 }
 
 func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err error) {
