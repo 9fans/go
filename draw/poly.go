@@ -35,7 +35,7 @@ func dopoly(cmd byte, dst *Image, pp []image.Point, end0, end1, radius int, src 
 	ox, oy := 0, 0
 	for _, p := range pp {
 		o += addcoord(a[o:], ox, p.X)
-		o = addcoord(a[o:], oy, p.Y)
+		o += addcoord(a[o:], oy, p.Y)
 		ox, oy = p.X, p.Y
 	}
 	d := dst.Display
