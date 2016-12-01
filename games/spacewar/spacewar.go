@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main // import "9fans.net/go/games/spacewar"
+package main // import "github.com/9fans/go/games/spacewar"
 
 import (
 	"bytes"
@@ -28,8 +28,8 @@ import (
 	"os"
 	"time"
 
-	"9fans.net/go/draw"
-	"9fans.net/go/games/spacewar/pdp1"
+	"github.com/9fans/go/draw"
+	"github.com/9fans/go/games/spacewar/pdp1"
 )
 
 func main() {

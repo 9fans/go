@@ -20,7 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"9fans.net/go/acme"
+	"github.com/9fans/go/acme"
 )
 
 func main() {
