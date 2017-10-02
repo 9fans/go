@@ -4,52 +4,106 @@ import (
 	"image"
 )
 
-// String draws the string in the specified font using SoverD on the image,
-// placing the upper left corner at p.
+// String draws the string in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
 func (dst *Image) String(pt image.Point, src *Image, sp image.Point, f *Font, s string) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, SoverD)
 }
 
-// StringOp draws the string in the specified font using the specified
-// operation on the image, placing the upper left corner at p.
+// StringOp draws the string in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using the specified operation onto dst.
 func (dst *Image) StringOp(pt image.Point, src *Image, sp image.Point, f *Font, s string, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, op)
 }
 
-// Runes draws the rune slice in the specified font using SoverD on the image,
-// placing the upper left corner at p.
+// StringBg draws the string in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) StringBg(pt image.Point, src *Image, sp image.Point, f *Font, s string, bg *Image, bgp image.Point) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, bg, bgp, SoverD)
+}
+
+// StringBgOp draws the string in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) StringBgOp(pt image.Point, src *Image, sp image.Point, f *Font, s string, bg *Image, bgp image.Point, op Op) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, bg, bgp, op)
+}
+
+// Runes draws the rune slice in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
 func (dst *Image) Runes(pt image.Point, src *Image, sp image.Point, f *Font, r []rune) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, SoverD)
 }
 
-// RunesOp draws the rune slice in the specified font using the specified
-// operation on the image, placing the upper left corner at p.
+// RunesOp draws the rune slice in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using the specified operation onto dst.
 func (dst *Image) RunesOp(pt image.Point, src *Image, sp image.Point, f *Font, r []rune, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, op)
 }
 
-// Bytes draws the byte slice in the specified font using SoverD on the image,
-// placing the upper left corner at p.
+// RunesBg draws the rune slice in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) RunesBg(pt image.Point, src *Image, sp image.Point, f *Font, r []rune, bg *Image, bgp image.Point) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, bg, bgp, SoverD)
+}
+
+// RunesBgOp draws the rune slice in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) RunesBgOp(pt image.Point, src *Image, sp image.Point, f *Font, r []rune, bg *Image, bgp image.Point, op Op) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, bg, bgp, op)
+}
+
+// Bytes draws the byte slice in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
 func (dst *Image) Bytes(pt image.Point, src *Image, sp image.Point, f *Font, b []byte) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.ZP, SoverD)
 }
 
-// BytesOp draws the byte slice in the specified font using the specified
-// operation on the image, placing the upper left corner at p.
+// BytesOp draws the byte slice in the specified font, placing the upper left corner at p.
+// It draws the text using src, with sp aligned to pt, using the specified operation onto dst.
 func (dst *Image) BytesOp(pt image.Point, src *Image, sp image.Point, f *Font, b []byte, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.ZP, op)
+}
+
+// BytesBg draws the rune slice in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) BytesBg(pt image.Point, src *Image, sp image.Point, f *Font, b []byte, bg *Image, bgp image.Point) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, bg, bgp, SoverD)
+}
+
+// BytesBgOp draws the rune slice in the specified font, placing the upper left corner at p.
+// It first draws the background bg, with bgp aligned to pt, using operation SoverD onto dst.
+// It then draws the text using src, with sp aligned to pt, using operation SoverD onto dst.
+func (dst *Image) BytesBgOp(pt image.Point, src *Image, sp image.Point, f *Font, b []byte, bg *Image, bgp image.Point, op Op) image.Point {
+	dst.Display.mu.Lock()
+	defer dst.Display.mu.Unlock()
+	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, bg, bgp, op)
 }
 
 func _string(dst *Image, pt image.Point, src *Image, sp image.Point, f *Font, s string, b []byte, r []rune, clipr image.Rectangle, bg *Image, bgp image.Point, op Op) image.Point {
