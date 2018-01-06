@@ -88,6 +88,9 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	if err != nil {
 		return nil, err
 	}
+	if errch == nil {
+		errch = make(chan error)
+	}
 	d := &Display{
 		conn:    c,
 		errch:   errch,

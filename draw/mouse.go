@@ -3,7 +3,6 @@ package draw
 import (
 	"fmt"
 	"image"
-	"log"
 	"os"
 )
 
@@ -45,7 +44,11 @@ func mouseproc(mc *Mousectl, d *Display, ch chan Mouse, rch chan bool) {
 	for {
 		m, resized, err := d.conn.ReadMouse()
 		if err != nil {
-			log.Fatal(err)
+			select {
+			case d.errch <- err:
+			default:
+			}
+			return
 		}
 		if resized {
 			rch <- true
