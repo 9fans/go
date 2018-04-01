@@ -5,6 +5,8 @@ import (
 	"image"
 	"log"
 	"os"
+
+	"9fans.net/go/draw/drawfcall"
 )
 
 // Mouse is the structure describing the current state of the mouse.
@@ -77,4 +79,12 @@ func (d *Display) MoveTo(pt image.Point) error {
 		return err
 	}
 	return nil
+}
+
+// Cursor represents the image of a cursor.
+type Cursor drawfcall.Cursor
+
+// SetCursor sets the mouse cursor to the given shape
+func (d *Display) SetCursor(c *Cursor) error {
+	return d.conn.Cursor((*drawfcall.Cursor)(c))
 }
