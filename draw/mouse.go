@@ -81,7 +81,9 @@ func (d *Display) MoveTo(pt image.Point) error {
 	return nil
 }
 
+// Cursor represents the image of a cursor.
 type Cursor drawfcall.Cursor
+
 // SetCursor sets the mouse cursor to the given shape
 func (d *Display) SetCursor(c *Cursor) error {
 	return d.conn.Cursor((*drawfcall.Cursor)(c))
