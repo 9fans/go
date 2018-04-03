@@ -5,6 +5,8 @@ import (
 	"image"
 	"log"
 	"os"
+
+	"9fans.net/go/draw/drawfcall"
 )
 
 // Mouse is the structure describing the current state of the mouse.
@@ -67,13 +69,26 @@ func (mc *Mousectl) Read() Mouse {
 	return m
 }
 
-// Moveto moves the mouse cursor to the specified location.
+// MoveTo moves the mouse cursor to the specified location.
 func (d *Display) MoveTo(pt image.Point) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	err := d.conn.MoveTo(pt)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "MoveTo: %v\n", err)
+		return err
+	}
+	return nil
+}
+
+// SetCursor sets the mouse cursor to the specified cursor image.
+// SetCursor(nil) changes the cursor to the standard system cursor.
+func (d *Display) SetCursor(c *Cursor) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	err := d.conn.Cursor((*drawfcall.Cursor)(c))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "SetCursor: %v\n", err)
 		return err
 	}
 	return nil
