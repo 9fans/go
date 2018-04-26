@@ -29,6 +29,7 @@ type Win struct {
 	event      *client.Fid
 	data       *client.Fid
 	xdata      *client.Fid
+	errors     *client.Fid
 	ebuf       *bufio.Reader
 	c          chan *Event
 	next, prev *Win
@@ -213,6 +214,9 @@ func (w *Win) CloseFiles() {
 
 	w.xdata.Close()
 	w.xdata = nil
+
+	w.errors.Close()
+	w.errors = nil
 }
 
 // Ctl writes the command format, ... to the window's ctl file.
@@ -243,6 +247,7 @@ func (w *Win) OpenEvent() error {
 
 func (w *Win) fid(name string) (*client.Fid, error) {
 	var f **client.Fid
+	var mode uint8 = plan9.ORDWR
 	switch name {
 	case "addr":
 		f = &w.addr
@@ -258,12 +263,15 @@ func (w *Win) fid(name string) (*client.Fid, error) {
 		f = &w.tag
 	case "xdata":
 		f = &w.xdata
+	case "errors":
+		f = &w.errors
+		mode = plan9.OWRITE
 	default:
 		return nil, errors.New("unknown acme file: " + name)
 	}
 	if *f == nil {
 		var err error
-		*f, err = fsys.Open(fmt.Sprintf("%d/%s", w.id, name), plan9.ORDWR)
+		*f, err = fsys.Open(fmt.Sprintf("%d/%s", w.id, name), mode)
 		if err != nil {
 			return nil, err
 		}
