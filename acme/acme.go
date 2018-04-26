@@ -337,7 +337,7 @@ func (w *Win) Seek(file string, offset int64, whence int) (int64, error) {
 func (w *Win) Write(file string, b []byte) (n int, err error) {
 	f, err := w.fid(file)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	return f.Write(b)
 }
