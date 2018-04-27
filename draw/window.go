@@ -149,22 +149,4 @@ func bottomnwindows(w []*Image) {
 func topnwindows(w []*Image) {
 	topbottom(w, true)
 }
-
-func originwindow(w *Image, log, scr image.Point) error {
-	w.Display.flushimage(false)
-	b := w.Display.bufimage(1+4+2*4+2*4)
-	b[0] = 'o'
-	bplong(b[1:], w.id)
-	bplong(b[5:], uint32(log.X))
-	bplong(b[9:], uint32(log.Y))
-	bplong(b[13:], uint32(scr.X))
-	bplong(b[17:], uint32(scr.Y))
-	if err := w.Display.flushimage(true); err != nil {
-		return err
-	}
-	delta := log.Sub(w.R.Min)
-	w.R = w.R.Add(delta)
-	w.Clipr = w.Clipr.Add(delta)
-	return nil
-}
 */

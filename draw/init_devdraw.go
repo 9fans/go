@@ -1,3 +1,5 @@
+// +build !plan9
+
 package draw
 
 import (
@@ -364,7 +366,7 @@ func bpshort(b []byte, n uint16) {
 }
 
 func (d *Display) HiDPI() bool {
-	return d.DPI >= DefaultDPI*3/2 
+	return d.DPI >= DefaultDPI*3/2
 }
 
 func (d *Display) ScaleSize(n int) int {

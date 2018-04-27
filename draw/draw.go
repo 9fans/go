@@ -1,5 +1,8 @@
 // Package draw is a port of Plan 9's libdraw to Go.
-// It connects to the 'devdraw' binary built as part of Plan 9 from User Space (http://swtch.com/plan9port/).
+//
+// On Plan 9 it talks to /dev/draw and rio(4) at $wsys directly.
+// On unix, it connects to the 'devdraw' binary built as part of Plan 9 from User Space (http://swtch.com/plan9port/).
+//
 // All graphics operations are done in the remote server. The functions
 // in this package typically send a message to the server.
 //
