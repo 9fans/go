@@ -150,9 +150,6 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 		return nil, err
 	}
 
-	d.mousectl = d.initMouse()
-	d.keyboardctl = d.initKeyboard()
-
 	d.ctl, err = os.OpenFile("/dev/draw/new", os.O_RDWR|syscall.O_CLOEXEC, 0666)
 	if err != nil {
 		return nil, err
@@ -245,6 +242,9 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 		d.close()
 		return nil, err
 	}
+
+	d.mousectl = d.initMouse()
+	d.keyboardctl = d.initKeyboard()
 
 	return d, nil
 }
