@@ -47,12 +47,12 @@ func scalesubfont(f *Subfont, scale int) {
 	dst := make([]byte, dstn)
 	i, err := f.Bits.Display.AllocImage(r2, f.Bits.Pix, false, Black)
 	if err != nil {
-		log.Fatal("allocimage: %v", err)
+		log.Fatalf("allocimage: %v", err)
 	}
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		_, err := f.Bits.Unload(image.Rect(r.Min.X, y, r.Max.X, y+1), src)
 		if err != nil {
-			log.Fatal("unloadimage: %v", err)
+			log.Fatalf("unloadimage: %v", err)
 		}
 		for i := range dst {
 			dst[i] = 0

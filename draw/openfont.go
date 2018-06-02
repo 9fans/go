@@ -82,7 +82,7 @@ func (d *Display) openFont1(name string) (*Font, error) {
 
 func swapfont(targ *Font, oldp, newp **Font) {
 	if targ != *oldp {
-		log.Fatal("bad swapfont %p %p %p", targ, *oldp, *newp)
+		log.Fatalf("bad swapfont %p %p %p", targ, *oldp, *newp)
 	}
 
 	old := *oldp
