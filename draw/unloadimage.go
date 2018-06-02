@@ -10,6 +10,10 @@ import (
 func (src *Image) Unload(r image.Rectangle, data []byte) (n int, err error) {
 	src.Display.mu.Lock()
 	defer src.Display.mu.Unlock()
+	return src.unload(r, data)
+}
+
+func (src *Image) unload(r image.Rectangle, data []byte) (n int, err error) {
 	i := src
 	if !r.In(i.R) {
 		return 0, fmt.Errorf("image.Unload: bad rectangle")
