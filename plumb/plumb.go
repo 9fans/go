@@ -153,7 +153,16 @@ func (r *reader) readLine() string {
 func (r *reader) read(p []byte) {
 	rr, ok := r.r.(io.Reader)
 	if r.err == nil && ok {
-		_, r.err = rr.Read(p)
+		// io.Reader may return before p has been filled so loop until
+		// the entire message payload has been read into p.
+		for ro := 0; ro < len(p); {
+			n, err := rr.Read(p[ro:])
+			if err != nil {
+				r.err = err
+				break
+			}
+			ro += n
+		}
 		return
 	}
 	for i := range p {
