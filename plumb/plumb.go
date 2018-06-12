@@ -153,7 +153,7 @@ func (r *reader) readLine() string {
 func (r *reader) read(p []byte) {
 	rr, ok := r.r.(io.Reader)
 	if r.err == nil && ok {
-		_, r.err = rr.Read(p)
+		_, r.err = io.ReadFull(rr, p)
 		return
 	}
 	for i := range p {
