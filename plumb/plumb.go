@@ -241,3 +241,16 @@ func unquoteAttribute(s string) (string, error) {
 	}
 	return string(b), nil
 }
+
+// LookupAttr returns the value associated with the named attribute.
+// If the attribute is missing, LookupAttr returns an empty string.
+// To distinguish an empty present attribute from a missing attribute,
+// walk the m.Attr list directly instead of using LookupAttr.
+func (m *Message) LookupAttr(name string) string {
+	for a := m.Attr; a != nil; a = a.Next {
+		if a.Name == name {
+			return a.Value
+		}
+	}
+	return ""
+}
