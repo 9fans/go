@@ -169,7 +169,10 @@ func Show(name string) *Win {
 
 	for w := windows; w != nil; w = w.next {
 		if w.name == name {
-			w.Ctl("show")
+			if err := w.Ctl("show"); err != nil {
+				w.drop()
+				return nil
+			}
 			return w
 		}
 	}
@@ -538,9 +541,16 @@ func (w *Win) eventReader() {
 		}
 		w.c <- e
 	}
+	w.drop()
+	close(w.c)
+}
 
+func (w *Win) drop() {
 	windowsMu.Lock()
 	defer windowsMu.Unlock()
+	if w.prev == nil && w.next == nil && windows != w {
+		return
+	}
 	if w.prev != nil {
 		w.prev.next = w.next
 	} else {
@@ -551,8 +561,8 @@ func (w *Win) eventReader() {
 	} else {
 		last = w.prev
 	}
-
-	close(w.c)
+	w.prev = nil
+	w.next = nil
 }
 
 var fontCache struct {
