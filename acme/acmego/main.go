@@ -104,6 +104,16 @@ func reformat(id int, name string) {
 
 	diff, _ := exec.Command("9", "diff", name, tmp).CombinedOutput()
 
+	latest, err := w.ReadAll("body")
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	if !bytes.Equal(old, latest) {
+		log.Printf("skipped update to %s: window modified since Put\n", name, len(old), len(latest))
+		return
+	}
+
 	w.Write("ctl", []byte("mark"))
 	w.Write("ctl", []byte("nomark"))
 	diffLines := strings.Split(string(diff), "\n")
