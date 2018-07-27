@@ -313,6 +313,10 @@ func (w *Win) ReadAll(file string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+func (w *Win) ID() int {
+	return w.id
+}
+
 func (w *Win) Name(format string, args ...interface{}) error {
 	name := fmt.Sprintf(format, args...)
 	if err := w.Ctl("name %s", name); err != nil {
