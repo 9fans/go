@@ -56,10 +56,6 @@ var fsys *client.Fsys
 var fsysErr error
 var fsysOnce sync.Once
 
-func mountAcme() {
-	fsys, fsysErr = client.MountService("acme")
-}
-
 // AutoExit sets whether to call os.Exit the next time the last managed acme window is deleted.
 // If there are no acme windows at the time of the call, the exit does not happen until one
 // is created and then deleted.

@@ -3,6 +3,8 @@ package draw
 import (
 	"fmt"
 	"image"
+	"io/ioutil"
+	"runtime"
 )
 
 var screenid uint32
@@ -83,7 +85,20 @@ func (s *Screen) free() error {
 
 func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
 	d := s.Display
-	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.id, ref)
+	var err error
+	if runtime.GOOS == "plan9" {
+		const BorderWidth = 4
+		name, err := ioutil.ReadFile("/dev/winname")
+		if err != nil {
+			return nil, err
+		}
+		i, err = namedImage(d, i, string(name))
+		if err == nil {
+			i.R = i.R.Inset(BorderWidth)
+		}
+	} else {
+		i, err = allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.id, ref)
+	}
 	if err != nil {
 		return nil, err
 	}
