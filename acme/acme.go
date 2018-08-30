@@ -21,20 +21,19 @@ import (
 
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
-	"9fans.net/go/plan9/client"
 )
 
 // A Win represents a single acme window and its control files.
 type Win struct {
 	id         int
-	ctl        *client.Fid
-	tag        *client.Fid
-	body       *client.Fid
-	addr       *client.Fid
-	event      *client.Fid
-	data       *client.Fid
-	xdata      *client.Fid
-	errors     *client.Fid
+	ctl        acmeFid
+	tag        acmeFid
+	body       acmeFid
+	addr       acmeFid
+	event      acmeFid
+	data       acmeFid
+	xdata      acmeFid
+	errors     acmeFid
 	ebuf       *bufio.Reader
 	c          chan *Event
 	next, prev *Win
@@ -48,13 +47,9 @@ type Win struct {
 var windowsMu sync.Mutex
 var windows, last *Win
 
-var fsys *client.Fsys
+var fsys acmeFsys
 var fsysErr error
 var fsysOnce sync.Once
-
-func mountAcme() {
-	fsys, fsysErr = client.MountService("acme")
-}
 
 // New creates a new window.
 func New() (*Win, error) {
@@ -92,7 +87,7 @@ type WinInfo struct {
 
 // A LogReader provides read access to the acme log file.
 type LogReader struct {
-	f   *client.Fid
+	f   acmeFid
 	buf [8192]byte
 }
 
@@ -183,7 +178,7 @@ func Show(name string) *Win {
 // Open connects to the existing window with the given id.
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
-func Open(id int, ctl *client.Fid) (*Win, error) {
+func Open(id int, ctl acmeFid) (*Win, error) {
 	fsysOnce.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
@@ -218,30 +213,40 @@ func (w *Win) Addr(format string, args ...interface{}) error {
 // CloseFiles closes all the open files associated with the window w.
 // (These file descriptors are cached across calls to Ctl, etc.)
 func (w *Win) CloseFiles() {
-	w.ctl.Close()
-	w.ctl = nil
-
-	w.body.Close()
-	w.body = nil
-
-	w.addr.Close()
-	w.addr = nil
-
-	w.tag.Close()
-	w.tag = nil
-
-	w.event.Close()
-	w.event = nil
+	if w.ctl != nil {
+		w.ctl.Close()
+		w.ctl = nil
+	}
+	if w.body != nil {
+		w.body.Close()
+		w.body = nil
+	}
+	if w.addr != nil {
+		w.addr.Close()
+		w.addr = nil
+	}
+	if w.tag != nil {
+		w.tag.Close()
+		w.tag = nil
+	}
+	if w.event != nil {
+		w.event.Close()
+		w.event = nil
+	}
 	w.ebuf = nil
 
-	w.data.Close()
-	w.data = nil
-
-	w.xdata.Close()
-	w.xdata = nil
-
-	w.errors.Close()
-	w.errors = nil
+	if w.data != nil {
+		w.data.Close()
+		w.data = nil
+	}
+	if w.xdata != nil {
+		w.xdata.Close()
+		w.xdata = nil
+	}
+	if w.errors != nil {
+		w.errors.Close()
+		w.errors = nil
+	}
 }
 
 // Ctl writes the command format, ... to the window's ctl file.
@@ -270,8 +275,8 @@ func (w *Win) OpenEvent() error {
 	return err
 }
 
-func (w *Win) fid(name string) (*client.Fid, error) {
-	var f **client.Fid
+func (w *Win) fid(name string) (acmeFid, error) {
+	var f *acmeFid
 	var mode uint8 = plan9.ORDWR
 	switch name {
 	case "addr":
