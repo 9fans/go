@@ -1,3 +1,5 @@
+// +build !plan9
+
 package drawfcall
 
 import (
@@ -45,7 +47,6 @@ func New() (*Conn, error) {
 		w1.Close()
 		return nil, fmt.Errorf("drawfcall.New: %v", err)
 	}
-
 	c := &Conn{
 		rd:      r2,
 		wr:      w1,
@@ -61,6 +62,7 @@ func New() (*Conn, error) {
 }
 
 func (c *Conn) RPC(tx, rx *Msg) error {
+	//log.Printf("tx: %v\n", tx)
 	msg := tx.Marshal()
 	ch := make(chan []byte, 1)
 	c.tag.Lock()
@@ -219,6 +221,10 @@ func (c *Conn) Resize(r image.Rectangle) error {
 	tx := &Msg{Type: Tresize, Rect: r}
 	rx := &Msg{}
 	return c.RPC(tx, rx)
+}
+
+func (c *Conn) ReadCtl(b []byte) (int, error) {
+	panic("not supported")
 }
 
 func (c *Conn) ReadDraw(b []byte) (int, error) {
