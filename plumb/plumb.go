@@ -8,6 +8,9 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync"
+
+	"9fans.net/go/plan9/client"
 )
 
 // Message represents a message to or from the plumber.
@@ -31,6 +34,23 @@ var (
 	ErrAttribute = errors.New("bad attribute syntax")
 	ErrQuote     = errors.New("bad attribute quoting")
 )
+
+var fsys *client.Fsys
+var fsysErr error
+var fsysOnce sync.Once
+
+// Open opens the plumbing file with the given name and open mode.
+func Open(name string, mode int) (*client.Fid, error) {
+	fsysOnce.Do(mountPlumb)
+	if fsysErr != nil {
+		return nil, fsysErr
+	}
+	fid, err := fsys.Open(name, uint8(mode))
+	if err != nil {
+		return nil, err
+	}
+	return fid, nil
+}
 
 // Send writes the message to the writer. The message will be sent with
 // a single call to Write.
