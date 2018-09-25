@@ -15,8 +15,15 @@ type Fsys struct {
 
 func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, error) {
 	// TODO(fhs): what if something else is already using this mount point?
-	mtpt := fmt.Sprintf("/n/9fans.%s.%s", c.name, aname)
-	err := syscall.Mount(c.fd, int(afid.File.Fd()), mtpt, plan9.MREPL, aname)
+	mtpt := fmt.Sprintf("/n/9fans.%s", c.name)
+	if len(aname) > 0 {
+		mtpt += "." + aname
+	}
+	afd := -1
+	if afid != nil {
+		afd = int(afid.File.Fd())
+	}
+	err := syscall.Mount(c.fd, afd, mtpt, plan9.MREPL, aname)
 	if err != nil {
 		return nil, err
 	}
