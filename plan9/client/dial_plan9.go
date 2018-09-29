@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"path/filepath"
 	"syscall"
 )
@@ -24,17 +23,7 @@ func Mount(network, addr string) (*Fsys, error) {
 }
 
 func MountService(service string) (*Fsys, error) {
-	fd, err := openSrv(service)
-	if err != nil {
-		return nil, err
-	}
-	// TODO(fhs): what if something else is already using this mount point?
-	mtpt := fmt.Sprintf("/n/9fans.%s", service)
-	err = syscall.Mount(fd, -1, mtpt, 0, "")
-	if err != nil {
-		return nil, err
-	}
-	return &Fsys{Mtpt: mtpt}, nil
+	panic("TODO")
 }
 
 // Namespace returns the path to the name space directory.
