@@ -10,7 +10,7 @@ import (
 )
 
 type Fsys struct {
-	mtpt string
+	Mtpt string
 }
 
 func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, error) {
@@ -27,7 +27,7 @@ func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Fsys{mtpt: mtpt}, nil
+	return &Fsys{Mtpt: mtpt}, nil
 }
 
 func (fs *Fsys) Access(name string, mode int) error {
@@ -39,7 +39,7 @@ func (fs *Fsys) Create(name string, mode uint8, perm plan9.Perm) (*Fid, error) {
 }
 
 func (fs *Fsys) Open(name string, mode uint8) (*Fid, error) {
-	f, err := os.OpenFile(filepath.Join(fs.mtpt, name), int(mode), 0)
+	f, err := os.OpenFile(filepath.Join(fs.Mtpt, name), int(mode), 0)
 	return &Fid{File: f}, err
 }
 

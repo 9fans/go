@@ -34,7 +34,7 @@ func MountService(service string) (*Fsys, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Fsys{mtpt: mtpt}, nil
+	return &Fsys{Mtpt: mtpt}, nil
 }
 
 // Namespace returns the path to the name space directory.

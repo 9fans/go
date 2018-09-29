@@ -21,19 +21,20 @@ import (
 
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
+	"9fans.net/go/plan9/client"
 )
 
 // A Win represents a single acme window and its control files.
 type Win struct {
 	id         int
-	ctl        acmeFid
-	tag        acmeFid
-	body       acmeFid
-	addr       acmeFid
-	event      acmeFid
-	data       acmeFid
-	xdata      acmeFid
-	errors     acmeFid
+	ctl        *client.Fid
+	tag        *client.Fid
+	body       *client.Fid
+	addr       *client.Fid
+	event      *client.Fid
+	data       *client.Fid
+	xdata      *client.Fid
+	errors     *client.Fid
 	ebuf       *bufio.Reader
 	c          chan *Event
 	next, prev *Win
@@ -47,7 +48,7 @@ type Win struct {
 var windowsMu sync.Mutex
 var windows, last *Win
 
-var fsys acmeFsys
+var fsys *client.Fsys
 var fsysErr error
 var fsysOnce sync.Once
 
@@ -87,7 +88,7 @@ type WinInfo struct {
 
 // A LogReader provides read access to the acme log file.
 type LogReader struct {
-	f   acmeFid
+	f   *client.Fid
 	buf [8192]byte
 }
 
@@ -178,7 +179,7 @@ func Show(name string) *Win {
 // Open connects to the existing window with the given id.
 // If ctl is non-nil, Open uses it as the window's control file
 // and takes ownership of it.
-func Open(id int, ctl acmeFid) (*Win, error) {
+func Open(id int, ctl *client.Fid) (*Win, error) {
 	fsysOnce.Do(mountAcme)
 	if fsysErr != nil {
 		return nil, fsysErr
@@ -275,8 +276,8 @@ func (w *Win) OpenEvent() error {
 	return err
 }
 
-func (w *Win) fid(name string) (acmeFid, error) {
-	var f *acmeFid
+func (w *Win) fid(name string) (*client.Fid, error) {
+	var f **client.Fid
 	var mode uint8 = plan9.ORDWR
 	switch name {
 	case "addr":
