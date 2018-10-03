@@ -97,9 +97,6 @@ func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*I
 		if err == nil {
 			i.R = i.R.Inset(BorderWidth)
 		}
-		if i.Display == nil {
-			panic("nil display")
-		}
 	} else {
 		i, err = allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.id, ref)
 	}

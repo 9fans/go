@@ -47,6 +47,7 @@ func New() (*Conn, error) {
 		w1.Close()
 		return nil, fmt.Errorf("drawfcall.New: %v", err)
 	}
+
 	c := &Conn{
 		rd:      r2,
 		wr:      w1,
@@ -62,7 +63,6 @@ func New() (*Conn, error) {
 }
 
 func (c *Conn) RPC(tx, rx *Msg) error {
-	//log.Printf("tx: %v\n", tx)
 	msg := tx.Marshal()
 	ch := make(chan []byte, 1)
 	c.tag.Lock()

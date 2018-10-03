@@ -87,12 +87,6 @@ func (dst *Image) draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
 // coordinates are aligned so p1 in src and mask both correspond to r.min in
 // the destination.
 func (dst *Image) Draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
-	if dst == nil {
-		panic("nil image")
-	}
-	if dst.Display == nil {
-		panic("nil display")
-	}
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p1, mask, p1, SoverD)
