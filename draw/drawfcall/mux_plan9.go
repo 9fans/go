@@ -56,11 +56,6 @@ func New() (*Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctl.Close()
-	ctl, err = os.OpenFile(fmt.Sprintf("/dev/draw/%v/ctl", n), os.O_RDWR, 0)
-	if err != nil {
-		return nil, err
-	}
 	cons, err := os.Open("/dev/cons")
 	if err != nil {
 		return nil, err
@@ -99,10 +94,6 @@ func New() (*Conn, error) {
 		initCtl: b[:nr],
 		n:       n,
 	}, nil
-}
-
-func (c *Conn) RPC(tx, rx *Msg) error {
-	panic("unimplemented")
 }
 
 func (c *Conn) Close() error {
@@ -234,41 +225,6 @@ func bplong(b []byte, n uint32) {
 	binary.LittleEndian.PutUint32(b, n)
 }
 
-func (c *Conn) getScreenInfo() error {
-	wname, err := ioutil.ReadFile("/dev/winname")
-	if err != nil {
-		return err
-	}
-
-	id := uint32(0xffff) // TODO: ID conflict with draw package
-	b := make([]byte, 1+4+1+len(wname))
-	b[0] = 'n'
-	bplong(b[1:], id)
-	b[5] = byte(len(wname))
-	copy(b[6:], wname)
-	fmt.Printf("J buf: %q\n", b)
-	_, err = c.data.Write(b)
-	if err != nil {
-		return err
-	}
-
-	b = make([]byte, 12*12+1)
-	nr, err := c.ctl.Read(b)
-	if err != nil {
-		return err
-	}
-	c.readData = append(c.readData, b[:nr]...)
-
-	b = make([]byte, 1+4)
-	b[0] = 'f'
-	bplong(b[1:], id)
-	_, err = c.data.Write(b)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *Conn) WriteDraw(b []byte) (int, error) {
 	i := 0
 Loop:
@@ -277,10 +233,6 @@ Loop:
 		case 'J': // set image 0 to screen image
 			i++
 		case 'I': // get image info: 'I'
-			//if err := c.getScreenInfo(); err != nil {
-			//	return 0, err
-			//}
-			//log.Printf("ctl read second time: %q\n", c.readData)
 			c.readData = append(c.readData, c.initCtl...)
 			i++
 		case 'q': // query: 'Q' n[1] queryspec[n]
@@ -293,13 +245,9 @@ Loop:
 			break Loop
 		}
 	}
-	b = b[i:]
-	if len(b) == 0 {
+	if len(b[i:]) == 0 {
 		return i, nil
 	}
-	n, err := c.data.Write(b)
-	if err != nil {
-		fmt.Printf("failed WriteDraw len %v: %c %x\n", len(b), b[0], b[:50])
-	}
+	n, err := c.data.Write(b[i:])
 	return n + i, err
 }
