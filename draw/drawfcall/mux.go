@@ -223,10 +223,6 @@ func (c *Conn) Resize(r image.Rectangle) error {
 	return c.RPC(tx, rx)
 }
 
-func (c *Conn) ReadCtl(b []byte) (int, error) {
-	panic("not supported")
-}
-
 func (c *Conn) ReadDraw(b []byte) (int, error) {
 	tx := &Msg{Type: Trddraw, Count: len(b)}
 	rx := &Msg{}

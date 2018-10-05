@@ -107,13 +107,19 @@ func namedImage(d *Display, ai *Image, name string) (i *Image, err error) {
 		return nil, err
 	}
 
+	a = d.bufimage(1)
+	a[0] = 'I'
+	if err := d.flush(false); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot read image info: %v\n", err)
+		return nil, err
+	}
 	info := make([]byte, 12*12)
-	n, err = d.conn.ReadCtl(info)
+	n, err = d.conn.ReadDraw(info)
 	if err != nil {
 		return nil, err
 	}
 	if n < len(info) {
-		return nil, fmt.Errorf("short info from ReadCtl")
+		return nil, fmt.Errorf("short info from rddraw")
 	}
 
 	pix, err := ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))

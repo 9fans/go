@@ -12,22 +12,24 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Conn struct {
-	ctl     *os.File
-	data    *os.File
-	cons    *bufio.Reader
-	consctl *os.File
-	mouse   *os.File
-	snarf   *os.File
-	cursor  *os.File
-	n       int // connection number
-
+	ctl      *os.File
+	data     *os.File
+	cons     *bufio.Reader
+	consctl  *os.File
+	mouse    *os.File
+	snarf    *os.File
+	cursor   *os.File
+	n        int // connection number
 	initCtl  []byte
-	readData []byte
-
 	oldLabel string
+
+	readData []byte
+	initDone bool
+	lk       sync.Mutex
 }
 
 func New() (*Conn, error) {
@@ -203,18 +205,17 @@ func (c *Conn) Resize(r image.Rectangle) error {
 	panic("unimplemented")
 }
 
-func (c *Conn) ReadCtl(b []byte) (n int, err error) {
-	return c.ctl.Read(b)
-}
-
 func (c *Conn) ReadDraw(b []byte) (n int, err error) {
+	c.lk.Lock()
 	if len(c.readData) > 0 {
 		fmt.Printf("readData before: %q\n", c.readData)
 		n = copy(b, c.readData)
 		c.readData = c.readData[n:]
 		fmt.Printf("readData after: %q\n", c.readData)
+		c.lk.Unlock()
 		return n, nil
 	}
+	c.lk.Unlock()
 	fmt.Printf("reading from data...\n")
 	n, err = c.data.Read(b[:])
 	//fmt.Printf("ReadDraw(%v, %v): %x\n", n, err, b[:50])
@@ -232,15 +233,33 @@ Loop:
 		switch b[i] {
 		case 'J': // set image 0 to screen image
 			i++
+
 		case 'I': // get image info: 'I'
-			c.readData = append(c.readData, c.initCtl...)
+			c.lk.Lock()
+			if !c.initDone {
+				c.readData = append(c.readData, c.initCtl...)
+				c.initDone = true
+			} else {
+				b := make([]byte, 12*12)
+				n, err := c.ctl.Read(b)
+				if err != nil {
+					c.lk.Unlock()
+					return 0, err
+				}
+				c.readData = append(c.readData, b[:n]...)
+			}
+			c.lk.Unlock()
 			i++
+
 		case 'q': // query: 'Q' n[1] queryspec[n]
 			if bytes.Equal(b, []byte{'q', 1, 'd'}) {
 				dpi := fmt.Sprintf("%12d", 100)
+				c.lk.Lock()
 				c.readData = append(c.readData, []byte(dpi)...)
+				c.lk.Unlock()
 			}
 			i += 1 + 1 + int(b[1])
+
 		default:
 			break Loop
 		}
