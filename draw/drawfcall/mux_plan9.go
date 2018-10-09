@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"image"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -47,12 +46,10 @@ func New() (*Conn, error) {
 	if len(f) != 12 {
 		return nil, fmt.Errorf("bad ctl file")
 	}
-	log.Printf("ctl read first time: %q\n", b[:nr])
 	n, err := strconv.Atoi(f[0])
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("connection number %v\n", n)
 
 	data, err := os.OpenFile(fmt.Sprintf("/dev/draw/%v/data", n), os.O_RDWR, 0)
 	if err != nil {
@@ -208,18 +205,13 @@ func (c *Conn) Resize(r image.Rectangle) error {
 func (c *Conn) ReadDraw(b []byte) (n int, err error) {
 	c.lk.Lock()
 	if len(c.readData) > 0 {
-		fmt.Printf("readData before: %q\n", c.readData)
 		n = copy(b, c.readData)
 		c.readData = c.readData[n:]
-		fmt.Printf("readData after: %q\n", c.readData)
 		c.lk.Unlock()
 		return n, nil
 	}
 	c.lk.Unlock()
-	fmt.Printf("reading from data...\n")
-	n, err = c.data.Read(b[:])
-	//fmt.Printf("ReadDraw(%v, %v): %x\n", n, err, b[:50])
-	return n, err
+	return c.data.Read(b[:])
 }
 
 func bplong(b []byte, n uint32) {

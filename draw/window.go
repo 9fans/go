@@ -30,7 +30,6 @@ func (i *Image) allocScreen(fill *Image, public bool) (*Screen, error) {
 		id = screenid
 		a[0] = 'A'
 		bplong(a[1:], id)
-		fmt.Printf("allocScreen i.id = %v\n", i.id)
 		bplong(a[5:], i.id)
 		bplong(a[9:], fill.id)
 		if public {

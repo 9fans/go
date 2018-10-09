@@ -19,11 +19,11 @@ func DialService(service string) (*Conn, error) {
 }
 
 func Mount(network, addr string) (*Fsys, error) {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func MountService(service string) (*Fsys, error) {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 // Namespace returns the path to the name space directory.

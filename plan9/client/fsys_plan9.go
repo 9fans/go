@@ -12,15 +12,15 @@ type Fsys struct {
 }
 
 func (c *Conn) Attach(afid *Fid, user, aname string) (*Fsys, error) {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func (fs *Fsys) Access(name string, mode int) error {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func (fs *Fsys) Create(name string, mode uint8, perm plan9.Perm) (*Fid, error) {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func (fs *Fsys) Open(name string, mode uint8) (*Fid, error) {
@@ -29,13 +29,13 @@ func (fs *Fsys) Open(name string, mode uint8) (*Fid, error) {
 }
 
 func (fs *Fsys) Remove(name string) error {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func (fs *Fsys) Stat(name string) (*plan9.Dir, error) {
-	panic("TODO")
+	panic("unimplemented")
 }
 
 func (fs *Fsys) Wstat(name string, d *plan9.Dir) error {
-	panic("TODO")
+	panic("unimplemented")
 }
