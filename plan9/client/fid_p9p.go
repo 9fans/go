@@ -58,25 +58,10 @@ func (fid *Fid) Qid() plan9.Qid {
 }
 
 func (fid *Fid) Read(b []byte) (n int, err error) {
-	return fid.readAt(b, -1)
+	return fid.ReadAt(b, -1)
 }
 
 func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err error) {
-	for len(b) > 0 {
-		m, err := fid.readAt(b, offset)
-		if err != nil {
-			return n, err
-		}
-		n += m
-		b = b[m:]
-		if offset != -1 {
-			offset += int64(m)
-		}
-	}
-	return n, nil
-}
-
-func (fid *Fid) readAt(b []byte, offset int64) (n int, err error) {
 	msize := fid.c.msize - plan9.IOHDRSZ
 	n = len(b)
 	if uint32(n) > msize {
