@@ -26,9 +26,9 @@ type Conn struct {
 	initCtl  []byte
 	oldLabel string
 
-	readData []byte
-	initDone bool
-	lk       sync.Mutex
+	readData   []byte
+	ctlWasRead bool
+	lk         sync.Mutex
 }
 
 func New() (*Conn, error) {
@@ -228,9 +228,9 @@ Loop:
 
 		case 'I': // get image info: 'I'
 			c.lk.Lock()
-			if !c.initDone {
+			if !c.ctlWasRead {
 				c.readData = append(c.readData, c.initCtl...)
-				c.initDone = true
+				c.ctlWasRead = true
 			} else {
 				b := make([]byte, 12*12)
 				n, err := c.ctl.Read(b)
