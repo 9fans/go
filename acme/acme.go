@@ -170,7 +170,7 @@ func Show(name string) *Win {
 	for w := windows; w != nil; w = w.next {
 		if w.name == name {
 			if err := w.Ctl("show"); err != nil {
-				w.drop()
+				w.dropLocked()
 				return nil
 			}
 			return w
@@ -552,6 +552,10 @@ func (w *Win) eventReader() {
 func (w *Win) drop() {
 	windowsMu.Lock()
 	defer windowsMu.Unlock()
+	w.dropLocked()
+}
+
+func (w *Win) dropLocked() {
 	if w.prev == nil && w.next == nil && windows != w {
 		return
 	}
