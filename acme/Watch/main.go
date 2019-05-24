@@ -185,10 +185,11 @@ func runner() {
 		id := run.id
 		run.Unlock()
 		if lastcmd != nil {
-			lastcmd.Process.Kill()
+			syscall.Kill(-lastcmd.Process.Pid, syscall.SIGKILL)
 		}
 		lastcmd = nil
 		cmd := exec.Command(args[0], args[1:]...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 		r, w, err := os.Pipe()
 		if err != nil {
 			log.Fatal(err)
