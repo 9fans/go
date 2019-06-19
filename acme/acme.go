@@ -12,6 +12,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"path"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,6 +49,7 @@ type Win struct {
 
 var windowsMu sync.Mutex
 var windows, last *Win
+var autoExit bool
 
 var fsys *client.Fsys
 var fsysErr error
@@ -53,6 +57,15 @@ var fsysOnce sync.Once
 
 func mountAcme() {
 	fsys, fsysErr = client.MountService("acme")
+}
+
+// AutoExit sets whether to call os.Exit the next time the last managed acme window is deleted.
+// If there are no acme windows at the time of the call, the exit does not happen until one
+// is created and then deleted.
+func AutoExit(exit bool) {
+	windowsMu.Lock()
+	defer windowsMu.Unlock()
+	autoExit = exit
 }
 
 // New creates a new window.
@@ -545,6 +558,7 @@ func (w *Win) eventReader() {
 		}
 		w.c <- e
 	}
+	w.c <- new(Event) // make sure event reader is done processing last event; drop might exit
 	w.drop()
 	close(w.c)
 }
@@ -571,6 +585,9 @@ func (w *Win) dropLocked() {
 	}
 	w.prev = nil
 	w.next = nil
+	if autoExit && windows == nil {
+		os.Exit(0)
+	}
 }
 
 var fontCache struct {
@@ -625,7 +642,7 @@ func (w *Win) Font() (tab int, font *draw.Font, err error) {
 }
 
 // Blink starts the window tag blinking and returns a function that stops it.
-// When stop returns, the blinking is over.
+// When stop returns, the blinking is over and the window state is clean.
 func (w *Win) Blink() (stop func()) {
 	c := make(chan struct{})
 	go func() {
@@ -642,9 +659,7 @@ func (w *Win) Blink() (stop func()) {
 					w.Ctl("clean")
 				}
 			case <-c:
-				if dirty {
-					w.Ctl("clean")
-				}
+				w.Ctl("clean")
 				c <- struct{}{}
 				return
 			}
@@ -778,7 +793,7 @@ func (w *Win) EventLoop(h EventHandler) {
 		switch e.C2 {
 		case 'x', 'X': // execute
 			cmd := strings.TrimSpace(string(e.Text))
-			if !h.Execute(cmd) {
+			if !w.execute(h, cmd) {
 				w.WriteEvent(e)
 			}
 		case 'l', 'L': // look
@@ -789,6 +804,70 @@ func (w *Win) EventLoop(h EventHandler) {
 			}
 		}
 	}
+}
+
+func (w *Win) execute(h EventHandler, cmd string) bool {
+	verb, arg := cmd, ""
+	if i := strings.IndexAny(verb, " \t"); i >= 0 {
+		verb, arg = verb[:i], strings.TrimSpace(verb[i+1:])
+	}
+
+	// Look for specific method.
+	m := reflect.ValueOf(h).MethodByName("Exec" + verb)
+	if !m.IsValid() {
+		// Fall back to general Execute.
+		return h.Execute(cmd)
+	}
+
+	// Found method.
+	// Committed to handling the event.
+	// All returns below should be return true.
+
+	// Check method signature.
+	t := m.Type()
+	switch t.NumOut() {
+	default:
+		w.Errf("bad method %s: too many results", cmd)
+		return true
+	case 0:
+		// ok
+	case 1:
+		if t.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
+			w.Errf("bad method %s: return type %v, not error", t.Out(0))
+			return true
+		}
+	}
+	varg := reflect.ValueOf(arg)
+	switch t.NumIn() {
+	default:
+		w.Errf("bad method %s: too many arguments", cmd)
+		return true
+	case 0:
+		if arg != "" {
+			w.Errf("%s takes no arguments", cmd)
+			return true
+		}
+	case 1:
+		if t.In(0) != varg.Type() {
+			w.Errf("bad method %s: argument type %v, not string", cmd, t.In(0))
+			return true
+		}
+	}
+
+	args := []reflect.Value{}
+	if t.NumIn() > 0 {
+		args = append(args, varg)
+	}
+	out := m.Call(args)
+	var err error
+	if len(out) == 1 {
+		err = out[0].Interface().(error)
+	}
+	if err != nil {
+		w.Errf("%v", err)
+	}
+
+	return true
 }
 
 func (w *Win) Selection() string {
@@ -804,11 +883,29 @@ func (w *Win) SetErrorPrefix(p string) {
 	w.errorPrefix = p
 }
 
-func (w *Win) Err(s string) {
-	if !strings.HasSuffix(s, "\n") {
-		s = s + "\n"
+// Err finds or creates a window appropriate for showing errors related to w
+// and then prints msg to that window.
+// It adds a final newline to msg if needed.
+func (w *Win) Err(msg string) {
+	Err(w.errorPrefix, msg)
+}
+
+func (w *Win) Errf(format string, args ...interface{}) {
+	w.Err(fmt.Sprintf(format, args...))
+}
+
+// Err finds or creates a window appropriate for showing errors related to a window titled src
+// and then prints msg to that window. It adds a final newline to msg if needed.
+func Err(src, msg string) {
+	if !strings.HasSuffix(msg, "\n") {
+		msg = msg + "\n"
 	}
-	w1 := Show(w.errorPrefix + "+Errors")
+	prefix, _ := path.Split(src)
+	if prefix == "/" || prefix == "." {
+		prefix = ""
+	}
+	name := prefix + "+Errors"
+	w1 := Show(name)
 	if w1 == nil {
 		var err error
 		w1, err = New()
@@ -819,10 +916,17 @@ func (w *Win) Err(s string) {
 				log.Fatalf("cannot create +Errors window")
 			}
 		}
-		w1.Name("%s", w.errorPrefix+"+Errors")
+		w1.Name("%s", name)
 	}
-	w1.Fprintf("body", "%s", s)
 	w1.Addr("$")
 	w1.Ctl("dot=addr")
+	w1.Fprintf("body", "%s", msg)
+	w1.Addr(".,")
+	w1.Ctl("dot=addr")
 	w1.Ctl("show")
+}
+
+// Errf is like Err but accepts a printf-style formatting.
+func Errf(src, format string, args ...interface{}) {
+	Err(src, fmt.Sprintf(format, args...))
 }
