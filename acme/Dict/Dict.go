@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 	w.Name("/dict/")
-	d, err = dict.Dial("tcp", "216.93.242.2:dict")
+	d, err = dict.Dial("tcp", *server)
 	if err != nil {
 		w.Write("body", []byte(err.Error()))
 		return
