@@ -176,6 +176,11 @@ func Windows() ([]WinInfo, error) {
 	return info, nil
 }
 
+// Show looks and causes acme to show the window with the given name,
+// returning that window.
+// If this process has not created a window with the given name
+// (or if any such window has since been deleted),
+// Show returns nil.
 func Show(name string) *Win {
 	windowsMu.Lock()
 	defer windowsMu.Unlock()
