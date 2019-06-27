@@ -838,7 +838,7 @@ func (w *Win) execute(h EventHandler, cmd string) bool {
 		// ok
 	case 1:
 		if t.Out(0) != reflect.TypeOf((*error)(nil)).Elem() {
-			w.Errf("bad method %s: return type %v, not error", t.Out(0))
+			w.Errf("bad method %s: return type %v, not error", cmd, t.Out(0))
 			return true
 		}
 	}
