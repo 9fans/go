@@ -866,7 +866,7 @@ func (w *Win) execute(h EventHandler, cmd string) bool {
 	out := m.Call(args)
 	var err error
 	if len(out) == 1 {
-		err = out[0].Interface().(error)
+		err, _ = out[0].Interface().(error)
 	}
 	if err != nil {
 		w.Errf("%v", err)
