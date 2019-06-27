@@ -110,7 +110,7 @@ func reformat(id int, name string) {
 		return
 	}
 	if !bytes.Equal(old, latest) {
-		log.Printf("skipped update to %s: window modified since Put\n", name, len(old), len(latest))
+		log.Printf("skipped update to %s: window modified since Put\n", name)
 		return
 	}
 
