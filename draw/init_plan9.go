@@ -53,6 +53,7 @@ type Display struct {
 	DefaultFont    *Font
 	DefaultSubfont *Subfont
 
+	dir	string
 	conn        *drawFile
 	ctl         *os.File
 	mousectl    *Mousectl
@@ -159,8 +160,8 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	id := atoi(info[:1*12])
-	drawDir := fmt.Sprintf("/dev/draw/%d", id)
-	fd, err := os.OpenFile(drawDir+"/data", os.O_RDWR|syscall.O_CLOEXEC, 0666)
+	d.dir = fmt.Sprintf("/dev/draw/%d", id)
+	fd, err := os.OpenFile(d.dir+"/data", os.O_RDWR|syscall.O_CLOEXEC, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -263,6 +264,13 @@ func (d *Display) getwindow(ref int) error {
 // If reattaching, maintain value of screen pointer.
 func gengetwindow(d *Display, winname string, ref int) error {
 	var i *Image
+	var err error
+
+	d.ctl.Close()
+	d.ctl, err = os.OpenFile(d.dir + "/ctl", os.O_RDWR|syscall.O_CLOEXEC, 0666)
+	if err != nil {
+		return err
+	}
 
 	buf, err := ioutil.ReadFile(winname)
 	if err != nil {
