@@ -9,7 +9,7 @@ import (
 // error. No error is returned if there is no problem except for buf being too
 // short.
 func (d *Display) ReadSnarf(buf []byte) (int, int, error) {
-	sbuf, err := ioutil.ReadFile(d.mtpt + "/snarf")
+	sbuf, err := ioutil.ReadFile("/dev/snarf")
 	if err != nil {
 		return -1, -1, err
 	}
@@ -23,5 +23,5 @@ func (d *Display) ReadSnarf(buf []byte) (int, int, error) {
 
 // WriteSnarf writes the data to the snarf buffer.
 func (d *Display) WriteSnarf(data []byte) error {
-	return ioutil.WriteFile(d.mtpt+"/snarf", data, 0666)
+	return ioutil.WriteFile("/dev/snarf", data, 0666)
 }
