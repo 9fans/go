@@ -88,7 +88,7 @@ Errbad:
 	return nil, fmt.Errorf("bad font format: number expected (char position %d)", len(buf)-len(s))
 }
 
-/// Free frees the server resources for the Font. Fonts have a finalizer that
+// Free frees the server resources for the Font. Fonts have a finalizer that
 // calls Free automatically, if necessary, for garbage collected Images, but it
 // is more efficient to be explicit.
 // TODO: Implement the Finalizer!
