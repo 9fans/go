@@ -9,7 +9,7 @@ import (
 func (dst *Image) String(pt image.Point, src *Image, sp image.Point, f *Font, s string) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, SoverD)
+	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.Point{}, SoverD)
 }
 
 // StringOp draws the string in the specified font, placing the upper left corner at p.
@@ -17,7 +17,7 @@ func (dst *Image) String(pt image.Point, src *Image, sp image.Point, f *Font, s 
 func (dst *Image) StringOp(pt image.Point, src *Image, sp image.Point, f *Font, s string, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.ZP, op)
+	return _string(dst, pt, src, sp, f, s, nil, nil, dst.Clipr, nil, image.Point{}, op)
 }
 
 // StringBg draws the string in the specified font, placing the upper left corner at p.
@@ -43,7 +43,7 @@ func (dst *Image) StringBgOp(pt image.Point, src *Image, sp image.Point, f *Font
 func (dst *Image) Runes(pt image.Point, src *Image, sp image.Point, f *Font, r []rune) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, SoverD)
+	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.Point{}, SoverD)
 }
 
 // RunesOp draws the rune slice in the specified font, placing the upper left corner at p.
@@ -51,7 +51,7 @@ func (dst *Image) Runes(pt image.Point, src *Image, sp image.Point, f *Font, r [
 func (dst *Image) RunesOp(pt image.Point, src *Image, sp image.Point, f *Font, r []rune, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.ZP, op)
+	return _string(dst, pt, src, sp, f, "", nil, r, dst.Clipr, nil, image.Point{}, op)
 }
 
 // RunesBg draws the rune slice in the specified font, placing the upper left corner at p.
@@ -77,7 +77,7 @@ func (dst *Image) RunesBgOp(pt image.Point, src *Image, sp image.Point, f *Font,
 func (dst *Image) Bytes(pt image.Point, src *Image, sp image.Point, f *Font, b []byte) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.ZP, SoverD)
+	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.Point{}, SoverD)
 }
 
 // BytesOp draws the byte slice in the specified font, placing the upper left corner at p.
@@ -85,7 +85,7 @@ func (dst *Image) Bytes(pt image.Point, src *Image, sp image.Point, f *Font, b [
 func (dst *Image) BytesOp(pt image.Point, src *Image, sp image.Point, f *Font, b []byte, op Op) image.Point {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.ZP, op)
+	return _string(dst, pt, src, sp, f, "", b, nil, dst.Clipr, nil, image.Point{}, op)
 }
 
 // BytesBg draws the rune slice in the specified font, placing the upper left corner at p.

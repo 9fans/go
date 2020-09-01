@@ -12,7 +12,7 @@ func (d *Display) AllocImageMix(color1, color3 Color) *Image {
 	if d.ScreenImage.Depth <= 8 { // create a 2x2 texture
 		t, _ := d.allocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, false, color1)
 		b, _ := d.allocImage(image.Rect(0, 0, 2, 2), d.ScreenImage.Pix, true, color3)
-		b.draw(image.Rect(0, 0, 1, 1), t, nil, image.ZP)
+		b.draw(image.Rect(0, 0, 1, 1), t, nil, image.Point{})
 		t.free()
 		return b
 	}
@@ -23,7 +23,7 @@ func (d *Display) AllocImageMix(color1, color3 Color) *Image {
 	}
 	t, _ := d.allocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, true, color1)
 	b, _ := d.allocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, true, color3)
-	b.draw(b.R, t, d.qmask, image.ZP)
+	b.draw(b.R, t, d.qmask, image.Point{})
 	t.free()
 	return b
 }

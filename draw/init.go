@@ -169,7 +169,7 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	screen := d.ScreenImage
-	screen.draw(screen.R, d.White, nil, image.ZP)
+	screen.draw(screen.R, d.White, nil, image.Point{})
 	if err := d.flush(true); err != nil {
 		log.Fatal(err)
 	}
@@ -361,7 +361,7 @@ func bpshort(b []byte, n uint16) {
 }
 
 func (d *Display) HiDPI() bool {
-	return d.DPI >= DefaultDPI*3/2 
+	return d.DPI >= DefaultDPI*3/2
 }
 
 func (d *Display) ScaleSize(n int) int {
