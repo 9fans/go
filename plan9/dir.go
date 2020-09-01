@@ -130,7 +130,7 @@ type Perm uint32
 
 type permChar struct {
 	bit Perm
-	c   int
+	c   rune
 }
 
 var permChars = []permChar{
@@ -165,21 +165,21 @@ var permChars = []permChar{
 }
 
 func (p Perm) String() string {
-	s := ""
+	r := make([]rune, 0)
 	did := false
 	for _, pc := range permChars {
 		if p&pc.bit != 0 {
 			did = true
-			s += string(pc.c)
+			r = append(r, pc.c)
 		}
 		if pc.bit == 0 {
 			if !did {
-				s += string(pc.c)
+				r = append(r, pc.c)
 			}
 			did = false
 		}
 	}
-	return s
+	return string(r)
 }
 
 func gperm(b []byte) (Perm, []byte) {
