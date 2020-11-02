@@ -61,9 +61,6 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 	args = flag.Args()
-	if len(args) == 0 {
-		usage()
-	}
 
 	var err error
 	win, err = acme.New()
@@ -73,8 +70,10 @@ func main() {
 	pwd, _ := os.Getwd()
 	win.Name(pwd + "/+watch")
 	win.Ctl("clean")
+	win.Ctl("dumpdir " + pwd)
+	win.Ctl("dump Watch")
 	win.Fprintf("tag", "Get Kill Quit ")
-	win.Fprintf("body", "$ %s\n", strings.Join(args, " "))
+	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
 	needrun <- true
 	go events()
@@ -224,6 +223,9 @@ func runBackground(id int) {
 			win.Addr("#%d", q0)
 			win.Write("data", []byte("% \n"))
 			win.Ctl("clean")
+			win.Addr("#%d", m0)
+			win.Ctl("dot=addr")
+			win.Ctl("show")
 			run.Unlock()
 			return
 		}
