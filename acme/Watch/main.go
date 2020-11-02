@@ -49,9 +49,17 @@ import (
 var args []string
 var win *acme.Win
 var needrun = make(chan bool, 1)
+var watchChildren bool
+
+func pathmatch(putFile, pwd string) bool {
+	if watchChildren {
+		return strings.HasPrefix(putFile, pwd)
+	}
+	return path.Dir(putFile) == pwd
+}
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: Watch cmd args...\n")
+	fmt.Fprintf(os.Stderr, "usage: Watch [-r] cmd args...\n")
 	os.Exit(2)
 }
 
@@ -59,6 +67,7 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("Watch: ")
 	flag.Usage = usage
+	flag.BoolVar(&watchChildren, "r", false, "Run the command for Put operations in child directories as well")
 	flag.Parse()
 	args = flag.Args()
 	if len(args) == 0 {
@@ -89,7 +98,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if ev.Op == "put" && path.Dir(ev.Name) == pwd {
+		if ev.Op == "put" && pathmatch(ev.Name, pwd) {
 			select {
 			case needrun <- true:
 			default:
