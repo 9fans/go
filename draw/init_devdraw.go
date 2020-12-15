@@ -1,3 +1,5 @@
+// +build !plan9
+
 package draw
 
 import (
@@ -87,6 +89,9 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	c, err := drawfcall.New()
 	if err != nil {
 		return nil, err
+	}
+	if errch == nil {
+		errch = make(chan error)
 	}
 	d := &Display{
 		conn:    c,
@@ -361,7 +366,7 @@ func bpshort(b []byte, n uint16) {
 }
 
 func (d *Display) HiDPI() bool {
-	return d.DPI >= DefaultDPI*3/2 
+	return d.DPI >= DefaultDPI*3/2
 }
 
 func (d *Display) ScaleSize(n int) int {

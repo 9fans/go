@@ -86,23 +86,18 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 	return i, nil
 }
 
-/*
-func namedimage(d *Display, name string) (*Image, nil) {
-	panic("namedimage")
-}
-
+/* implements message 'N' */
 func nameimage(i *Image, name string, in bool) error {
-	a := i.Display.bufimage(1+4+1+1+len(name))
+	a := i.Display.bufimage(1 + 4 + 1 + 1 + len(name))
 	a[0] = 'N'
-	bplong(a[1:], i.ID)
+	bplong(a[1:], i.id)
 	if in {
 		a[5] = 1
 	}
-	a[6] = len(name)
+	a[6] = byte(len(name))
 	copy(a[7:], name)
-	return d.flushimage(false)
+	return i.Display.flush(false)
 }
-*/
 
 func (i *Image) free() error {
 	if i == nil || i.Display == nil {

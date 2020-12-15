@@ -1,3 +1,5 @@
+// +build !plan9
+
 package draw
 
 // ReadSnarf reads the snarf buffer into buf, returning the number of bytes read,

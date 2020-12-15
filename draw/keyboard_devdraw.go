@@ -1,6 +1,6 @@
-package draw
+// +build !plan9
 
-import "log"
+package draw
 
 const (
 	KeyFn = '\uF000'
@@ -42,7 +42,11 @@ func kbdproc(d *Display, ch chan rune) {
 	for {
 		r, err := d.conn.ReadKbd()
 		if err != nil {
-			log.Fatal(err)
+			select {
+			case d.errch <- err:
+			default:
+			}
+			return
 		}
 		ch <- r
 	}
