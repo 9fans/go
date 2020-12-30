@@ -49,9 +49,10 @@ import (
 var args []string
 var win *acme.Win
 var needrun = make(chan bool, 1)
+var recursive = flag.Bool("r", false, "watch all subdirectories recursively")
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: Watch cmd args...\n")
+	fmt.Fprintf(os.Stderr, "usage: Watch [-r] cmd args...\n")
 	os.Exit(2)
 }
 
@@ -68,10 +69,15 @@ func main() {
 		log.Fatal(err)
 	}
 	pwd, _ := os.Getwd()
-	win.Name(pwd + "/+watch")
+	pwdSlash := strings.TrimSuffix(pwd, "/") + "/"
+	win.Name(pwdSlash + "+watch")
 	win.Ctl("clean")
 	win.Ctl("dumpdir " + pwd)
-	win.Ctl("dump Watch")
+	cmd := "dump Watch"
+	if *recursive {
+		cmd += " -r"
+	}
+	win.Ctl(cmd)
 	win.Fprintf("tag", "Get Kill Quit ")
 	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
@@ -88,7 +94,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if ev.Op == "put" && path.Dir(ev.Name) == pwd {
+		if ev.Op == "put" && (path.Dir(ev.Name) == pwd || *recursive && strings.HasPrefix(ev.Name, pwdSlash)) {
 			select {
 			case needrun <- true:
 			default:
