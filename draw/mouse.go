@@ -19,10 +19,20 @@ type Mouse struct {
 // TODO: Mouse field is racy but okay.
 
 // Mousectl holds the interface to receive mouse events.
-// The Mousectl's Mouse is updated after send so it doesn't
-// have the wrong value if the sending goroutine blocks during send.
-// This means that programs should receive into Mousectl.Mouse
-//  if they want full synchrony.
+//
+// This Go library differs from the Plan 9 C library in its updating
+// of Mouse. Updating the Mouse field is the duty of every
+// receiver from C. The Read method does the update, but any use
+// of C in a select needs to update the field as well, as in:
+//
+//	case mc.Mouse <- mc.C:
+//
+// In the Plan 9 C library, the sender does the write after the send,
+// but that write could not be relied upon due to scheduling delays,
+// so receivers conventionally also did the write, as above.
+// This write-write race, while harmless, impedes using the race detector
+// to find more serious races, and it is easily avoided:
+// the receiver is now in charge of updating Mouse.
 type Mousectl struct {
 	Mouse                // Store Mouse events here.
 	C       <-chan Mouse // Channel of Mouse events.
@@ -47,17 +57,14 @@ func mouseproc(mc *Mousectl, d *Display, ch chan Mouse, rch chan bool) {
 	for {
 		m, resized, err := d.conn.ReadMouse()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("readmouse: ", err)
 		}
 		if resized {
 			rch <- true
 		}
 		mm := Mouse{image.Point{m.X, m.Y}, m.Buttons, uint32(m.Msec)}
 		ch <- mm
-		/*
-		 * See comment above.
-		 */
-		mc.Mouse = mm
+		// No "mc.Mouse = mm" here! See Mousectl doc comment.
 	}
 }
 

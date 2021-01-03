@@ -19,14 +19,15 @@ import (
 
 // A Display represents a connection to a display.
 type Display struct {
-	mu      sync.Mutex // See comment above.
-	conn    *drawfcall.Conn
-	errch   chan<- error
-	bufsize int
-	buf     []byte
-	imageid uint32
-	qmask   *Image
-	locking bool
+	mu       sync.Mutex // See comment above.
+	conn     *drawfcall.Conn
+	errch    chan<- error
+	bufsize  int
+	buf      []byte
+	imageid  uint32
+	qmask    *Image
+	locking  bool
+	flushErr int
 
 	Image       *Image
 	Screen      *Screen
@@ -165,13 +166,13 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 		return nil, err
 	}
 	if err := d.flush(true); err != nil {
-		log.Fatal(err)
+		log.Fatal("allocwindow flush: ", err)
 	}
 
 	screen := d.ScreenImage
 	screen.draw(screen.R, d.White, nil, image.ZP)
 	if err := d.flush(true); err != nil {
-		log.Fatal(err)
+		log.Fatal("draw flush: ", err)
 	}
 
 	return d, nil
@@ -247,7 +248,7 @@ func (d *Display) Attach(ref int) error {
 	d.ScreenImage.free()
 	d.ScreenImage, err = allocwindow(d.ScreenImage, d.Screen, i.R, ref, White)
 	if err != nil {
-		log.Fatal("aw", err)
+		log.Fatal("allocwindow: ", err)
 	}
 
 	if d.HiDPI() {
@@ -284,9 +285,16 @@ func (d *Display) flushBuffer() error {
 	_, err := d.conn.WriteDraw(d.buf)
 	d.buf = d.buf[:0]
 	if err != nil {
+		if d.flushErr++; d.flushErr > 100 {
+			panic("draw flush: error loop: " + err.Error())
+		}
+		if d.flushErr > 110 {
+			log.Fatalf("draw flush: error loop: " + err.Error())
+		}
 		fmt.Fprintf(os.Stderr, "draw flush: %v\n", err)
 		return err
 	}
+	d.flushErr = 0
 	return nil
 }
 
@@ -361,7 +369,7 @@ func bpshort(b []byte, n uint16) {
 }
 
 func (d *Display) HiDPI() bool {
-	return d.DPI >= DefaultDPI*3/2 
+	return d.DPI >= DefaultDPI*3/2
 }
 
 func (d *Display) ScaleSize(n int) int {
