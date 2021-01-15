@@ -1,5 +1,17 @@
 package draw
 
+const (
+	/* line ends */
+	EndSquare = 0
+	EndDisc   = 1
+	EndArrow  = 2
+	EndMask   = 0x1F
+)
+
+func Arrow(a, b, c int) int {
+	return EndArrow | a<<5 | b<<14 | c<<23
+}
+
 // Line draws a line in the source color from p0 to p1, of thickness
 // 1+2*radius, with the specified ends, using SoverD. The source is aligned so
 // sp corresponds to p0. See the Plan 9 documentation for more information.
