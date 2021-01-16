@@ -15,8 +15,6 @@ type Mouse struct {
 	Msec    uint32 // Time stamp in milliseconds.
 }
 
-// TODO: Mouse field is racy but okay.
-
 // Mousectl holds the interface to receive mouse events.
 //
 // This Go library differs from the Plan 9 C library in its updating
