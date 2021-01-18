@@ -1,0 +1,31 @@
+B tmp
+a
+hello
+world
+.
+B tmp2
+a
+goodbye
+world
+.
+X ,x/./ g/e/ c/E/
+X/'/w
+X D
+B tmp
+B tmp2
+X
+X ,x g/E/ p
+-- out --
+ -.
+ -. tmp
+?can't open "tmp": no such file or directory
+ -. tmp2
+?can't open "tmp2": no such file or directory
+tmp: (new file) #12
+tmp2: (new file) #14
+ -. tmp
+ -. tmp2
+ -. tmp
+ -. tmp2
+hEllo
+goodbyE

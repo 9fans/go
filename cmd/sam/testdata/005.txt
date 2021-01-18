@@ -1,0 +1,7 @@
+B address.go buff.go cmd.go
+X ,x g/asfasdfs/
+-- out --
+ -.
+ -. cmd.go
+ -  address.go
+ -  buff.go

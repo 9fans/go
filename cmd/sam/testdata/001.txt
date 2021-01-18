@@ -1,0 +1,9 @@
+B testdata/gettysburg
+,s/ago/AGO/g
+X ,x/[a-z]+/ g/and/ c/AND/
+1
+-- out --
+ -.
+ -. testdata/gettysburg
+  Four score AND seven years AGO our fathers brought forth on
+?changed files

@@ -1,0 +1,13 @@
+B <echo address.go buff.go cmd.go
+X ,x g/asfasdfs/
+X
+-- out --
+ -.
+!
+ -. cmd.go
+ -  address.go
+ -  buff.go
+ -.
+ -. address.go
+ -. buff.go
+ -. cmd.go

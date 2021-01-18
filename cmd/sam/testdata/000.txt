@@ -1,0 +1,6 @@
+B testdata/gettysburg
+1
+-- out --
+ -.
+ -. testdata/gettysburg
+  Four score and seven years ago our fathers brought forth on

@@ -1,0 +1,8 @@
+B testdata/gettysburg
+/dedicate/=
+/dedicate/=#
+-- out --
+ -.
+ -. testdata/gettysburg
+2; #118,#126
+#118,#126

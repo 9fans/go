@@ -1,0 +1,17 @@
+B testdata/gettysburg
+#20,#30p
+/\n/p
+10
+/perish/-+
+0-+
+/n(O|o)bly/-+
+/^nation/;/dedicated/-+
+-- out --
+ -.
+ -. testdata/gettysburg
+en years a
+nation might live.  It is altogether fitting and proper that
+people, for the people, shall not perish from this earth.
+  Four score and seven years ago our fathers brought forth on
+nobly advanced.  It is rather for us to be here dedicated to
+nation, or any nation so conceived and so dedicated, can long

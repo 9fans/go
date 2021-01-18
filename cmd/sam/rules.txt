@@ -1,0 +1,95 @@
+BACK -> frame.BACK
+BORD -> frame.BORD
+C.char -> int8
+C.short -> int
+Cursor -> draw.Cursor
+DDarkyellow -> draw.Darkyellow
+DNofill -> draw.Nofill
+DPalebluegreen -> draw.Palebluegreen
+DPalegreygreen -> draw.Palegreygreen
+DPaleyellow -> draw.Paleyellow
+DPurpleblue -> draw.Purpleblue
+DWhite -> draw.White
+DYellowgreen -> draw.Yellowgreen
+Display -> draw.Display
+Dx(r) -> r.Dx()
+Dy(r) -> r.Dy()
+Font -> draw.Font
+Frame -> frame.Frame
+HIGH -> frame.HIGH
+HTEXT -> frame.HTEXT
+Image -> draw.Image
+Keyboardctl -> draw.Keyboardctl
+Menu -> draw.Menu
+Mouse -> draw.Mouse
+Mousectl -> draw.Mousectl
+NCOL -> frame.NCOL
+Plumbmsg -> plumb.Message
+Point -> image.Point
+Pt -> image.Pt
+Rect -> image.Rect
+Rectangle -> image.Rectangle
+Rune -> rune
+TEXT -> frame.TEXT
+ZP -> image.ZP
+ZR -> image.ZR
+addpt(p, q) -> p.Add(q)
+allocimage(d, r, p, 0, c) -> d.AllocImage(r, p, false, c)
+allocimage(d, r, p, 1, c) -> d.AllocImage(r, p, true, c)
+allocimagemix(d, c, b) -> d.AllocImageMix(c, b)
+border(i, r, w, s, p) -> i.Border(r, w, s, p)
+draw(i, r, s, m, p) -> i.Draw(r, s, m, p)
+eqpt(p, q) -> p.Eq(q)
+eqrect(r, s) -> r.Eq(s)
+f.nchars -> f.NumChars
+flushimage(d, 1) -> d.Flush()
+fmt.Fprintf(2, a) -> fmt.Fprintf(os.Stderr, a)
+fmt.Fprintf(2, a, b) -> fmt.Fprintf(os.Stderr, a, b)
+fmt.Fprintf(2, a, b, c) -> fmt.Fprintf(os.Stderr, a, b, c)
+fmt.Fprintf(2, a, b, c, d) -> fmt.Fprintf(os.Stderr, a, b, c, d)
+fmt.Fprintf(2, a, b, c, d, e) -> fmt.Fprintf(os.Stderr, a, b, c, d, e)
+fmt.Fprintf(2, a, b, c, d, e, f) -> fmt.Fprintf(os.Stderr, a, b, c, d, e, f)
+fprint -> fmt.Fprintf
+frcharofpt(f, p) -> f.CharOf(p)
+frclear(f, 0) -> f.Clear(false)
+frclear(f, 1) -> f.Clear(true)
+frdelete(f, a, b) -> f.Delete(a, b)
+frdrawsel(f, p, q, r, 0) -> f.Drawsel(p, q, r, false)
+frdrawsel(f, p, q, r, 1) -> f.Drawsel(p, q, r, true)
+freeimage(i) -> i.Free()
+frinit(f, a, b, c, d) -> f.Init(a, b, c, d)
+frinsert(f, a, b, c) -> f.Insert(a, b, c)
+frptofchar(f, i) -> f.PointOf(i)
+frselect(f, m) -> f.Select(m)
+frsetrects(f, r, b) -> f.SetRects(r, b)
+frtick(f, p, t) -> f.Tick(p, t)
+getrect -> draw.SweepRect
+i.chan_ -> i.Pix
+initkeyboard(x) -> display.InitKeyboard()
+initmouse(x, i) -> display.InitMouse()
+insetrect(r, d) -> r.Inset(d)
+l.user1 -> l.text
+m.xy -> m.Point
+menuhit -> draw.MenuHit
+moveto(m, p) -> display.MoveTo(p)
+ptinrect(p, r) -> p.In(r)
+rectaddpt(r, p) -> r.Add(p)
+rectclip -> draw.RectClip
+rectsubpt(r, p) -> r.Sub(p)
+scalesize(d, i) -> d.ScaleSize(i)
+setcursor(m, c) -> display.SetCursor(c)
+stringwidth(f, s) -> f.StringWidth(s)
+subpt(p, q) -> p.Sub(q)
+uchar -> uint8
+ulong -> int
+ushort -> int
+vlong -> int64
+getwindow(d, r) -> display.Attach(r)
+Refnone -> display.Refnone
+dup -> syscall.Dup2
+close -> syscall.Close
+open -> syscall.Open
+OREAD -> syscall.O_RDONLY
+OWRITE -> syscall.O_WRONLY
+utfrune(x, y) != 0 -> strings.ContainsRune(x, y)
+*int8 -> string
