@@ -17,10 +17,6 @@
 //
 package draw // import "9fans.net/go/draw"
 
-import (
-	"image"
-)
-
 // Op represents a Porter-Duff compositing operator.
 type Op int
 
@@ -54,7 +50,7 @@ func setdrawop(d *Display, op Op) {
 	}
 }
 
-func draw(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
+func draw(dst *Image, r Rectangle, src *Image, p0 Point, mask *Image, p1 Point, op Op) {
 	setdrawop(dst.Display, op)
 
 	a := dst.Display.bufimage(1 + 4 + 4 + 4 + 4*4 + 2*4 + 2*4)
@@ -78,7 +74,7 @@ func draw(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image
 	bplong(a[41:], uint32(p1.Y))
 }
 
-func (dst *Image) draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
+func (dst *Image) draw(r Rectangle, src, mask *Image, p1 Point) {
 	draw(dst, r, src, p1, mask, p1, SoverD)
 }
 
@@ -86,7 +82,7 @@ func (dst *Image) draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
 // rectangle r, through the specified mask using operation SoverD. The
 // coordinates are aligned so p1 in src and mask both correspond to r.min in
 // the destination.
-func (dst *Image) Draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
+func (dst *Image) Draw(r Rectangle, src, mask *Image, p1 Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p1, mask, p1, SoverD)
@@ -96,7 +92,7 @@ func (dst *Image) Draw(r image.Rectangle, src, mask *Image, p1 image.Point) {
 // rectangle r, through the specified mask using the specified operation. The
 // coordinates are aligned so p1 in src and mask both correspond to r.min in
 // the destination.
-func (dst *Image) DrawOp(r image.Rectangle, src, mask *Image, p1 image.Point, op Op) {
+func (dst *Image) DrawOp(r Rectangle, src, mask *Image, p1 Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p1, mask, p1, op)
@@ -106,7 +102,7 @@ func (dst *Image) DrawOp(r image.Rectangle, src, mask *Image, p1 image.Point, op
 // rectangle r, through the specified mask using operation SoverD. The
 // coordinates are aligned so p1 in src and p0 in mask both correspond to r.min in
 // the destination.
-func (dst *Image) GenDraw(r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point) {
+func (dst *Image) GenDraw(r Rectangle, src *Image, p0 Point, mask *Image, p1 Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p0, mask, p1, SoverD)
@@ -116,7 +112,7 @@ func (dst *Image) GenDraw(r image.Rectangle, src *Image, p0 image.Point, mask *I
 // rectangle r, through the specified mask using the specified operation. The
 // coordinates are aligned so p1 in src and p0 in mask both correspond to r.min in
 // the destination.
-func GenDrawOp(dst *Image, r image.Rectangle, src *Image, p0 image.Point, mask *Image, p1 image.Point, op Op) {
+func GenDrawOp(dst *Image, r Rectangle, src *Image, p0 Point, mask *Image, p1 Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	draw(dst, r, src, p0, mask, p1, op)

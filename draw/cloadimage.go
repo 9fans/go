@@ -1,12 +1,9 @@
 package draw
 
-import (
-	"fmt"
-	"image"
-)
+import "fmt"
 
 // Cload is like Load, but uses image-compressed data.
-func (dst *Image) Cload(r image.Rectangle, data []byte) (int, error) {
+func (dst *Image) Cload(r Rectangle, data []byte) (int, error) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	i := dst

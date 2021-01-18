@@ -1,7 +1,5 @@
 package draw
 
-import "image"
-
 func addcoord(p []byte, oldx, newx int) int {
 	dx := newx - oldx
 	if uint(dx - -0x40) <= 0x7F {
@@ -14,7 +12,7 @@ func addcoord(p []byte, oldx, newx int) int {
 	return 3
 }
 
-func dopoly(cmd byte, dst *Image, pp []image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+func dopoly(cmd byte, dst *Image, pp []Point, end0, end1, radius int, src *Image, sp Point, op Op) {
 	if len(pp) == 0 {
 		return
 	}
@@ -45,7 +43,7 @@ func dopoly(cmd byte, dst *Image, pp []image.Point, end0, end1, radius int, src 
 // Poly draws the open polygon p in the specified source color, with ends as
 // specified. The images are aligned so sp aligns with p[0]. The polygon is
 // drawn using SoverD.
-func (dst *Image) Poly(p []image.Point, end0, end1, radius int, src *Image, sp image.Point) {
+func (dst *Image) Poly(p []Point, end0, end1, radius int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	dopoly('p', dst, p, end0, end1, radius, src, sp, SoverD)
@@ -53,7 +51,7 @@ func (dst *Image) Poly(p []image.Point, end0, end1, radius int, src *Image, sp i
 
 // PolyOp draws the open polygon p in the specified source color, with ends as
 // specified. The images are aligned so sp aligns with p[0].
-func (dst *Image) PolyOp(p []image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+func (dst *Image) PolyOp(p []Point, end0, end1, radius int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	dopoly('p', dst, p, end0, end1, radius, src, sp, op)
@@ -63,7 +61,7 @@ func (dst *Image) PolyOp(p []image.Point, end0, end1, radius int, src *Image, sp
 // source color. The images are aligned so sp aligns with p[0]. The polygon is
 // drawn using SoverD. The winding parameter resolves ambiguities; see the Plan
 // 9 manual for details.
-func (dst *Image) FillPoly(p []image.Point, end0, end1, radius int, src *Image, sp image.Point) {
+func (dst *Image) FillPoly(p []Point, end0, end1, radius int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	dopoly('P', dst, p, end0, end1, radius, src, sp, SoverD)
@@ -72,7 +70,7 @@ func (dst *Image) FillPoly(p []image.Point, end0, end1, radius int, src *Image, 
 // FillPolyOp fills the polygon p (which it closesif necessary) in the
 // specified source color. The images are aligned so sp aligns with p[0]. The
 // winding parameter resolves ambiguities; see the Plan 9 manual for details.
-func (dst *Image) FillPolyOp(p []image.Point, end0, end1, radius int, src *Image, sp image.Point, op Op) {
+func (dst *Image) FillPolyOp(p []Point, end0, end1, radius int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	dopoly('P', dst, p, end0, end1, radius, src, sp, op)

@@ -1,8 +1,6 @@
 package draw
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // A Color represents an RGBA value, 8 bits per element. Red is the high 8
 // bits, green the next 8 and so on.

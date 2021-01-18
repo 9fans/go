@@ -1,10 +1,6 @@
 package draw
 
-import (
-	"image"
-)
-
-func doellipse(cmd byte, dst *Image, c image.Point, xr, yr, thick int, src *Image, sp image.Point, alpha uint32, phi int, op Op) {
+func doellipse(cmd byte, dst *Image, c Point, xr, yr, thick int, src *Image, sp Point, alpha uint32, phi int, op Op) {
 	setdrawop(dst.Display, op)
 	a := dst.Display.bufimage(1 + 4 + 4 + 2*4 + 4 + 4 + 4 + 2*4 + 2*4)
 	a[0] = cmd
@@ -24,7 +20,7 @@ func doellipse(cmd byte, dst *Image, c image.Point, xr, yr, thick int, src *Imag
 // Ellipse draws, using SoverD, an ellipse with center c and horizontal and
 // vertical semiaxes a and b, and thickness 1+2*thick. The source is aligned so
 // sp corresponds to c.
-func (dst *Image) Ellipse(c image.Point, a, b, thick int, src *Image, sp image.Point) {
+func (dst *Image) Ellipse(c Point, a, b, thick int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
@@ -33,7 +29,7 @@ func (dst *Image) Ellipse(c image.Point, a, b, thick int, src *Image, sp image.P
 // EllipseOp draws an ellipse with center c and horizontal and vertical
 // semiaxes a and b, and thickness 1+2*thick. The source is aligned so sp
 // corresponds to c.
-func (dst *Image) EllipseOp(c image.Point, a, b, thick int, src *Image, sp image.Point, op Op) {
+func (dst *Image) EllipseOp(c Point, a, b, thick int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, op)
@@ -42,7 +38,7 @@ func (dst *Image) EllipseOp(c image.Point, a, b, thick int, src *Image, sp image
 // FillEllipse draws and fills, using SoverD, an ellipse with center c and
 // horizontal and vertical semiaxes a and b, and thickness 1+2*thick. The
 // source is aligned so sp corresponds to c.
-func (dst *Image) FillEllipse(c image.Point, a, b, thick int, src *Image, sp image.Point) {
+func (dst *Image) FillEllipse(c Point, a, b, thick int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
@@ -51,7 +47,7 @@ func (dst *Image) FillEllipse(c image.Point, a, b, thick int, src *Image, sp ima
 // FillEllipseOp draws and fills ellipse with center c and horizontal and
 // vertical semiaxes a and b, and thickness 1+2*thick. The source is aligned so
 // sp corresponds to c.
-func (dst *Image) FillEllipseOp(c image.Point, a, b, thick int, src *Image, sp image.Point, op Op) {
+func (dst *Image) FillEllipseOp(c Point, a, b, thick int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, op)
@@ -60,7 +56,7 @@ func (dst *Image) FillEllipseOp(c image.Point, a, b, thick int, src *Image, sp i
 // Arc draws, using SoverD, the arc centered at c, with thickness 1+2*thick,
 // using the specified source color. The arc starts at angle alpha and extends
 // counterclockwise by phi; angles are measured in degrees from the x axis.
-func (dst *Image) Arc(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int) {
+func (dst *Image) Arc(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
@@ -69,7 +65,7 @@ func (dst *Image) Arc(c image.Point, a, b, thick int, src *Image, sp image.Point
 // ArcOp draws the arc centered at c, with thickness 1+2*thick, using the
 // specified source color. The arc starts at angle alpha and extends
 // counterclockwise by phi; angles are measured in degrees from the x axis.
-func (dst *Image) ArcOp(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int, op Op) {
+func (dst *Image) ArcOp(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)
@@ -79,7 +75,7 @@ func (dst *Image) ArcOp(c image.Point, a, b, thick int, src *Image, sp image.Poi
 // 1+2*thick, using the specified source color. The arc starts at angle alpha
 // and extends counterclockwise by phi; angles are measured in degrees from the
 // x axis.
-func (dst *Image) FillArc(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int) {
+func (dst *Image) FillArc(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
@@ -88,7 +84,7 @@ func (dst *Image) FillArc(c image.Point, a, b, thick int, src *Image, sp image.P
 // FillArcOp draws and fills the arc centered at c, with thickness 1+2*thick,
 // using the specified source color. The arc starts at angle alpha and extends
 // counterclockwise by phi; angles are measured in degrees from the x axis.
-func (dst *Image) FillArcOp(c image.Point, a, b, thick int, src *Image, sp image.Point, alpha, phi int, op Op) {
+func (dst *Image) FillArcOp(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)

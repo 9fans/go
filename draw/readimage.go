@@ -2,7 +2,6 @@ package draw
 
 import (
 	"fmt"
-	"image"
 	"io"
 	"strings"
 )
@@ -106,7 +105,7 @@ func (d *Display) readImage(rd io.Reader) (*Image, error) {
 			}
 		}
 		if d != nil {
-			if _, err = i.load(image.Rect(r.Min.X, miny, r.Max.X, miny+dy), tmp[:n]); err != nil {
+			if _, err = i.load(Rect(r.Min.X, miny, r.Max.X, miny+dy), tmp[:n]); err != nil {
 				goto Err
 			}
 		}

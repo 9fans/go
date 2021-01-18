@@ -1,9 +1,6 @@
 package draw
 
-import (
-	"fmt"
-	"image"
-)
+import "fmt"
 
 var screenid uint32
 
@@ -81,7 +78,7 @@ func (s *Screen) free() error {
 	return d.flush(true)
 }
 
-func allocwindow(i *Image, s *Screen, r image.Rectangle, ref int, val Color) (*Image, error) {
+func allocwindow(i *Image, s *Screen, r Rectangle, ref int, val Color) (*Image, error) {
 	d := s.Display
 	i, err := allocImage(d, i, r, d.ScreenImage.Pix, false, val, s.id, ref)
 	if err != nil {

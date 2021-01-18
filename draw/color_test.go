@@ -1,22 +1,21 @@
 package draw
 
 import (
-	"image"
 	"image/color"
 	"testing"
 )
 
 type AtTest struct {
 	im         *Image
-	p          image.Point
+	p          Point
 	r, g, b, a uint8
 }
 
 var (
-	r1  = image.Rect(0, 0, 1, 1)
-	r2  = image.Rect(1, 1, 2, 2)
-	p0  = image.Pt(0, 0)
-	p1  = image.Pt(101, 101) // Far outside source of the replicated box.
+	r1  = Rect(0, 0, 1, 1)
+	r2  = Rect(1, 1, 2, 2)
+	p0  = Pt(0, 0)
+	p1  = Pt(101, 101) // Far outside source of the replicated box.
 	top = Color(0x884422FF)
 	bot = Color(0x773311FF)
 	gry = Color(0x30303030)
@@ -127,7 +126,7 @@ var atTests = []AtTest{
 	{alloc(r2, XBGR32, true, top), p1, 0x88, 0x44, 0x22, 0xFF},
 }
 
-func alloc(r image.Rectangle, pix Pix, repl bool, color Color) *Image {
+func alloc(r Rectangle, pix Pix, repl bool, color Color) *Image {
 	i, err := display().AllocImage(r, pix, repl, color)
 	if err != nil {
 		panic(err)
@@ -154,10 +153,10 @@ func TestAtGrey1(t *testing.T) {
 		}
 		return c
 	}
-	i := alloc(image.Rect(0, 0, 4, 1), GREY1, false, 0)
+	i := alloc(Rect(0, 0, 4, 1), GREY1, false, 0)
 	for x := 0; x < 4; x++ {
 		bit := alloc(r1, GREY2, false, col(x))
-		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+		i.Draw(Rect(x, 0, x+1, 1), bit, nil, p0)
 	}
 	for x := 0; x < 4; x++ {
 		r, g, b, a := i.At(x, 0).RGBA()
@@ -192,10 +191,10 @@ func rgba(x int) color.Color {
 }
 
 func TestAtGrey2(t *testing.T) {
-	i := alloc(image.Rect(0, 0, 4, 1), GREY2, false, 0)
+	i := alloc(Rect(0, 0, 4, 1), GREY2, false, 0)
 	for x := 0; x < 4; x++ {
 		bit := alloc(r1, GREY2, false, col(x))
-		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+		i.Draw(Rect(x, 0, x+1, 1), bit, nil, p0)
 	}
 	for x := 0; x < 4; x++ {
 		r, g, b, a := i.At(x, 0).RGBA()
@@ -208,10 +207,10 @@ func TestAtGrey2(t *testing.T) {
 }
 
 func TestAtGrey4(t *testing.T) {
-	i := alloc(image.Rect(0, 0, 4, 1), GREY4, false, 0)
+	i := alloc(Rect(0, 0, 4, 1), GREY4, false, 0)
 	for x := 0; x < 4; x++ {
 		bit := alloc(r1, GREY4, false, col(x))
-		i.Draw(image.Rect(x, 0, x+1, 1), bit, nil, p0)
+		i.Draw(Rect(x, 0, x+1, 1), bit, nil, p0)
 	}
 	for x := 0; x < 4; x++ {
 		r, g, b, a := i.At(x, 0).RGBA()

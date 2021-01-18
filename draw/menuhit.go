@@ -1,7 +1,5 @@
 package draw
 
-import "image"
-
 const (
 	menuMargin      = 4  /* outside to text */
 	menuBorder      = 2  /* outside to selection boxes */
@@ -49,8 +47,8 @@ var menu struct {
 func menucolors(display *Display) {
 	/* Main tone is greenish, with negative selection */
 	menu.back = display.AllocImageMix(Palegreen, White)
-	menu.high, _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* dark green */
-	menu.bord, _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Medgreen)  /* not as dark green */
+	menu.high, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* dark green */
+	menu.bord, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Medgreen)  /* not as dark green */
 	if menu.back == nil || menu.high == nil || menu.bord == nil {
 		goto Error
 	}
@@ -73,9 +71,9 @@ Error:
  * r is a rectangle holding the text elements.
  * return the rectangle, including its black edge, holding element i.
  */
-func menurect(display *Display, r image.Rectangle, i int) image.Rectangle {
+func menurect(display *Display, r Rectangle, i int) Rectangle {
 	if i < 0 {
-		return image.Rect(0, 0, 0, 0)
+		return Rect(0, 0, 0, 0)
 	}
 	r.Min.Y += (display.DefaultFont.Height + menuVspacing) * i
 	r.Max.Y = r.Min.Y + display.DefaultFont.Height + menuVspacing
@@ -86,7 +84,7 @@ func menurect(display *Display, r image.Rectangle, i int) image.Rectangle {
  * r is a rectangle holding the text elements.
  * return the element number containing p.
  */
-func menusel(display *Display, r image.Rectangle, p image.Point) int {
+func menusel(display *Display, r Rectangle, p Point) int {
 	r = r.Inset(menuMargin)
 	if !p.In(r) {
 		return -1
@@ -94,7 +92,7 @@ func menusel(display *Display, r image.Rectangle, p image.Point) int {
 	return (p.Y - r.Min.Y) / (display.DefaultFont.Height + menuVspacing)
 }
 
-func paintitem(m *Image, me *Menu, textr image.Rectangle, off, i int, highlight bool, save, restore *Image) {
+func paintitem(m *Image, me *Menu, textr Rectangle, off, i int, highlight bool, save, restore *Image) {
 	if i < 0 {
 		return
 	}
@@ -118,7 +116,7 @@ func paintitem(m *Image, me *Menu, textr image.Rectangle, off, i int, highlight 
 		itemBytes, _ = me.gen(i + off)
 		width = font.BytesWidth(itemBytes)
 	}
-	var pt image.Point
+	var pt Point
 	pt.X = (textr.Min.X + textr.Max.X - width) / 2
 	pt.Y = textr.Min.Y + i*(font.Height+menuVspacing)
 	back, text := menu.back, menu.text
@@ -139,7 +137,7 @@ func paintitem(m *Image, me *Menu, textr image.Rectangle, off, i int, highlight 
  * is raised, -1 as soon as it leaves box.
  * invariant: nothing is highlighted on entry or exit.
  */
-func menuscan(m *Image, me *Menu, but int, mc *Mousectl, textr image.Rectangle, off, lasti int, save *Image) int {
+func menuscan(m *Image, me *Menu, but int, mc *Mousectl, textr Rectangle, off, lasti int, save *Image) int {
 	paintitem(m, me, textr, off, lasti, true, save, nil)
 	for mc.Read(); mc.Buttons&(1<<(but-1)) != 0; mc.Read() {
 		i := menusel(m.Display, textr, mc.Point)
@@ -156,28 +154,28 @@ func menuscan(m *Image, me *Menu, but int, mc *Mousectl, textr image.Rectangle, 
 	return lasti
 }
 
-func menupaint(m *Image, me *Menu, textr image.Rectangle, off, nitemdrawn int) {
-	m.Draw(textr.Inset(menuBorder-menuMargin), menu.back, nil, image.ZP)
+func menupaint(m *Image, me *Menu, textr Rectangle, off, nitemdrawn int) {
+	m.Draw(textr.Inset(menuBorder-menuMargin), menu.back, nil, ZP)
 	for i := 0; i < nitemdrawn; i++ {
 		paintitem(m, me, textr, off, i, false, nil, nil)
 	}
 }
 
-func menuscrollpaint(m *Image, scrollr image.Rectangle, off, nitem, nitemdrawn int) {
-	m.Draw(scrollr, menu.back, nil, image.ZP)
+func menuscrollpaint(m *Image, scrollr Rectangle, off, nitem, nitemdrawn int) {
+	m.Draw(scrollr, menu.back, nil, ZP)
 	r := scrollr
 	r.Min.Y = scrollr.Min.Y + (scrollr.Dy()*off)/nitem
 	r.Max.Y = scrollr.Min.Y + (scrollr.Dy()*(off+nitemdrawn))/nitem
 	if r.Max.Y < r.Min.Y+2 {
 		r.Max.Y = r.Min.Y + 2
 	}
-	m.Border(r, 1, menu.bord, image.ZP)
+	m.Border(r, 1, menu.bord, ZP)
 	if menu.txt == nil {
 		display := m.Display
-		menu.txt, _ = display.AllocImage(image.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* border color; BUG? */
+		menu.txt, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* border color; BUG? */
 	}
 	if menu.txt != nil {
-		m.Draw(r.Inset(1), menu.txt, nil, image.ZP)
+		m.Draw(r.Inset(1), menu.txt, nil, ZP)
 	}
 }
 
@@ -247,10 +245,10 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 		}
 		lasti = me.LastHit - off
 	}
-	r := image.Rect(0, 0, wid, nitemdrawn*(font.Height+menuVspacing)).Inset(-menuMargin)
-	r = r.Sub(image.Pt(wid/2, lasti*(font.Height+menuVspacing)+font.Height/2))
+	r := Rect(0, 0, wid, nitemdrawn*(font.Height+menuVspacing)).Inset(-menuMargin)
+	r = r.Sub(Pt(wid/2, lasti*(font.Height+menuVspacing)+font.Height/2))
 	r = r.Add(mc.Point)
-	pt := image.ZP
+	pt := ZP
 	if r.Max.X > screen.R.Max.X {
 		pt.X = screen.R.Max.X - r.Max.X
 	}
@@ -264,12 +262,12 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 		pt.Y = screen.R.Min.Y - r.Min.Y
 	}
 	menur := r.Add(pt)
-	var textr image.Rectangle
+	var textr Rectangle
 	textr.Max.X = menur.Max.X - menuMargin
 	textr.Min.X = textr.Max.X - maxwid
 	textr.Min.Y = menur.Min.Y + menuMargin
 	textr.Max.Y = textr.Min.Y + nitemdrawn*(font.Height+menuVspacing)
-	var scrollr image.Rectangle
+	var scrollr Rectangle
 	if scrolling {
 		scrollr = menur.Inset(menuBorder)
 		scrollr.Max.X = scrollr.Min.X + menuScrollwid
@@ -290,8 +288,8 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 			backup.Draw(menur, screen, nil, menur.Min)
 		}
 	}
-	b.Draw(menur, menu.back, nil, image.ZP)
-	b.Border(menur, menuBlackborder, menu.bord, image.ZP)
+	b.Draw(menur, menu.back, nil, ZP)
+	b.Border(menur, menuBlackborder, menu.bord, ZP)
 	save, _ := display.AllocImage(menurect(display, textr, 0), screen.Pix, false, White)
 	r = menurect(display, textr, lasti)
 	display.MoveTo(r.Min.Add(r.Max).Div(2))

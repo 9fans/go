@@ -2,7 +2,6 @@ package draw
 
 import (
 	"fmt"
-	"image"
 	"runtime"
 )
 
@@ -11,17 +10,17 @@ import (
 // - the pixel descriptor: RGBA32 etc.
 // - whether the image is to be replicated (tiled)
 // - the starting background color for the image
-func (d *Display) AllocImage(r image.Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
+func (d *Display) AllocImage(r Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return allocImage(d, nil, r, pix, repl, val, 0, 0)
 }
 
-func (d *Display) allocImage(r image.Rectangle, pix Pix, repl bool, val Color) (i *Image, err error) {
+func (d *Display) allocImage(r Rectangle, pix Pix, repl bool, val Color) (i *Image, err error) {
 	return allocImage(d, nil, r, pix, repl, val, 0, 0)
 }
 
-func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, val Color, screenid uint32, refresh int) (i *Image, err error) {
+func allocImage(d *Display, ai *Image, r Rectangle, pix Pix, repl bool, val Color, screenid uint32, refresh int) (i *Image, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("allocimage %v %v: %v", r, pix, err)
@@ -58,7 +57,7 @@ func allocImage(d *Display, ai *Image, r image.Rectangle, pix Pix, repl bool, va
 	clipr := r
 	if repl {
 		// huge but not infinite, so various offsets will leave it huge, not overflow
-		clipr = image.Rect(-0x3FFFFFFF, -0x3FFFFFFF, 0x3FFFFFFF, 0x3FFFFFFF)
+		clipr = Rect(-0x3FFFFFFF, -0x3FFFFFFF, 0x3FFFFFFF, 0x3FFFFFFF)
 	}
 	bplong(a[31:], uint32(clipr.Min.X))
 	bplong(a[35:], uint32(clipr.Min.Y))

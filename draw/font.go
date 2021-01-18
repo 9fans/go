@@ -2,7 +2,6 @@ package draw
 
 import (
 	"fmt"
-	"image"
 	"os"
 	"sync"
 	"unicode/utf8"
@@ -314,8 +313,8 @@ Found:
 		/* must prevent c.top from going negative when loading cache */
 		d := subf.f.Ascent - f.Ascent
 		b := subf.f.Bits
-		b.draw(b.R, b, nil, b.R.Min.Add(image.Pt(0, d)))
-		b.draw(image.Rect(b.R.Min.X, b.R.Max.Y-d, b.R.Max.X, b.R.Max.Y), f.Display.Black, nil, b.R.Min)
+		b.draw(b.R, b, nil, b.R.Min.Add(Pt(0, d)))
+		b.draw(Rect(b.R.Min.X, b.R.Max.Y-d, b.R.Max.X, b.R.Max.Y), f.Display.Black, nil, b.R.Min)
 		for i := 0; i < subf.f.N; i++ {
 			t := int(subf.f.Info[i].Top) - d
 			if t < 0 {
@@ -408,7 +407,7 @@ func fontresize(f *Font, wid, ncache, depth int) int {
 	if d == nil {
 		goto Nodisplay
 	}
-	new, err = d.allocImage(image.Rect(0, 0, ncache*wid, f.Height), MakePix(CGrey, depth), false, 0)
+	new, err = d.allocImage(Rect(0, 0, ncache*wid, f.Height), MakePix(CGrey, depth), false, 0)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "font cache resize failed\n")
 		panic("resize")

@@ -2,7 +2,6 @@ package draw
 
 import (
 	"fmt"
-	"image"
 	"log"
 	"os"
 
@@ -11,9 +10,9 @@ import (
 
 // Mouse is the structure describing the current state of the mouse.
 type Mouse struct {
-	image.Point        // Location.
-	Buttons     int    // Buttons; bit 0 is button 1, bit 1 is button 2, etc.
-	Msec        uint32 // Time stamp in milliseconds.
+	Point          // Location.
+	Buttons int    // Buttons; bit 0 is button 1, bit 1 is button 2, etc.
+	Msec    uint32 // Time stamp in milliseconds.
 }
 
 // TODO: Mouse field is racy but okay.
@@ -62,7 +61,7 @@ func mouseproc(mc *Mousectl, d *Display, ch chan Mouse, rch chan bool) {
 		if resized {
 			rch <- true
 		}
-		mm := Mouse{image.Point{m.X, m.Y}, m.Buttons, uint32(m.Msec)}
+		mm := Mouse{Point{m.X, m.Y}, m.Buttons, uint32(m.Msec)}
 		ch <- mm
 		// No "mc.Mouse = mm" here! See Mousectl doc comment.
 	}
@@ -77,7 +76,7 @@ func (mc *Mousectl) Read() Mouse {
 }
 
 // MoveTo moves the mouse cursor to the specified location.
-func (d *Display) MoveTo(pt image.Point) error {
+func (d *Display) MoveTo(pt Point) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	err := d.conn.MoveTo(pt)

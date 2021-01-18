@@ -3,7 +3,6 @@ package draw
 import (
 	"encoding/binary"
 	"fmt"
-	"image"
 	"log"
 	"os"
 	"strings"
@@ -51,11 +50,11 @@ type Display struct {
 type Image struct {
 	Display *Display
 	id      uint32
-	Pix     Pix             // The pixel format for the image.
-	Depth   int             // The depth of the pixels in bits.
-	Repl    bool            // Whether the image is replicated (tiles the rectangle).
-	R       image.Rectangle // The extent of the image.
-	Clipr   image.Rectangle // The clip region.
+	Pix     Pix       // The pixel format for the image.
+	Depth   int       // The depth of the pixels in bits.
+	Repl    bool      // Whether the image is replicated (tiles the rectangle).
+	R       Rectangle // The extent of the image.
+	Clipr   Rectangle // The clip region.
 	next    *Image
 	Screen  *Screen // If non-nil, the associated screen; this is a window.
 }
@@ -112,11 +111,11 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	d.Image = i
-	d.White, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, White)
+	d.White, err = d.allocImage(Rect(0, 0, 1, 1), GREY1, true, White)
 	if err != nil {
 		return nil, err
 	}
-	d.Black, err = d.allocImage(image.Rect(0, 0, 1, 1), GREY1, true, Black)
+	d.Black, err = d.allocImage(Rect(0, 0, 1, 1), GREY1, true, Black)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +169,7 @@ func Init(errch chan<- error, fontname, label, winsize string) (*Display, error)
 	}
 
 	screen := d.ScreenImage
-	screen.draw(screen.R, d.White, nil, image.ZP)
+	screen.draw(screen.R, d.White, nil, ZP)
 	if err := d.flush(true); err != nil {
 		log.Fatal("draw flush: ", err)
 	}
@@ -352,12 +351,12 @@ func atoi(b []byte) int {
 	return n
 }
 
-func atop(b []byte) image.Point {
-	return image.Pt(atoi(b), atoi(b[12:]))
+func atop(b []byte) Point {
+	return Pt(atoi(b), atoi(b[12:]))
 }
 
-func ator(b []byte) image.Rectangle {
-	return image.Rectangle{atop(b), atop(b[2*12:])}
+func ator(b []byte) Rectangle {
+	return Rectangle{atop(b), atop(b[2*12:])}
 }
 
 func bplong(b []byte, n uint32) {

@@ -1,19 +1,16 @@
 package draw
 
-import (
-	"fmt"
-	"image"
-)
+import "fmt"
 
 // Load copies the pixel data from the buffer to the specified rectangle of the image.
 // The buffer must be big enough to fill the rectangle.
-func (dst *Image) Load(r image.Rectangle, data []byte) (int, error) {
+func (dst *Image) Load(r Rectangle, data []byte) (int, error) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	return dst.load(r, data)
 }
 
-func (dst *Image) load(r image.Rectangle, data []byte) (int, error) {
+func (dst *Image) load(r Rectangle, data []byte) (int, error) {
 	i := dst
 	chunk := i.Display.bufsize - 64
 	if !r.In(i.R) {
