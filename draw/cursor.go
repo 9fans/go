@@ -1,17 +1,26 @@
 package draw
 
-// Cursor describes a single cursor.
+// A Cursor describes a single cursor.
+//
+// The arrays White and Black are arranged in rows, two bytes per row,
+// left to right in big-endian order, to give 16 rows of 16 bits each.
+// A cursor is displayed on the screen by adding Point to the current
+// mouse position, then using White as a mask to draw white at
+// the pixels where White is 1, and then drawing black at the pixels
+// where Black is 1.
 type Cursor struct {
 	Point
-	Clr [2 * 16]uint8
-	Set [2 * 16]uint8
+	White [2 * 16]uint8
+	Black [2 * 16]uint8
 }
 
-// Cursor2 describes a high-DPI cursor.
+// A Cursor2 describes a single high-DPI cursor,
+// with twice the pixels in each direction as a Cursor
+// (32 rows of 32 bits each).
 type Cursor2 struct {
 	Point
-	Clr [4 * 32]uint8
-	Set [4 * 32]uint8
+	White [4 * 32]uint8
+	Black [4 * 32]uint8
 }
 
 var expand = [16]uint8{
@@ -21,27 +30,28 @@ var expand = [16]uint8{
 	0xf0, 0xf3, 0xfc, 0xff,
 }
 
-// Scale returns a high-DPI version of c.
-func (c *Cursor) ScaleTo(c2 *Cursor2) {
-	*c2 = Cursor2{}
+// ScaleCursor returns a high-DPI version of c.
+func ScaleCursor(c Cursor) Cursor2 {
+	var c2 Cursor2
 	c2.X = 2 * c.X
 	c2.Y = 2 * c.Y
 	for y := 0; y < 16; y++ {
-		c2.Clr[8*y+4] = expand[c.Clr[2*y]>>4]
-		c2.Clr[8*y] = c2.Clr[8*y+4]
-		c2.Set[8*y+4] = expand[c.Set[2*y]>>4]
-		c2.Set[8*y] = c2.Set[8*y+4]
-		c2.Clr[8*y+5] = expand[c.Clr[2*y]&15]
-		c2.Clr[8*y+1] = c2.Clr[8*y+5]
-		c2.Set[8*y+5] = expand[c.Set[2*y]&15]
-		c2.Set[8*y+1] = c2.Set[8*y+5]
-		c2.Clr[8*y+6] = expand[c.Clr[2*y+1]>>4]
-		c2.Clr[8*y+2] = c2.Clr[8*y+6]
-		c2.Set[8*y+6] = expand[c.Set[2*y+1]>>4]
-		c2.Set[8*y+2] = c2.Set[8*y+6]
-		c2.Clr[8*y+7] = expand[c.Clr[2*y+1]&15]
-		c2.Clr[8*y+3] = c2.Clr[8*y+7]
-		c2.Set[8*y+7] = expand[c.Set[2*y+1]&15]
-		c2.Set[8*y+3] = c2.Set[8*y+7]
+		c2.White[8*y+4] = expand[c.White[2*y]>>4]
+		c2.White[8*y] = c2.White[8*y+4]
+		c2.Black[8*y+4] = expand[c.Black[2*y]>>4]
+		c2.Black[8*y] = c2.Black[8*y+4]
+		c2.White[8*y+5] = expand[c.White[2*y]&15]
+		c2.White[8*y+1] = c2.White[8*y+5]
+		c2.Black[8*y+5] = expand[c.Black[2*y]&15]
+		c2.Black[8*y+1] = c2.Black[8*y+5]
+		c2.White[8*y+6] = expand[c.White[2*y+1]>>4]
+		c2.White[8*y+2] = c2.White[8*y+6]
+		c2.Black[8*y+6] = expand[c.Black[2*y+1]>>4]
+		c2.Black[8*y+2] = c2.Black[8*y+6]
+		c2.White[8*y+7] = expand[c.White[2*y+1]&15]
+		c2.White[8*y+3] = c2.White[8*y+7]
+		c2.Black[8*y+7] = expand[c.Black[2*y+1]&15]
+		c2.Black[8*y+3] = c2.Black[8*y+7]
 	}
+	return c2
 }

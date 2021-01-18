@@ -1,9 +1,13 @@
 package draw
 
-// AllocImageMix blends the two colors to create a tiled image representing
-// their combination. For pixel formats of 8 bits or less, it creates a 2x2
-// pixel texture whose average value is the mix. Otherwise it creates a 1-pixel
-// solid color blended using 50% alpha for each.
+// AllocImageMix is used to allocate background colors.
+// It returns a 1×1 replicated image whose pixel is the result of
+// mixing the two colors in a one to three ratio.
+// On 8-bit color-mapped displays, it returns a 2×2 replicated image
+// with one pixel colored the color one and the other three
+// with three.  (This simulates a wider range of tones than can
+// be represented by a single pixel value on a color-mapped
+// display.)
 func (d *Display) AllocImageMix(color1, color3 Color) *Image {
 	d.mu.Lock()
 	defer d.mu.Unlock()

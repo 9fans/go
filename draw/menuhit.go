@@ -46,9 +46,9 @@ var menu struct {
 
 func menucolors(display *Display) {
 	/* Main tone is greenish, with negative selection */
-	menu.back = display.AllocImageMix(Palegreen, White)
-	menu.high, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* dark green */
-	menu.bord, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Medgreen)  /* not as dark green */
+	menu.back = display.AllocImageMix(PaleGreen, White)
+	menu.high, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, DarkGreen) /* dark green */
+	menu.bord, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, MedGreen)  /* not as dark green */
 	if menu.back == nil || menu.high == nil || menu.bord == nil {
 		goto Error
 	}
@@ -75,8 +75,8 @@ func menurect(display *Display, r Rectangle, i int) Rectangle {
 	if i < 0 {
 		return Rect(0, 0, 0, 0)
 	}
-	r.Min.Y += (display.DefaultFont.Height + menuVspacing) * i
-	r.Max.Y = r.Min.Y + display.DefaultFont.Height + menuVspacing
+	r.Min.Y += (display.Font.Height + menuVspacing) * i
+	r.Max.Y = r.Min.Y + display.Font.Height + menuVspacing
 	return r.Inset(menuBorder - menuMargin)
 }
 
@@ -89,7 +89,7 @@ func menusel(display *Display, r Rectangle, p Point) int {
 	if !p.In(r) {
 		return -1
 	}
-	return (p.Y - r.Min.Y) / (display.DefaultFont.Height + menuVspacing)
+	return (p.Y - r.Min.Y) / (display.Font.Height + menuVspacing)
 }
 
 func paintitem(m *Image, me *Menu, textr Rectangle, off, i int, highlight bool, save, restore *Image) {
@@ -97,7 +97,7 @@ func paintitem(m *Image, me *Menu, textr Rectangle, off, i int, highlight bool, 
 		return
 	}
 	display := m.Display
-	font := display.DefaultFont
+	font := display.Font
 	r := menurect(display, textr, i)
 	if restore != nil {
 		m.Draw(r, restore, nil, restore.R.Min)
@@ -172,7 +172,7 @@ func menuscrollpaint(m *Image, scrollr Rectangle, off, nitem, nitemdrawn int) {
 	m.Border(r, 1, menu.bord, ZP)
 	if menu.txt == nil {
 		display := m.Display
-		menu.txt, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, Darkgreen) /* border color; BUG? */
+		menu.txt, _ = display.AllocImage(Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, DarkGreen) /* border color; BUG? */
 	}
 	if menu.txt != nil {
 		m.Draw(r.Inset(1), menu.txt, nil, ZP)
@@ -191,7 +191,7 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 
 	display := mc.Display
 	screen := display.ScreenImage
-	font := display.DefaultFont
+	font := display.Font
 
 	if menu.back == nil {
 		menucolors(display)
@@ -276,7 +276,7 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 	var b *Image
 	var backup *Image
 	if scr != nil {
-		b, _ = allocwindow(nil, scr, menur, Refbackup, White)
+		b, _ = allocwindow(nil, scr, menur, RefBackup, White)
 		if b == nil {
 			b = screen
 		}
@@ -292,7 +292,7 @@ func MenuHit(but int, mc *Mousectl, me *Menu, scr *Screen) int {
 	b.Border(menur, menuBlackborder, menu.bord, ZP)
 	save, _ := display.AllocImage(menurect(display, textr, 0), screen.Pix, false, White)
 	r = menurect(display, textr, lasti)
-	display.MoveTo(r.Min.Add(r.Max).Div(2))
+	display.MoveCursor(r.Min.Add(r.Max).Div(2))
 	menupaint(b, me, textr, off, nitemdrawn)
 	if scrolling {
 		menuscrollpaint(b, scrollr, off, nitem, nitemdrawn)

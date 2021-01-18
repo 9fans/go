@@ -41,7 +41,7 @@ func brects(r Rectangle) [4]Rectangle {
 
 func SweepRect(but int, mc *Mousectl) Rectangle {
 	but = 1 << (but - 1)
-	mc.Display.SetCursor(&sweep)
+	mc.Display.SwitchCursor(&sweep)
 	for mc.Buttons != 0 {
 		mc.Read()
 	}
@@ -67,7 +67,7 @@ func SweepRect(but int, mc *Mousectl) Rectangle {
 		}
 	}
 
-	mc.Display.SetCursor(nil)
+	mc.Display.SwitchCursor(nil)
 	if mc.Buttons&(7^but) != 0 {
 		rc = ZR
 		for mc.Buttons != 0 {

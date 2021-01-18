@@ -141,9 +141,9 @@ var txpix = [NCOL]draw.Color{
 	draw.Yellow,    /* yellow */
 	draw.Cyan,      /* cyan */
 	draw.Green,     /* lime green */
-	draw.Greyblue,  /* slate */
+	draw.GreyBlue,  /* slate */
 	draw.Red,       /* red */
-	draw.Greygreen, /* olive green */
+	draw.GreyGreen, /* olive green */
 	draw.Blue,      /* blue */
 	0xFF55AAFF,     /* pink */
 	0xFFAAFFFF,     /* lavender */
@@ -655,7 +655,7 @@ func suspproc() {
 
 func redraw(new bool) {
 	if new {
-		if err := display.Attach(draw.Refmesg); err != nil {
+		if err := display.Attach(draw.RefMesg); err != nil {
 			log.Fatalf("can't reattach to window: %v", err)
 		}
 	}

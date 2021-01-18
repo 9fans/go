@@ -6,7 +6,9 @@ import (
 	"strings"
 )
 
-// ReadImage reads the image data from the reader and returns the image it describes.
+// ReadImage creates an image from data contained in r.
+// (See the package documentation for the image file format.)
+// The returned image is allocated using AllocImage.
 func (d *Display) ReadImage(r io.Reader) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()

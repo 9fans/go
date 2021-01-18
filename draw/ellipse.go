@@ -17,75 +17,62 @@ func doellipse(cmd byte, dst *Image, c Point, xr, yr, thick int, src *Image, sp 
 	bplong(a[41:], uint32(phi))
 }
 
-// Ellipse draws, using SoverD, an ellipse with center c and horizontal and
-// vertical semiaxes a and b, and thickness 1+2*thick. The source is aligned so
-// sp corresponds to c.
+// Ellipse draws in dst an ellipse centered on c with horizontal and vertical
+// semiaxes a and b. The source is aligned so sp in src corresponds to c in dst.
+// The ellipse is drawn with thickness 1+2*thick.
 func (dst *Image) Ellipse(c Point, a, b, thick int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
 }
 
-// EllipseOp draws an ellipse with center c and horizontal and vertical
-// semiaxes a and b, and thickness 1+2*thick. The source is aligned so sp
-// corresponds to c.
+// EllipseOp is like Ellipse but specifies an explicit Porter-Duff operator.
 func (dst *Image) EllipseOp(c Point, a, b, thick int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, 0, 0, op)
 }
 
-// FillEllipse draws and fills, using SoverD, an ellipse with center c and
-// horizontal and vertical semiaxes a and b, and thickness 1+2*thick. The
-// source is aligned so sp corresponds to c.
-func (dst *Image) FillEllipse(c Point, a, b, thick int, src *Image, sp Point) {
+// FillEllipse is like Ellipse but fills the ellipse rather than outlining it.
+func (dst *Image) FillEllipse(c Point, a, b int, src *Image, sp Point) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, SoverD)
+	doellipse('E', dst, c, a, b, 0, src, sp, 0, 0, SoverD)
 }
 
-// FillEllipseOp draws and fills ellipse with center c and horizontal and
-// vertical semiaxes a and b, and thickness 1+2*thick. The source is aligned so
-// sp corresponds to c.
-func (dst *Image) FillEllipseOp(c Point, a, b, thick int, src *Image, sp Point, op Op) {
+// FillEllipseOp is like FillEllipse but specifies an explicit Porter-Duff operator.
+func (dst *Image) FillEllipseOp(c Point, a, b int, src *Image, sp Point, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	doellipse('E', dst, c, a, b, thick, src, sp, 0, 0, op)
+	doellipse('E', dst, c, a, b, 0, src, sp, 0, 0, op)
 }
 
-// Arc draws, using SoverD, the arc centered at c, with thickness 1+2*thick,
-// using the specified source color. The arc starts at angle alpha and extends
-// counterclockwise by phi; angles are measured in degrees from the x axis.
+// Arc is like Ellipse but draws only that portion of the ellipse starting at angle alpha
+// and extending through an angle of phi. The angles are measured in degrees
+// counterclockwise from the positive x axis.
 func (dst *Image) Arc(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
 }
 
-// ArcOp draws the arc centered at c, with thickness 1+2*thick, using the
-// specified source color. The arc starts at angle alpha and extends
-// counterclockwise by phi; angles are measured in degrees from the x axis.
+// ArcOp is like Arc but specifies an explicit Porter-Duff operator.
 func (dst *Image) ArcOp(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
 	doellipse('e', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)
 }
 
-// FillArc draws and fills, using SoverD, the arc centered at c, with thickness
-// 1+2*thick, using the specified source color. The arc starts at angle alpha
-// and extends counterclockwise by phi; angles are measured in degrees from the
-// x axis.
-func (dst *Image) FillArc(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int) {
+// FillArc is like Arc but fills the sector with the source color.
+func (dst *Image) FillArc(c Point, a, b int, src *Image, sp Point, alpha, phi int) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, SoverD)
+	doellipse('E', dst, c, a, b, 0, src, sp, uint32(alpha)|1<<31, phi, SoverD)
 }
 
-// FillArcOp draws and fills the arc centered at c, with thickness 1+2*thick,
-// using the specified source color. The arc starts at angle alpha and extends
-// counterclockwise by phi; angles are measured in degrees from the x axis.
-func (dst *Image) FillArcOp(c Point, a, b, thick int, src *Image, sp Point, alpha, phi int, op Op) {
+// FillArcOp is like FillArc but specifies an explicit Porter-Duff operator.
+func (dst *Image) FillArcOp(c Point, a, b int, src *Image, sp Point, alpha, phi int, op Op) {
 	dst.Display.mu.Lock()
 	defer dst.Display.mu.Unlock()
-	doellipse('E', dst, c, a, b, thick, src, sp, uint32(alpha)|1<<31, phi, op)
+	doellipse('E', dst, c, a, b, 0, src, sp, uint32(alpha)|1<<31, phi, op)
 }

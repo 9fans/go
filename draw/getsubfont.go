@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func getsubfont(d *Display, name string) (*Subfont, error) {
+func getsubfont(d *Display, name string) (*subfont, error) {
 	scale, fname := parsefontscale(name)
 	data, err := ioutil.ReadFile(fname)
 	if err != nil && strings.HasPrefix(fname, "/mnt/font/") {
@@ -32,7 +32,7 @@ func getsubfont(d *Display, name string) (*Subfont, error) {
 	return f, err
 }
 
-func scalesubfont(f *Subfont, scale int) {
+func scalesubfont(f *subfont, scale int) {
 	r := f.Bits.R
 	r2 := r
 	r2.Min.X *= scale

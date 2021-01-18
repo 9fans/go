@@ -1,7 +1,6 @@
 package draw
 
-// BorderOp draws a retangular border of size r and width n, with n positive
-// meaning the border is inside r, drawn with the specified draw op.
+// BorderOp is like Border but specifies an explicit Porter-Duff operator.
 func (dst *Image) BorderOp(r Rectangle, n int, color *Image, sp Point, op Op) {
 	if n < 0 {
 		r = r.Inset(n)
@@ -23,8 +22,10 @@ func (dst *Image) BorderOp(r Rectangle, n int, color *Image, sp Point, op Op) {
 		color, pt, nil, pt, op)
 }
 
-// Border draws a retangular border of size r and width n, with n positive
-// meaning the border is inside r. It uses SoverD.
-func (dst *Image) Border(r Rectangle, n int, color *Image, sp Point) {
-	dst.BorderOp(r, n, color, sp, SoverD)
+// Border draws an outline of rectangle r in the specified color.
+// The outline has width w; if w is positive, the border goes inside the
+// rectangle; if negative, outside.
+// The source is aligned so that sp corresponds to r.Min.
+func (dst *Image) Border(r Rectangle, w int, color *Image, sp Point) {
+	dst.BorderOp(r, w, color, sp, SoverD)
 }

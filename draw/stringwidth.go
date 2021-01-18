@@ -14,7 +14,7 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 	for !in.done {
 		max := Max
 		n := 0
-		var sf *Subfont
+		var sf *subfont
 		var l, wid int
 		var subfontname string
 		for {
@@ -36,8 +36,8 @@ func stringnwidth(f *Font, s string, b []byte, r []rune) int {
 				var err error
 				sf, err = getsubfont(f.Display, subfontname)
 				if err != nil {
-					if f.Display != nil && f != f.Display.DefaultFont {
-						f = f.Display.DefaultFont
+					if f.Display != nil && f != f.Display.Font {
+						f = f.Display.Font
 						continue
 					}
 					break

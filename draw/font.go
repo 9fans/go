@@ -11,10 +11,20 @@ import (
 // A Font is constructed by reading a font file that describes how to
 // create a full font from a collection of subfonts, each of which
 // covers a section of the Unicode code space.
+//
+// A Font is a set of character images, indexed by runes.
+// The images are organized into Subfonts, each containing the images
+// for a small, contiguous set of runes.
+//
+// Font defines two important dimension fields: ‘Ascent’,
+// the distance from the top of the highest character
+// (actually the top of the image holding all the characters) to the baseline,
+// and ‘Height’, the distance from the top of the highest character
+// to the bottom of the lowest character (and hence, the interline spacing).
 type Font struct {
 	Display *Display
 	Name    string // name, typically from file.
-	Height  int    // max height of image, interline spacing
+	Height  int    // max height of image; interline spacing
 	Ascent  int    // top of image to baseline
 	Scale   int    // pixel scaling
 
@@ -73,17 +83,33 @@ type cacheinfo struct {
 type cachesubf struct {
 	age uint32
 	cf  *cachefont
-	f   *Subfont
+	f   *subfont
 }
 
-// A Subfont represents a subfont, mapping a section of the Unicode code space to a set of glyphs.
-type Subfont struct {
-	Name   string     // Name of the subfont, typically the file from which it was read.
-	N      int        // Number of characters in the subfont.
-	Height int        // Inter-line spacing.
-	Ascent int        // Height above the baseline.
-	Info   []Fontchar // Character descriptions.
-	Bits   *Image     // Image holding the glyphs.
+// A subfont is a set of images for a contiguous range of Unicode code points,
+// stored as a single image with the characters placed side-by-side on a
+// common baseline.
+//
+// The Bits image fills the rectangle (0, 0, w, Height), where w is the sum
+// of the horizontal extents (of non-zero pixels) for all characters.
+// The pixels to be displayed for character c are in the rectangle
+// (i.X, i.Top, next.X, i.Bottom) where i is Info[c] and next is Info[c+1].
+// When a character is displayed at Point p in an image,
+// the character rectangle is placed at (p.X+i.Left, p.Y)
+// and the next character of the string is displayed at (p.X+i.Width, p.Y).
+// The baseline of the characters is ‘ascent’ rows down from the top
+// of the subfont image.
+// The `info' array has n+1 elements, one each for characters 0 to n-1
+// plus an additional entry so the width of the last character can be calculated.
+// Thus the width, w, of the Image associated with a subfont s is
+// s.Info[s.N].X.
+type subfont struct {
+	Name   string     // name, typically the file from which it was read
+	N      int        // number of characters in the subfont.
+	Height int        // interline spacing
+	Ascent int        // height above the baseline
+	Info   []Fontchar // character descriptions
+	Bits   *Image     // image holding the glyphs
 	ref    int
 }
 
@@ -204,7 +230,7 @@ func agefont(f *Font) {
 			if s.age > 0 {
 				if s.age < _SUBFAGE && s.cf.name != "" {
 					/* clean up */
-					if f.Display == nil || s.f != f.Display.DefaultSubfont {
+					if f.Display == nil || s.f != f.Display.defaultSubfont {
 						s.f.free()
 					}
 					s.cf = nil
@@ -220,7 +246,7 @@ func agefont(f *Font) {
 	}
 }
 
-func cf2subfont(cf *cachefont, f *Font) (*Subfont, error) {
+func cf2subfont(cf *cachefont, f *Font) (*subfont, error) {
 	name := cf.subfontname
 	if name == "" {
 		depth := 0

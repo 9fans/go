@@ -73,8 +73,8 @@ func (mc *Mousectl) Read() Mouse {
 	return m
 }
 
-// MoveTo moves the mouse cursor to the specified location.
-func (d *Display) MoveTo(pt Point) error {
+// MoveCursor moves the mouse cursor to the specified location.
+func (d *Display) MoveCursor(pt Point) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	err := d.conn.MoveTo(pt)
@@ -85,9 +85,9 @@ func (d *Display) MoveTo(pt Point) error {
 	return nil
 }
 
-// SetCursor sets the mouse cursor to the specified cursor image.
-// SetCursor(nil) changes the cursor to the standard system cursor.
-func (d *Display) SetCursor(c *Cursor) error {
+// SwitchCursor sets the mouse cursor to the specified cursor image.
+// SwitchCursor(nil) changes the cursor to the standard system cursor.
+func (d *Display) SwitchCursor(c *Cursor) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	err := d.conn.Cursor((*drawfcall.Cursor)(c))

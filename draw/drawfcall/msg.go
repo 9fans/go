@@ -73,14 +73,14 @@ type Mouse struct {
 
 type Cursor struct {
 	image.Point
-	Clr [32]byte
-	Set [32]byte
+	White [32]byte
+	Black [32]byte
 }
 
 type Cursor2 struct {
 	image.Point
-	Clr [128]byte
-	Set [128]byte
+	White [128]byte
+	Black [128]byte
 }
 
 func stringsize(s string) int {
@@ -176,18 +176,18 @@ func (m *Msg) Marshal() []byte {
 	case Tcursor:
 		b = pbit32(b, m.Cursor.X)
 		b = pbit32(b, m.Cursor.Y)
-		b = append(b, m.Cursor.Clr[:]...)
-		b = append(b, m.Cursor.Set[:]...)
+		b = append(b, m.Cursor.White[:]...)
+		b = append(b, m.Cursor.Black[:]...)
 		b = append(b, boolbyte(m.Arrow))
 	case Tcursor2:
 		b = pbit32(b, m.Cursor.X)
 		b = pbit32(b, m.Cursor.Y)
-		b = append(b, m.Cursor.Clr[:]...)
-		b = append(b, m.Cursor.Set[:]...)
+		b = append(b, m.Cursor.White[:]...)
+		b = append(b, m.Cursor.Black[:]...)
 		b = pbit32(b, m.Cursor2.X)
 		b = pbit32(b, m.Cursor2.Y)
-		b = append(b, m.Cursor2.Clr[:]...)
-		b = append(b, m.Cursor2.Set[:]...)
+		b = append(b, m.Cursor2.White[:]...)
+		b = append(b, m.Cursor2.Black[:]...)
 		b = append(b, boolbyte(m.Arrow))
 	case Rrdkbd:
 		b = pbit16(b, uint16(m.Rune))
@@ -299,8 +299,8 @@ func (m *Msg) Unmarshal(b []byte) error {
 	case Tcursor:
 		m.Cursor.X, b = gbit32(b)
 		m.Cursor.Y, b = gbit32(b)
-		copy(m.Cursor.Clr[:], b[:])
-		copy(m.Cursor.Set[:], b[32:])
+		copy(m.Cursor.White[:], b[:])
+		copy(m.Cursor.Black[:], b[32:])
 		b = b[64:]
 		var n byte
 		n, b = gbit8(b)
@@ -308,13 +308,13 @@ func (m *Msg) Unmarshal(b []byte) error {
 	case Tcursor2:
 		m.Cursor.X, b = gbit32(b)
 		m.Cursor.Y, b = gbit32(b)
-		copy(m.Cursor.Clr[:], b[:])
-		copy(m.Cursor.Set[:], b[32:])
+		copy(m.Cursor.White[:], b[:])
+		copy(m.Cursor.Black[:], b[32:])
 		b = b[64:]
 		m.Cursor2.X, b = gbit32(b)
 		m.Cursor2.Y, b = gbit32(b)
-		copy(m.Cursor2.Clr[:], b[:])
-		copy(m.Cursor2.Set[:], b[128:])
+		copy(m.Cursor2.White[:], b[:])
+		copy(m.Cursor2.Black[:], b[128:])
 		b = b[256:]
 		var n byte
 		n, b = gbit8(b)

@@ -5,15 +5,34 @@ import (
 	"runtime"
 )
 
-// AllocImage allocates a new Image on display d. The arguments are:
-// - the rectangle representing the size
-// - the pixel descriptor: RGBA32 etc.
-// - whether the image is to be replicated (tiled)
-// - the starting background color for the image
-func (d *Display) AllocImage(r Rectangle, pix Pix, repl bool, val Color) (*Image, error) {
+// AllocImage allocates a new Image on display d.
+// It will have the rectangle, pixel format (RGBA32 etc),
+// and replication flag given by its arguments.
+//
+// All the new image's pixels will have the initial color
+// (Black, White, Red, and so on).
+// If color is NoFill, the pixels will be left uninitialized.
+// (In Go, uninitialized means zeroed, so the pixels will be
+// Transparent or Black depending on whether the pixel
+// format includes an alpha channel.)
+//
+// If repl is true, the result's Clipr rectangle is set to a very large region.
+// Otherwise, the result's Clipr is set to r.
+//
+// The result's Depth is computed from pix.
+//
+// AllocImage returns an error if the display cannot allocate the image
+// or is no longer available.
+//
+// For example, to allocate a single-pixel replicated image that may be
+// used to paint a region red:
+//
+//	red, err := display.AllocImage(draw.Rect(0, 0, 1, 1), draw.RGB24, true, draw.Red)
+//
+func (d *Display) AllocImage(r Rectangle, pix Pix, repl bool, color Color) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return allocImage(d, nil, r, pix, repl, val, 0, 0)
+	return allocImage(d, nil, r, pix, repl, color, 0, 0)
 }
 
 func (d *Display) allocImage(r Rectangle, pix Pix, repl bool, val Color) (i *Image, err error) {
@@ -127,14 +146,15 @@ func (i *Image) free() error {
 			}
 		}
 	}
-	i.Display = nil // So a second free (perhaps through a Finalizer) will be OK.
+	i.Display = nil // so a second free will be OK
 	runtime.SetFinalizer(i, nil)
 	return d.flush(i.Screen != nil)
 }
 
-// Free frees the server resources for the image. Images have a finalizer that
-// calls Free automatically, if necessary, for garbage collected Images, but it
-// is more efficient to be explicit.
+// Free frees the server resources for the image.
+// Images have a finalizer that calls Free automatically,
+// if necessary, when the Image is garbage collected,
+// but it is more efficient to be explicit.
 func (i *Image) Free() error {
 	if i == nil {
 		return nil
