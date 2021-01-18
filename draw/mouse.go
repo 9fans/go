@@ -97,3 +97,17 @@ func (d *Display) SwitchCursor(c *Cursor) error {
 	}
 	return nil
 }
+
+// SwitchCursor2 sets the mouse cursor to the specified cursor images.
+// SwitchCursor2(nil, nil) changes the cursor to the standard system cursor.
+// If c2 is omitted, a scaled version of c is used instead.
+func (d *Display) SwitchCursor2(c *Cursor, c2 *Cursor2) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	err := d.conn.Cursor2((*drawfcall.Cursor)(c), (*drawfcall.Cursor2)(c2))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "SetCursor: %v\n", err)
+		return err
+	}
+	return nil
+}
