@@ -1,0 +1,9 @@
+#!/usr/local/plan9/bin/rc
+
+c2gofmt -r rules.txt -w /usr/local/plan9/src/cmd/samterm/^(*.c *.h) \
+	/usr/local/plan9/src/cmd/sam/mesg.h
+sed -i '' 's/package pkg/package main/g' *.go
+goimports -w .
+go build -gcflags=-e >[2=1] | grep -v 'but does have' | 9 sort +1
+
+
