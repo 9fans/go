@@ -45,6 +45,18 @@ func MountService(service string) (*Fsys, error) {
 	return fsys, err
 }
 
+func MountServiceAname(service, aname string) (*Fsys, error) {
+	c, err := DialService(service)
+	if err != nil {
+		return nil, err
+	}
+	fsys, err := c.Attach(nil, getuser(), aname)
+	if err != nil {
+		c.Close()
+	}
+	return fsys, err
+}
+
 var dotZero = regexp.MustCompile(`\A(.*:\d+)\.0\z`)
 
 // Namespace returns the path to the name space directory.
