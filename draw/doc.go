@@ -241,7 +241,9 @@
 //	drawop → Image.DrawOp
 //	drawrepl → Repl
 //	drawreplxy → ReplXY
-//	drawsetlabel → not implemented (TODO)
+//	drawresizewindow → Display.Resize
+//	drawsetlabel → Display.SetLabel
+//	drawtopwindow → Display.Top
 //	ellipse → Image.Ellipse
 //	ellipseop → Image.EllipseOp
 //	eqpt → Point.Eq (or ==)
