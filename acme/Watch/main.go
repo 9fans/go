@@ -31,6 +31,7 @@ package main // import "9fans.net/go/acme/Watch"
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -47,6 +48,7 @@ import (
 )
 
 var args []string
+var rc string
 var win *acme.Win
 var needrun = make(chan bool, 1)
 
@@ -66,6 +68,10 @@ func main() {
 	}
 
 	var err error
+	rc, err = resolveRc()
+	if err != nil {
+		log.Fatal(err)
+	}
 	win, err = acme.New()
 	if err != nil {
 		log.Fatal(err)
@@ -234,7 +240,7 @@ func runBackground(id int) {
 		run.Unlock()
 
 		line := data[1:] // chop %
-		cmd := exec.Command("/usr/local/plan9/bin/rc", "-c", string(line))
+		cmd := exec.Command(rc, "-c", string(line))
 		r, w, err := os.Pipe()
 		if err != nil {
 			log.Fatal(err)
@@ -303,4 +309,16 @@ func runBackground(id int) {
 		}
 		// Continue loop with lock held
 	}
+}
+
+func resolveRc() (string, error) {
+	out, err := exec.Command("9", "which", "rc").Output()
+	if err != nil {
+		return "", err
+	}
+	if len(out) == 0 {
+		return "", errors.New("rc not found in PATH")
+	}
+
+	return strings.Split(string(out), "\n")[0], nil
 }
