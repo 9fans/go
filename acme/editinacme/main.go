@@ -13,6 +13,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -36,8 +37,17 @@ func main() {
 	}
 
 	file := flag.Arg(0)
+
+	var perr *os.PathError
 	_, err := os.Stat(file)
-	if err != nil {
+	if errors.As(err, &perr) {
+		// File probably does not exist, try creating it so Acme doesn't complain
+		fh, err := os.Create(file)
+		if err != nil {
+			log.Fatalf("can't create file: %s", err)
+		}
+		fh.Close()
+	} else if err != nil {
 		log.Fatal(err)
 	}
 
