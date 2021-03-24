@@ -2,11 +2,6 @@
 //
 // Derived from Plan 9's /sys/src/games/xs.c
 // http://plan9.bell-labs.com/sources/plan9/sys/src/games/xs.c
-//
-// Copyright (C) 2003, Lucent Technologies Inc. and others. All Rights Reserved.
-// Portions Copyright 2009 The Go Authors.  All Rights Reserved.
-// Distributed under the terms of the Lucent Public License Version 1.02
-// See http://plan9.bell-labs.com/plan9/license.html
 
 package main
 
