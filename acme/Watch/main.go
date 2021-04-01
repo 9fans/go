@@ -161,7 +161,7 @@ func runner() {
 		run.kill = false
 		run.Unlock()
 		if lastcmd != nil {
-			lastcmd.Process.Kill()
+			kill(lastcmd)
 		}
 		lastcmd = nil
 
