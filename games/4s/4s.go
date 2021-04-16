@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 4s is a tetromino stacking game.
+// Use 4s -5 for pentominoes.
 package main // import "9fans.net/go/games/4s"
 
 import (

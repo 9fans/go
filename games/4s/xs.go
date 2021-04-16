@@ -313,7 +313,7 @@ func score(p int) {
 	points += p
 	buf := fmt.Sprintf("%.6d", points)
 	screen.Draw(image.Rectangle{pscore, pscore.Add(scoresz)}, display.White, nil, image.ZP)
-	screen.String(pscore, display.Black, image.ZP, display.DefaultFont, buf)
+	screen.String(pscore, display.Black, image.ZP, display.Font, buf)
 }
 
 func drawsq(b *draw.Image, p image.Point, ptx int) {
@@ -680,7 +680,7 @@ func redraw(new bool) {
 	rboard.Max.Y = rboard.Min.Y + NY*pcsz
 	pscore.X = rboard.Min.X + 8
 	pscore.Y = rboard.Min.Y - 32
-	scoresz = display.DefaultFont.StringSize("000000")
+	scoresz = display.Font.StringSize("000000")
 	pos.X = pos.X*pcsz + rboard.Min.X
 	pos.Y = pos.Y*pcsz + rboard.Min.Y
 	if bb != nil {
