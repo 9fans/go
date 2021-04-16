@@ -36,10 +36,6 @@ func main() {
 	}
 
 	file := flag.Arg(0)
-	_, err := os.Stat(file)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	fullpath, err := filepath.Abs(file)
 	if err != nil {
