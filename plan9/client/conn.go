@@ -39,10 +39,17 @@ func NewConn(rwc io.ReadWriteCloser) (*Conn, error) {
 	}
 
 	//	XXX raw messages, not c.rpc
-	tx := &plan9.Fcall{Type: plan9.Tversion, Msize: c.msize, Version: c.version}
-	rx, err := c.rpc(tx)
+	tx := &plan9.Fcall{Type: plan9.Tversion, Tag: plan9.NOTAG, Msize: c.msize, Version: c.version}
+	err := c.write(tx)
 	if err != nil {
 		return nil, err
+	}
+	rx, err := c.read()
+	if err != nil {
+		return nil, err
+	}
+	if rx.Type != plan9.Rversion || rx.Tag != plan9.NOTAG {
+		return nil, plan9.ProtocolError(fmt.Sprintf("invalid type/tag in Tversion exchange: %v %v", rx.Type, rx.Tag))
 	}
 
 	if rx.Msize > c.msize {
