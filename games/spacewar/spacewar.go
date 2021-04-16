@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Spacewar is the original PDP-1 Spacewar video game,
+// running in a PDP-1 emulator.
 package main // import "9fans.net/go/games/spacewar"
 
 import (
