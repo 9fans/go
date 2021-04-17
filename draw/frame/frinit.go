@@ -30,7 +30,7 @@ func (f *Frame) Init(r draw.Rectangle, ft *draw.Font, b *draw.Image, cols []*dra
 	f.LastLineFull = false
 	copy(f.Cols[:], cols)
 	f.SetRects(r, b)
-	if f.Tick == nil && f.Cols[BACK] != nil {
+	if f.tick == nil && f.Cols[BACK] != nil {
 		f.InitTick()
 	}
 }
@@ -48,7 +48,7 @@ func (f *Frame) InitTick() {
 		drawerror(f.Display, "missing screenimage")
 	}
 	ft := f.Font
-	if f.Tick != nil {
+	if f.tick != nil {
 		f.tick.Free()
 	}
 	f.tick, _ = f.Display.AllocImage(draw.Rect(0, 0, f.tickscale*_FRTICKW, ft.Height), b.Pix, false, draw.White)

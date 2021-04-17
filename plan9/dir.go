@@ -130,7 +130,7 @@ type Perm uint32
 
 type permChar struct {
 	bit Perm
-	c   int
+	c   rune
 }
 
 var permChars = []permChar{

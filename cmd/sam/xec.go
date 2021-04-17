@@ -353,7 +353,7 @@ func display(f *File) bool {
 	p1 := addr.r.p1
 	p2 := addr.r.p2
 	if p2 > f.b.nc {
-		fmt.Fprintf(os.Stderr, "bad display addr p1=%ld p2=%ld f->b.nc=%d\n", p1, p2, f.b.nc) /*ZZZ should never happen, can remove */
+		fmt.Fprintf(os.Stderr, "bad display addr p1=%d p2=%d f->b.nc=%d\n", p1, p2, f.b.nc) /*ZZZ should never happen, can remove */
 		p2 = f.b.nc
 	}
 	for p1 < p2 {

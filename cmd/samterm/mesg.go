@@ -92,7 +92,7 @@ func whichtext(tg int) *Text {
 		println(tag[i], text[i], string(name[i]))
 	}
 	panic("whichtext")
-	return nil
+	// return nil
 }
 
 func inmesg(typ Hmesg, count int) {
@@ -101,11 +101,11 @@ func inmesg(typ Hmesg, count int) {
 	switch typ {
 	case -1:
 		panic("rcv error")
-		fallthrough
+		// fallthrough
 	default:
 		fmt.Fprintf(os.Stderr, "type %d\n", typ)
 		panic("rcv unknown")
-		fallthrough
+		// fallthrough
 
 	case Hversion:
 		hversion = m

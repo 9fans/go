@@ -167,7 +167,7 @@ func filematch(f *File, r *String) bool {
 		}
 		return s[0]
 	}
-	buf := fmt.Sprintf("%c%c%c %s\n", ch(" '", f.mod), ch("-+", f.rasp != nil), ch(" .", f == curfile), f.name.s)
+	buf := fmt.Sprintf("%c%c%c %s\n", ch(" '", f.mod), ch("-+", f.rasp != nil), ch(" .", f == curfile), f.name)
 	t := tmpcstr(buf)
 	Strduplstr(&genstr, t)
 	freetmpstr(t)

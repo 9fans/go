@@ -82,7 +82,7 @@ func extproc(c chan string, fd *os.File) {
 	for {
 		n, err := fd.Read(buf)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "samterm: extern read error: %v\n")
+			fmt.Fprintf(os.Stderr, "samterm: extern read error: %v\n", err)
 			return /* not a fatal error */
 		}
 		c <- string(buf[:n])

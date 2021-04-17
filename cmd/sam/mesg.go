@@ -563,7 +563,7 @@ func snarf(f *File, p1 Posn, p2 Posn, buf *Buffer, emptyok int) {
 	bufreset(buf)
 	/* Stage through genbuf to avoid compaction problems (vestigial) */
 	if p2 > f.b.nc {
-		fmt.Fprintf(os.Stderr, "bad snarf addr p1=%ld p2=%ld f->b.nc=%d\n", p1, p2, f.b.nc) /*ZZZ should never happen, can remove */
+		fmt.Fprintf(os.Stderr, "bad snarf addr p1=%d p2=%d f->b.nc=%d\n", p1, p2, f.b.nc) /*ZZZ should never happen, can remove */
 		p2 = f.b.nc
 	}
 	var n int
