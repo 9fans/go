@@ -87,11 +87,11 @@ func dprint(z string, args ...interface{}) {
 }
 
 func print_ss(s string, a *String, b *String) {
-	dprint("?warning: %s: `%s' and `%s'\n", s, a.s, b.s)
+	dprint("?warning: %s: `%s' and `%s'\n", s, a, b)
 }
 
 func print_s(s string, a *String) {
-	dprint("?warning: %s `%s'\n", s, a.s)
+	dprint("?warning: %s `%s'\n", s, a)
 }
 
 var getuser_user string
