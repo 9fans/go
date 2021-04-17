@@ -15,6 +15,7 @@ var d *dict.Client
 var dicts []dict.Dict
 
 func main() {
+	flag.Parse()
 	w, err := acme.New()
 	if err != nil {
 		log.Fatal(err)
