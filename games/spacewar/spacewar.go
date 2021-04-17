@@ -108,7 +108,7 @@ func (m *SpacewarPDP1) Init(d *draw.Display) {
 		b = draw.Color(min(0, 255))
 		m.cmap[i], _ = d.AllocImage(image.Rect(0, 0, 1, 1), d.ScreenImage.Pix, true, r<<24|g<<16|b<<8|0xff)
 	}
-	m.screen.Draw(m.screen.R, d.Black, nil, image.ZP)
+	m.screen.Draw(m.screen.R, d.Black, nil, draw.ZP)
 }
 
 const (
@@ -169,7 +169,7 @@ func (m *SpacewarPDP1) flush() {
 		for x := 0; x < m.dx; x++ {
 			if m.oldpix[y][x] != m.pix[y][x] {
 				r := image.Rect(x, y, x+1, y+1)
-				m.screen.Draw(r, m.cmap[m.pix[y][x]], nil, image.ZP)
+				m.screen.Draw(r, m.cmap[m.pix[y][x]], nil, draw.ZP)
 				m.oldpix[y][x] = m.pix[y][x]
 			}
 			m.pix[y][x] >>= 1

@@ -36,7 +36,7 @@ func flstart(r image.Rectangle) {
 func flnew(l *Flayer, fn func(*Flayer, int) []rune, text *Text) {
 	l.textfn = fn
 	l.text = text
-	l.lastsr = image.ZR
+	l.lastsr = draw.ZR
 	llinsert(l)
 }
 
@@ -60,20 +60,20 @@ func flinit(l *Flayer, r image.Rectangle, ft *draw.Font, cols []*draw.Image) {
 	l.f.Init(flrect(l, r).Inset(FLMARGIN(l)), ft, screen, cols)
 	l.f.MaxTab = maxtab * ft.StringWidth("0")
 	newvisibilities(true)
-	screen.Draw(l.entire, l.f.Cols[frame.BACK], nil, image.ZP)
+	screen.Draw(l.entire, l.f.Cols[frame.BACK], nil, draw.ZP)
 	scrdraw(l, 0)
 	flborder(l, false)
 }
 
 func flclose(l *Flayer) {
 	if l.visible == All {
-		screen.Draw(l.entire, display.White, nil, image.ZP)
+		screen.Draw(l.entire, display.White, nil, draw.ZP)
 	} else if l.visible == Some {
 		if l.f.B == nil {
 			l.f.B, _ = display.AllocImage(l.entire, screen.Pix, false, draw.NoFill)
 		}
 		if l.f.B != nil {
-			l.f.B.Draw(l.entire, display.White, nil, image.ZP)
+			l.f.B.Draw(l.entire, display.White, nil, draw.ZP)
 			flrefresh(l, l.entire, 0)
 		}
 	}
@@ -88,12 +88,12 @@ func flclose(l *Flayer) {
 
 func flborder(l *Flayer, wide bool) {
 	if flprepare(l) {
-		l.f.B.Border(l.entire, FLMARGIN(l), l.f.Cols[frame.BACK], image.ZP)
+		l.f.B.Border(l.entire, FLMARGIN(l), l.f.Cols[frame.BACK], draw.ZP)
 		w := 1
 		if wide {
 			w = FLMARGIN(l)
 		}
-		l.f.B.Border(l.entire, w, l.f.Cols[frame.BORD], image.ZP)
+		l.f.B.Border(l.entire, w, l.f.Cols[frame.BORD], draw.ZP)
 		if l.visible == Some {
 			flrefresh(l, l.entire, 0)
 		}
@@ -128,7 +128,7 @@ func newvisibilities(redraw bool) {
 	/* if redraw false, we know it's a flupfront, and needn't
 	 * redraw anyone becoming partially covered */
 	for _, l := range llist {
-		l.lastsr = image.ZR /* make sure scroll bar gets redrawn */
+		l.lastsr = draw.ZR /* make sure scroll bar gets redrawn */
 		ov := l.visible
 		l.visible = visibility(l)
 		V := func(a, b Vis) int { return int(a)<<2 | int(b) }
@@ -333,11 +333,11 @@ func flresize(dr image.Rectangle) {
 	if false && dr.Dx() == olDrect.Dx() && dr.Dy() == olDrect.Dy() {
 		move = true
 	} else {
-		screen.Draw(lDrect, display.White, nil, image.ZP)
+		screen.Draw(lDrect, display.White, nil, draw.ZP)
 	}
 	for i := 0; i < nllist; i++ {
 		l := llist[i]
-		l.lastsr = image.ZR
+		l.lastsr = draw.ZR
 		f := &l.f
 		var r image.Rectangle
 		if move {
@@ -393,12 +393,12 @@ func flprepare(l *Flayer) bool {
 				return false
 			}
 		}
-		f.B.Draw(l.entire, f.Cols[frame.BACK], nil, image.ZP)
+		f.B.Draw(l.entire, f.Cols[frame.BACK], nil, draw.ZP)
 		w := 1
 		if l == llist[0] {
 			w = FLMARGIN(l)
 		}
-		f.B.Border(l.entire, w, f.Cols[frame.BORD], image.ZP)
+		f.B.Border(l.entire, w, f.Cols[frame.BORD], draw.ZP)
 		n := f.NumChars
 		f.Init(f.Entire, f.Font, f.B, nil)
 		f.MaxTab = maxtab * f.Font.StringWidth("0")
@@ -410,7 +410,7 @@ func flprepare(l *Flayer) bool {
 		if f.P0 != f.P1 || ticked {
 			f.Drawsel(f.PointOf(f.P0), f.P0, f.P1, true)
 		}
-		l.lastsr = image.ZR
+		l.lastsr = draw.ZR
 		scrdraw(l, scrtotal(l))
 	}
 	return true

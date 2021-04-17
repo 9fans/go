@@ -55,7 +55,7 @@ func scrpos(r image.Rectangle, p0 int, p1 int, tot int) image.Rectangle {
 func scrmark(l *Flayer, r image.Rectangle) {
 	r.Max.X--
 	if draw.RectClip(&r, l.scroll) {
-		l.f.B.Draw(r, l.f.Cols[frame.HIGH], nil, image.ZP)
+		l.f.B.Draw(r, l.f.Cols[frame.HIGH], nil, draw.ZP)
 	}
 }
 
@@ -83,11 +83,11 @@ func scrdraw(l *Flayer, tot int) {
 	r2 := scrpos(r1, l.origin, l.origin+l.f.NumChars, tot)
 	if !r2.Eq(l.lastsr) {
 		l.lastsr = r2
-		b.Draw(r1, l.f.Cols[frame.BORD], nil, image.ZP)
+		b.Draw(r1, l.f.Cols[frame.BORD], nil, draw.ZP)
 		b.Draw(r2, l.f.Cols[frame.BACK], nil, r2.Min)
 		r2 = r1
 		r2.Min.X = r2.Max.X - 1
-		b.Draw(r2, l.f.Cols[frame.BORD], nil, image.ZP)
+		b.Draw(r2, l.f.Cols[frame.BORD], nil, draw.ZP)
 		if b != l.f.B {
 			l.f.B.Draw(r, b, nil, r1.Min)
 		}

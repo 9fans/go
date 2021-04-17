@@ -215,8 +215,8 @@ func collider(pt, pmax image.Point) bool {
 }
 
 func setpiece(p *Piece) {
-	bb.Draw(bb.R, display.White, nil, image.ZP)
-	bbmask.Draw(bb.R, display.Transparent, nil, image.ZP)
+	bb.Draw(bb.R, display.White, nil, draw.ZP)
+	bbmask.Draw(bb.R, display.Transparent, nil, draw.ZP)
 	br = image.Rect(0, 0, 0, 0)
 	br2 = br
 	piece = p
@@ -232,9 +232,9 @@ func setpiece(p *Piece) {
 		r.Max.X = r.Min.X + pcsz
 		r.Max.Y = r.Min.Y + pcsz
 		if i == 0 {
-			bb.Draw(r, display.Black, nil, image.ZP)
-			bb.Draw(r.Inset(1), tx[piece.tx], nil, image.ZP)
-			bbmask.Draw(r, display.Opaque, nil, image.ZP)
+			bb.Draw(r, display.Black, nil, draw.ZP)
+			bb.Draw(r.Inset(1), tx[piece.tx], nil, draw.ZP)
+			bbmask.Draw(r, display.Opaque, nil, draw.ZP)
 			op = r.Min
 		} else {
 			bb.Draw(r, bb, nil, op)
@@ -252,9 +252,9 @@ func setpiece(p *Piece) {
 	br2.Max = br.Max.Add(delta)
 	r = br.Add(bb2.R.Min)
 	r2 := br2.Add(bb2.R.Min)
-	bb2.Draw(r2, display.White, nil, image.ZP)
+	bb2.Draw(r2, display.White, nil, draw.ZP)
 	bb2.Draw(r.Add(delta), bb, nil, bb.R.Min)
-	bb2mask.Draw(r2, display.Transparent, nil, image.ZP)
+	bb2mask.Draw(r2, display.Transparent, nil, draw.ZP)
 	bb2mask.Draw(r, display.Opaque, bbmask, bb.R.Min)
 	bb2mask.Draw(r.Add(delta), display.Opaque, bbmask, bb.R.Min)
 }
@@ -262,7 +262,7 @@ func setpiece(p *Piece) {
 func drawpiece() {
 	screen.Draw(br.Add(pos), bb, bbmask, bb.R.Min)
 	if suspended {
-		screen.Draw(br.Add(pos), display.White, whitemask, image.ZP)
+		screen.Draw(br.Add(pos), display.White, whitemask, draw.ZP)
 	}
 }
 
@@ -312,8 +312,8 @@ func canfit(p *Piece) bool {
 func score(p int) {
 	points += p
 	buf := fmt.Sprintf("%.6d", points)
-	screen.Draw(image.Rectangle{pscore, pscore.Add(scoresz)}, display.White, nil, image.ZP)
-	screen.String(pscore, display.Black, image.ZP, display.Font, buf)
+	screen.Draw(image.Rectangle{pscore, pscore.Add(scoresz)}, display.White, nil, draw.ZP)
+	screen.String(pscore, display.Black, draw.ZP, display.Font, buf)
 }
 
 func drawsq(b *draw.Image, p image.Point, ptx int) {
@@ -321,14 +321,14 @@ func drawsq(b *draw.Image, p image.Point, ptx int) {
 	r.Min = p
 	r.Max.X = r.Min.X + pcsz
 	r.Max.Y = r.Min.Y + pcsz
-	b.Draw(r, display.Black, nil, image.ZP)
-	b.Draw(r.Inset(1), tx[ptx], nil, image.ZP)
+	b.Draw(r, display.Black, nil, draw.ZP)
+	b.Draw(r.Inset(1), tx[ptx], nil, draw.ZP)
 }
 
 func drawboard() {
-	screen.Border(rboard.Inset(-2), 2, display.Black, image.ZP)
+	screen.Border(rboard.Inset(-2), 2, display.Black, draw.ZP)
 	screen.Draw(image.Rect(rboard.Min.X, rboard.Min.Y-2, rboard.Max.X, rboard.Min.Y),
-		display.White, nil, image.ZP)
+		display.White, nil, draw.ZP)
 	for i := 0; i < NY; i++ {
 		for j := 0; j < NX; j++ {
 			if board[i][j] != 0 {
@@ -338,7 +338,7 @@ func drawboard() {
 	}
 	score(0)
 	if suspended {
-		screen.Draw(screenr, display.White, whitemask, image.ZP)
+		screen.Draw(screenr, display.White, whitemask, draw.ZP)
 	}
 }
 
@@ -433,7 +433,7 @@ func horiz() bool {
 	for j := 0; j < h; j++ {
 		r.Min.Y = rboard.Min.Y + lev[j]*pcsz
 		r.Max.Y = r.Min.Y + pcsz
-		screen.Draw(r, display.White, whitemask, image.ZP)
+		screen.Draw(r, display.White, whitemask, draw.ZP)
 		display.Flush()
 	}
 	for i := 0; i < 3; i++ {
@@ -445,7 +445,7 @@ func horiz() bool {
 		for j := 0; j < h; j++ {
 			r.Min.Y = rboard.Min.Y + lev[j]*pcsz
 			r.Max.Y = r.Min.Y + pcsz
-			screen.Draw(r, display.White, whitemask, image.ZP)
+			screen.Draw(r, display.White, whitemask, draw.ZP)
 		}
 		display.Flush()
 	}
@@ -457,7 +457,7 @@ func horiz() bool {
 		r.Max.Y = rboard.Min.Y + lev[j]*pcsz
 		screen.Draw(r.Add(image.Pt(0, pcsz)), screen, nil, r.Min)
 		r.Max.Y = rboard.Min.Y + pcsz
-		screen.Draw(r, display.White, nil, image.ZP)
+		screen.Draw(r, display.White, nil, draw.ZP)
 		for k := lev[j] - 1; k >= 0; k-- {
 			board[k+1] = board[k]
 		}
@@ -693,7 +693,7 @@ func redraw(new bool) {
 	bbmask, _ = display.AllocImage(image.Rect(0, 0, N*pcsz, N*pcsz), draw.GREY1, false, 0)
 	bb2, _ = display.AllocImage(image.Rect(0, 0, N*pcsz, N*pcsz+DY), screen.Pix, false, 0)
 	bb2mask, _ = display.AllocImage(image.Rect(0, 0, N*pcsz, N*pcsz+DY), draw.GREY1, false, 0)
-	screen.Draw(screenr, display.White, nil, image.ZP)
+	screen.Draw(screenr, display.White, nil, draw.ZP)
 	drawboard()
 	setpiece(piece)
 	if piece != nil {

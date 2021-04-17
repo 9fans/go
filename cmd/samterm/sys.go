@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"image"
 	"io"
 	"log"
 	"os"
@@ -43,7 +42,7 @@ func getscreen() {
 	if t != "" {
 		maxtab, _ = strconv.Atoi(t)
 	}
-	screen.Draw(screen.Clipr, display.White, nil, image.ZP)
+	screen.Draw(screen.Clipr, display.White, nil, draw.ZP)
 }
 
 func screensize(w *int, h *int) bool {

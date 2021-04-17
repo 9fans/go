@@ -41,8 +41,8 @@ Refnone -> display.Refnone
 Rune -> rune
 TEXT -> frame.TEXT
 UTFmax -> utf8.UTFMax
-ZP -> image.ZP
-ZR -> image.ZR
+ZP -> draw.ZP
+ZR -> draw.ZR
 addpt(p, q) -> p.Add(q)
 allocimage(d, r, p, 0, c) -> d.AllocImage(r, p, false, c)
 allocimage(d, r, p, 1, c) -> d.AllocImage(r, p, true, c)
