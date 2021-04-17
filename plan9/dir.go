@@ -114,7 +114,7 @@ func dumpsome(b []byte) string {
 
 	printable := true
 	for _, c := range b {
-		if c != 0 && c < 32 || c > 127 {
+		if (c != 0 && c != '\n' && c != '\t' && c < ' ') || c > 127 {
 			printable = false
 			break
 		}
