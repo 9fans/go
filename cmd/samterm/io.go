@@ -162,11 +162,12 @@ func getch() int {
 
 func externchar() rune {
 	for got&(1<<RPlumb)&^block != 0 {
+		if len(externcmd) == 0 {
+			got &^= 1 << RPlumb
+			break
+		}
 		r := externcmd[0]
 		externcmd = externcmd[1:]
-		if r == 0 {
-			continue
-		}
 		return r
 	}
 	return -1
