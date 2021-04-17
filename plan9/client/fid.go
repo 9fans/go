@@ -311,7 +311,7 @@ func (fid *Fid) writeAt(b []byte, offset int64) (n int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	if o == -1 && rx.Count > 0 {
+	if offset == -1 && rx.Count > 0 {
 		fid.f.Lock()
 		fid.offset += int64(rx.Count)
 		fid.f.Unlock()
