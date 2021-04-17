@@ -128,7 +128,7 @@ func doubleclick(f *File, p1 Posn) {
 	f.dot.r.p2 = p1
 	f.dot.r.p1 = f.dot.r.p2
 	var p Posn
-	for i := 0; left[i] != nil; i++ {
+	for i := 0; i < len(left); i++ {
 		l := left[i]
 		r := right[i]
 		/* try left match */
