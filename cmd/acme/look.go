@@ -797,7 +797,7 @@ func openfile(t *Text, e *Expand) *Window {
 	} else {
 		eval = true
 		var dummy int
-		r = address(true, t, range_(-1, -1), range_(t.q0, t.q1), e.arg.(*Text), e.a0, e.a1, e.agetc, &eval, &dummy)
+		r = address(true, t, range_(-1, -1), range_(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
 		if r.q0 > r.q1 {
 			eval = false
 			warning(nil, "addresses out of order\n")

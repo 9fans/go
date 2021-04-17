@@ -43,6 +43,7 @@ func derror(d *draw.Display, errorstr string) {
 }
 
 func main() {
+	bigLock()
 	log.SetFlags(0)
 	log.SetPrefix("acme: ")
 
@@ -104,7 +105,9 @@ func main() {
 	}
 	go func() {
 		for err := range ch {
+			bigLock()
 			derror(d, err.Error())
+			bigUnlock()
 		}
 	}()
 
@@ -187,7 +190,9 @@ func main() {
 	go xfidallocthread()
 	go newwindowthread()
 	/* threadnotify(shutdown, 1) */
+	bigUnlock()
 	<-cexit
+	bigLock()
 	killprocs()
 	os.Exit(0)
 }
@@ -320,17 +325,19 @@ plumbproc(void *v)
 */
 
 func keyboardthread() {
-	big.Lock()
+	bigLock()
+	defer bigUnlock()
+
 	var timerc <-chan time.Time
 	var r rune
 	var timer *time.Timer
 	typetext = nil
 	for {
 		var t *Text
-		big.Unlock()
+		bigUnlock()
 		select {
 		case <-timerc:
-			big.Lock()
+			bigLock()
 			timer = nil
 			timerc = nil
 			t = typetext
@@ -342,7 +349,7 @@ func keyboardthread() {
 			}
 
 		case r = <-keyboardctl.C:
-			big.Lock()
+			bigLock()
 		Loop:
 			typetext = rowtype(&row, r, mouse.Point)
 			t = typetext
@@ -375,7 +382,9 @@ func keyboardthread() {
 }
 
 func mousethread() {
-	big.Lock()
+	bigLock()
+	defer bigUnlock()
+
 	for {
 		row.lk.Lock()
 		flushwarnings()
@@ -383,10 +392,10 @@ func mousethread() {
 
 		display.Flush()
 
-		big.Unlock()
+		bigUnlock()
 		select {
 		case <-mousectl.Resize:
-			big.Lock()
+			bigLock()
 			if err := display.Attach(draw.RefNone); err != nil {
 				error_("attach to window: " + err.Error())
 			}
@@ -396,7 +405,7 @@ func mousethread() {
 			rowresize(&row, display.ScreenImage.Clipr)
 
 		case pm := <-cplumb:
-			big.Lock()
+			bigLock()
 			if pm.Type == "text" {
 				act := pm.LookupAttr("action")
 				if act == "" || act == "showfile" {
@@ -407,7 +416,7 @@ func mousethread() {
 			}
 
 		case <-cwarn:
-			big.Lock()
+			bigLock()
 			// ok
 
 		/*
@@ -416,7 +425,7 @@ func mousethread() {
 		 * another race; see /sys/src/libdraw/mouse.c.
 		 */
 		case m := <-mousectl.C:
-			big.Lock()
+			bigLock()
 			mousectl.Mouse = m
 			row.lk.Lock()
 			t := rowwhich(&row, m.Point)
@@ -556,16 +565,22 @@ type Pid struct {
 func waitthread() {
 	var pids *Pid
 
+	bigLock()
+	defer bigUnlock()
+
 	for {
 		var c *Command
+		bigUnlock()
 		select {
 		case errb := <-cerr:
+			bigLock()
 			row.lk.Lock()
 			warning(nil, "%s", errb)
 			display.Flush()
 			row.lk.Unlock()
 
 		case cmd := <-ckill:
+			bigLock()
 			found := false
 			for c = command; c != nil; c = c.next {
 				/* -1 for blank */
@@ -583,6 +598,7 @@ func waitthread() {
 			}
 
 		case w := <-cwait:
+			bigLock()
 			pid := w.pid
 			var c, lc *Command
 			for c = command; c != nil; c = c.next {
@@ -619,6 +635,7 @@ func waitthread() {
 			goto Freecmd
 
 		case c = <-ccommand:
+			bigLock()
 			/* has this command already exited? */
 			var lastp *Pid
 			for p := pids; p != nil; p = p.next {
@@ -660,6 +677,7 @@ func waitthread() {
 func xfidallocthread() {
 	var xfree *Xfid
 	for {
+		// TODO(rsc): split cxfidalloc into two channels
 		select {
 		case <-cxfidalloc:
 			x := xfree
@@ -684,12 +702,13 @@ func xfidallocthread() {
 func newwindowthread() {
 	for {
 		/* only fsysproc is talking to us, so synchronization is trivial */
+		// TODO(rsc): split cnewwindow into two channels
 		<-cnewwindow
-		big.Lock()
+		bigLock()
 		w := makenewwindow(nil)
 		winsettag(w)
 		xfidlog(w, "new")
-		big.Unlock()
+		bigUnlock()
 		cnewwindow <- w
 	}
 }
@@ -975,3 +994,18 @@ func ismtpt(file string) bool {
 }
 
 const timefmt = "2006/01/02 15:04:05"
+
+var big sync.Mutex
+var stk = make([]byte, 1<<20)
+
+func bigLock() {
+	big.Lock()
+	//n := runtime.Stack(stk, true)
+	//print("\n\nbig.Lock:\n", string(stk[:n]))
+}
+
+func bigUnlock() {
+	//n := runtime.Stack(stk, true)
+	//print("\n\nbig.Unlock:\n", string(stk[:n]))
+	big.Unlock()
+}

@@ -35,18 +35,27 @@ type Log struct {
 var eventlog Log
 
 func init() {
+	// Using eventlog.lk with a sync.Cond means we have
+	// to reacquire big after sync.Wait has locked eventlog.lk.
+	// Therefore every acquisition of eventlog.lk must drop big
+	// before eventlog.lk.Lock and then reacquire it afterward,
+	// or else the two different lock orders will deadlock.
 	eventlog.r.L = &eventlog.lk
 }
 
 func xfidlogopen(x *Xfid) {
+	bigUnlock()
 	eventlog.lk.Lock()
+	bigLock()
 	eventlog.f = append(eventlog.f, x.f)
 	x.f.logoff = eventlog.start + int64(len(eventlog.ev))
 	eventlog.lk.Unlock()
 }
 
 func xfidlogclose(x *Xfid) {
+	bigUnlock()
 	eventlog.lk.Lock()
+	bigLock()
 	for i := 0; i < len(eventlog.f); i++ {
 		if eventlog.f[i] == x.f {
 			eventlog.f[i] = eventlog.f[len(eventlog.f)-1]
@@ -58,14 +67,16 @@ func xfidlogclose(x *Xfid) {
 }
 
 func xfidlogread(x *Xfid) {
+	bigUnlock()
 	eventlog.lk.Lock()
+	bigLock()
 	eventlog.read = append(eventlog.read, x)
 
 	x.flushed = false
 	for x.f.logoff >= eventlog.start+int64(len(eventlog.ev)) && !x.flushed {
-		big.Unlock()
+		bigUnlock()
 		eventlog.r.Wait()
-		big.Lock()
+		bigLock()
 	}
 	var i int
 
@@ -94,7 +105,9 @@ func xfidlogread(x *Xfid) {
 }
 
 func xfidlogflush(x *Xfid) {
+	bigUnlock()
 	eventlog.lk.Lock()
+	bigLock()
 	for i := 0; i < len(eventlog.read); i++ {
 		rx := eventlog.read[i]
 		if rx.fcall.Tag == x.fcall.Oldtag {
@@ -127,7 +140,9 @@ func xfidlogflush(x *Xfid) {
  *	- called from winclose
  */
 func xfidlog(w *Window, op string) {
+	bigUnlock()
 	eventlog.lk.Lock()
+	bigLock()
 	if len(eventlog.ev) >= cap(eventlog.ev) {
 		// Remove and free any entries that all readers have read.
 		min := eventlog.start + int64(len(eventlog.ev))

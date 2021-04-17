@@ -1379,7 +1379,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		return
 	}
 
-	for i := 0; left[i] != nil; i++ {
+	for i := 0; i < len(left); i++ {
 		q := *q0
 		l := left[i]
 		r := right[i]

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"9fans.net/go/plan9"
@@ -56,10 +55,10 @@ func clampaddr(w *Window) {
 func xfidctl(x *Xfid) {
 	for {
 		f := <-x.c
-		big.Lock()
+		bigLock()
 		f(x)
 		display.Flush()
-		big.Unlock()
+		bigUnlock()
 		cxfidfree <- x
 	}
 }
@@ -427,8 +426,6 @@ func fullrunewrite(x *Xfid) []rune {
 	}
 	return r
 }
-
-var big sync.Mutex
 
 func xfidwrite(x *Xfid) {
 	qid := FILE(x.f.qid)
@@ -1019,9 +1016,9 @@ func xfideventread(x *Xfid, w *Window) {
 		}
 		w.eventx = x
 		winunlock(w)
-		big.Unlock()
+		bigUnlock()
 		<-x.c
-		big.Lock()
+		bigLock()
 		winlock(w, 'F')
 		i++
 	}
