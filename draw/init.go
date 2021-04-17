@@ -358,11 +358,11 @@ func (d *Display) Attach(ref int) error {
 
 // Close closes the Display.
 func (d *Display) Close() error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	if d == nil {
 		return nil
 	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	return d.conn.Close()
 }
 
