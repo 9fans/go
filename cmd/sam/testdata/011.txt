@@ -1,0 +1,12 @@
+B testdata/gettysburg
+w tmp
+e tmp
+,s/i/I/g
+w
+q
+-- out --
+ -.
+ -. testdata/gettysburg
+tmp: #1548
+ -. tmp
+tmp: #1548
