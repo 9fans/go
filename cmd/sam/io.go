@@ -34,7 +34,7 @@ func writef(f *File) {
 	info, err := os.Stat(name)
 	if err != nil {
 		newfile++
-	} else if samename && (!os.SameFile(f.info, info) || !f.info.ModTime().Before(info.ModTime())) {
+	} else if samename && (!os.SameFile(f.info, info) || f.info.Size() != info.Size() || !f.info.ModTime().Equal(info.ModTime())) {
 		f.info = info
 		warn_S(Wdate, &genstr)
 		return
