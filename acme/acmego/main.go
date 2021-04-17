@@ -3,9 +3,25 @@
 // license that can be found in the LICENSE file.
 
 // Acmego watches acme for .go files being written.
+//
+// Usage:
+//
+//	acmego [-f]
+//
 // Each time a .go file is written, acmego checks whether the
 // import block needs adjustment. If so, it makes the changes
 // in the window body but does not write the file.
+// It depends on “goimports” being installed.
+//
+// If the -f option is given, reformats the Go source file body
+// as well as updating the imports. It also watches for other
+// known extensions and runs their formatters if found in
+// the executable path.
+//
+// The other known extensions and formatters are:
+//
+//	.rs - rustfmt
+//
 package main
 
 import (
@@ -23,10 +39,24 @@ import (
 	"9fans.net/go/acme"
 )
 
-var gofmt = flag.Bool("f", false, "run gofmt on the entire file after Put")
+var gofmt = flag.Bool("f", false, "format the entire file after Put")
+
+var formatters = map[string][]string{
+	".go": []string{"goimports"},
+}
+
+// Non-Go formatters (only loaded with -f option).
+var otherFormatters = map[string][]string{
+	".rs": []string{"rustfmt", "--emit", "stdout"},
+}
 
 func main() {
 	flag.Parse()
+	if *gofmt {
+		for suffix, formatter := range otherFormatters {
+			formatters[suffix] = formatter
+		}
+	}
 	l, err := acme.Log()
 	if err != nil {
 		log.Fatal(err)
@@ -37,13 +67,19 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if event.Name != "" && event.Op == "put" && strings.HasSuffix(event.Name, ".go") {
-			reformat(event.ID, event.Name)
+		if event.Name == "" || event.Op != "put" {
+			continue
+		}
+		for suffix, formatter := range formatters {
+			if strings.HasSuffix(event.Name, suffix) {
+				reformat(event.ID, event.Name, formatter)
+				break
+			}
 		}
 	}
 }
 
-func reformat(id int, name string) {
+func reformat(id int, name string, formatter []string) {
 	w, err := acme.Open(id, nil)
 	if err != nil {
 		log.Print(err)
@@ -56,7 +92,14 @@ func reformat(id int, name string) {
 		//log.Print(err)
 		return
 	}
-	new, err := exec.Command("goimports", name).CombinedOutput()
+
+	exe, err := exec.LookPath(formatter[0])
+	if err != nil {
+		// Formatter not installed.
+		return
+	}
+
+	new, err := exec.Command(exe, append(formatter[1:], name)...).CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(new), "fatal error") {
 			fmt.Fprintf(os.Stderr, "goimports %s: %v\n%s", name, err, new)
