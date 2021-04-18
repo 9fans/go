@@ -173,6 +173,10 @@ func doubleclick(f *File, p1 Posn) {
 	/* try filling out word to right */
 	p = p1
 	for p < f.b.nc {
+		p++
+		if !alnum(filereadc(f, p)) {
+			break
+		}
 		f.dot.r.p2++
 	}
 	/* try filling out word to left */
