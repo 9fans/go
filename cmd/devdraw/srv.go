@@ -20,7 +20,7 @@ import (
 
 var client0 *Client
 
-var trace int = 1
+var trace int = 0
 var srvname string
 var afd int
 var adir string
@@ -167,7 +167,7 @@ func runmsg(c *Client, m *drawfcall.Msg) {
 			replyerror(c, m, err)
 			break
 		}
-		println("I", i)
+		// println("I", i)
 		draw_initdisplaymemimage(c, i)
 		replymsg(c, m)
 

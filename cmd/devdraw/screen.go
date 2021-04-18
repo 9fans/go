@@ -49,7 +49,7 @@ func rpc_attach(client *Client, label, winsize string) (*memdraw.Image, error) {
 
 			case size.Event:
 				r := draw.Rect(0, 0, e.WidthPx, e.HeightPx)
-				log.Printf("rect %v\n", r)
+				log.Printf("size.Event rect %v\n", r)
 				i, err := memdraw.AllocImage(r, ScreenPix)
 				if err != nil {
 					log.Fatal(err)
@@ -103,8 +103,7 @@ func (impl *theImpl) rpc_flush(client *Client, r draw.Rectangle) {
 		// animations like sweeping windows much less flickery.
 		drawlk.Lock()
 		defer drawlk.Unlock()
-		fmt.Fprintf(os.Stderr, "flush %v\n", r)
-		//TODO godraw.Draw(impl.b.RGBA(), r, impl.rgba, r.Min, godraw.Src)
+		// fmt.Fprintf(os.Stderr, "flush %v\n", r)
 		godraw.Draw(impl.b.RGBA(), impl.b.Bounds(), impl.rgba, impl.b.Bounds().Min, godraw.Src)
 		theWindow.Upload(image.Point{}, impl.b, impl.b.Bounds())
 		theWindow.Publish()
@@ -164,14 +163,12 @@ func shinyMain(s screen.Screen) {
 		}
 	}()
 
-	println("SHINYMAIN")
-
 	var buttons int
 
 	for {
-		fmt.Fprintf(os.Stderr, "EVWAIT\n")
+		// fmt.Fprintf(os.Stderr, "EVWAIT\n")
 		e := w.NextEvent()
-		fmt.Fprintf(os.Stderr, "EV %T %+v\n", e, e)
+		// fmt.Fprintf(os.Stderr, "EV %T %+v\n", e, e)
 		switch e := e.(type) {
 		case func():
 			e()
@@ -183,6 +180,7 @@ func shinyMain(s screen.Screen) {
 			}
 
 		case key.Event:
+			// TODO buttons
 			if e.Direction != key.DirPress {
 				break
 			}
@@ -200,6 +198,7 @@ func shinyMain(s screen.Screen) {
 		case mouse.Event:
 			// TODO keyboard modifiers
 			// TODO buttons
+			fmt.Fprintf(os.Stderr, "M %T\n", e)
 			if e.Button > 0 {
 				if e.Direction == mouse.DirPress {
 					buttons |= 1 << (e.Button - 1)
@@ -207,12 +206,19 @@ func shinyMain(s screen.Screen) {
 					buttons &^= 1 << (e.Button - 1)
 				}
 			}
+			if buttons == 1 {
+				if e.Modifiers&key.ModAlt != 0 {
+					buttons = 2
+				} else if e.Modifiers&key.ModMeta != 0 {
+					buttons = 4
+				}
+			}
 			gfx_abortcompose(client)
-			fmt.Fprintf(os.Stderr, "mousetrack %d %d %#b\n", int(e.X), int(e.Y), buttons)
+			// fmt.Fprintf(os.Stderr, "mousetrack %d %d %#b\n", int(e.X), int(e.Y), buttons)
 			gfx_mousetrack(client, int(e.X), int(e.Y), buttons, uint32(time.Now().UnixNano()/1e6))
 
 		case paint.Event:
-			fmt.Fprintf(os.Stderr, "PAINT\n")
+			// fmt.Fprintf(os.Stderr, "PAINT\n")
 			w.Upload(image.Point{}, impl.b, impl.b.Bounds())
 			w.Publish()
 

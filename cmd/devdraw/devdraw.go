@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"os"
 	"sync"
 	"unsafe"
 
@@ -135,7 +134,7 @@ func dstflush(c *Client, dstid int, dst *memdraw.Image, r draw.Rectangle) {
 	}
 	/* how can this happen? -rsc, dec 12 2002 */
 	if dst == nil {
-		fmt.Fprintf(os.Stderr, "nil dstflush\n")
+		// fmt.Fprintf(os.Stderr, "nil dstflush\n")
 		return
 	}
 	l := dst.Layer
@@ -263,7 +262,7 @@ func drawinstall(client *Client, id int, i *memdraw.Image, dscreen *DScreen) *me
 func drawinstallscreen(client *Client, d *DScreen, id int, dimage *DImage, dfill *DImage, public int) *memdraw.Screen {
 	c := new(CScreen)
 	if dimage != nil && dimage.image != nil && dimage.image.Pix == 0 {
-		fmt.Fprintf(os.Stderr, "bad image %p in drawinstallscreen", dimage.image)
+		// fmt.Fprintf(os.Stderr, "bad image %p in drawinstallscreen", dimage.image)
 		panic("drawinstallscreen")
 	}
 
@@ -318,7 +317,7 @@ func drawdelname(client *Client, name *DName) {
 func drawfreedscreen(client *Client, this *DScreen) {
 	this.ref--
 	if this.ref < 0 {
-		fmt.Fprintf(os.Stderr, "negative ref in drawfreedscreen\n")
+		// fmt.Fprintf(os.Stderr, "negative ref in drawfreedscreen\n")
 	}
 	if this.ref > 0 {
 		return
@@ -356,7 +355,7 @@ Found:
 func drawfreedimage(client *Client, dimage *DImage) {
 	dimage.ref--
 	if dimage.ref < 0 {
-		fmt.Fprintf(os.Stderr, "negative ref in drawfreedimage\n")
+		// fmt.Fprintf(os.Stderr, "negative ref in drawfreedimage\n")
 	}
 	if dimage.ref > 0 {
 		return
@@ -558,7 +557,7 @@ func draw_datawrite(client *Client, v []byte) (int, error) {
 		if len(a) == 0 {
 			break
 		}
-		fmt.Fprintf(os.Stderr, "msgwrite %d(%c)...", len(a), a[0])
+		// fmt.Fprintf(os.Stderr, "msgwrite %d(%c)...", len(a), a[0])
 		var refx *Refx
 		var reffn memdraw.Refreshfn
 		var r draw.Rectangle
@@ -691,7 +690,7 @@ func draw_datawrite(client *Client, v []byte) (int, error) {
 				memdraw.Free(i)
 				goto Edrawmem
 			}
-			fmt.Fprintf(os.Stderr, "ALLOC %p %v %v %x\n", i, r, i.Clipr, value)
+			// fmt.Fprintf(os.Stderr, "ALLOC %p %v %v %x\n", i, r, i.Clipr, value)
 			memdraw.FillColor(i, value)
 			continue
 
@@ -756,7 +755,7 @@ func draw_datawrite(client *Client, v []byte) (int, error) {
 			drawpoint(&p, a[29:])
 			drawpoint(&q, a[37:])
 			op := drawclientop(client)
-			fmt.Fprintf(os.Stderr, "DRAW %p %v %p %v %p %v %v\n", dst, r, src, p, mask, q, op)
+			// fmt.Fprintf(os.Stderr, "DRAW %p %v %p %v %p %v %v\n", dst, r, src, p, mask, q, op)
 			memdraw.Draw(dst, r, src, p, mask, q, op)
 			dstflush(client, dstid, dst, r)
 			continue
