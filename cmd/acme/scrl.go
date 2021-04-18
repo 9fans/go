@@ -123,7 +123,7 @@ func textscroll(t *Text, but int) {
 			}
 			oldp0 = p0
 			mousectl.Read()
-			continue
+			goto Continue
 		}
 		if but == 1 {
 			p0 = textbacknl(t, t.org, (my-s.Min.Y)/t.fr.Font.Height)
@@ -147,6 +147,7 @@ func textscroll(t *Text, but int) {
 			first = false
 		}
 		scrsleep(80 * time.Millisecond)
+	Continue:
 		if mouse.Buttons&(1<<(but-1)) == 0 {
 			break
 		}
