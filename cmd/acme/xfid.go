@@ -496,6 +496,7 @@ func xfidwrite(x *Xfid) {
 		}
 		r := make([]rune, len(x.fcall.Data))
 		_, nr, _ := cvttorunes(x.fcall.Data, r, true)
+		r = r[:nr]
 		if !w.nomark {
 			seq++
 			filemark(t.file)
