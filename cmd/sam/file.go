@@ -265,7 +265,7 @@ func fileundelete(f *File, delta *Buffer, p0 int, p1 int) {
 }
 
 func filereadc(f *File, q int) rune {
-	if q >= f.b.nc {
+	if q < 0 || q >= f.b.nc {
 		return -1
 	}
 	var r [1]rune
