@@ -1,5 +1,4 @@
-!echo hello world
+B
 -- out --
  -.
-hello world
-!
+?blank expected

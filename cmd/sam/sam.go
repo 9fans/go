@@ -560,12 +560,15 @@ func cd(str *String) {
 }
 
 func loadflist(s *String) bool {
-	c := s.s[0]
 	var i int
-	for i = 0; s.s[i] == ' ' || s.s[i] == '\t'; i++ {
+	var c rune
+	if len(s.s) > 0 {
+		c = s.s[0]
 	}
-	if (c == ' ' || c == '\t') && s.s[i] != '\n' {
-		if s.s[i] == '<' {
+	for i = 0; i < len(s.s) && (s.s[i] == ' ' || s.s[i] == '\t'); i++ {
+	}
+	if (c == ' ' || c == '\t') && (i >= len(s.s) || s.s[i] != '\n') {
+		if i < len(s.s) && s.s[i] == '<' {
 			Strdelete(s, 0, int(i)+1)
 			readcmd(s)
 		} else {
