@@ -81,7 +81,7 @@ func scrdraw(l *Flayer, tot int) {
 		b = l.f.B
 	}
 	r2 := scrpos(r1, l.origin, l.origin+l.f.NumChars, tot)
-	if !r2.Eq(l.lastsr) {
+	if r2 != l.lastsr {
 		l.lastsr = r2
 		b.Draw(r1, l.f.Cols[frame.BORD], nil, draw.ZP)
 		b.Draw(r2, l.f.Cols[frame.BACK], nil, r2.Min)
@@ -128,7 +128,7 @@ func scroll(l *Flayer, but int) {
 			if my >= s.Max.Y {
 				my = s.Max.Y
 			}
-			if !mousep.Point.Eq(image.Pt(x, my)) {
+			if mousep.Point != image.Pt(x, my) {
 				display.MoveCursor(image.Pt(x, my))
 			}
 			if but == 1 {
