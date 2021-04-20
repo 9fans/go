@@ -43,9 +43,16 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 	ecmd := exec.Command(SHPATH, "-c", Strtoc(&plan9cmd))
 	setname(ecmd, f)
 
+	ecmd.Stdin = os.Stdin
+	ecmd.Stdout = os.Stdout
+	ecmd.Stderr = os.Stderr
+
 	if downloaded {
 		errfile = samerr()
 		os.Remove(errfile)
+		ecmd.Stderr = nil
+		ecmd.Stdout = nil
+		ecmd.Stdin = nil
 		if fd, err := os.Create(errfile); err == nil {
 			ecmd.Stderr = fd
 			if type_ == '>' || type_ == '!' {
@@ -56,6 +63,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 
 	var stdout *os.File
 	if type_ == '<' || type_ == '|' {
+		ecmd.Stdout = nil
 		p, err := ecmd.StdoutPipe()
 		if err != nil {
 			error_(Epipe)
@@ -65,6 +73,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 
 	var stdin *os.File
 	if type_ == '>' || type_ == '|' {
+		ecmd.Stdin = nil
 		p, err := ecmd.StdinPipe()
 		if err != nil {
 			error_(Epipe)

@@ -1,0 +1,5 @@
+!echo hello world
+-- out --
+ -.
+hello world
+!
