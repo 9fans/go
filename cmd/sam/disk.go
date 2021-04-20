@@ -3,7 +3,7 @@
 package main
 
 import (
-	iopkg "io"
+	"io"
 	"reflect"
 	"unsafe"
 )
@@ -86,7 +86,7 @@ func diskwrite(d *Disk, bp **Block, r []rune) {
 	}
 	if nw, err := d.fd.WriteAt(runedata(r), b.addr); nw != n*RUNESIZE || err != nil {
 		if err == nil {
-			err = iopkg.ErrShortWrite
+			err = io.ErrShortWrite
 		}
 		panic_("writing temp file: %v", err)
 	}

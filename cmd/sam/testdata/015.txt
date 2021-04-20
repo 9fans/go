@@ -1,0 +1,12 @@
+B testdata/gettysburg
+3,5|sort
+3,5
+q
+-- out --
+ -.
+ -. testdata/gettysburg
+!
+  Now we are engaged in a great Civil War, testing whether that
+nation, or any nation so conceived and so dedicated, can long
+to the proposition that all men are created equal.
+?changed files

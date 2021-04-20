@@ -3,8 +3,7 @@
 package main
 
 import (
-	iopkg "io"
-	"os"
+	"io"
 	"unicode/utf8"
 )
 
@@ -199,7 +198,7 @@ func bufdelete(b *Buffer, q0 int, q1 int) {
 	}
 }
 
-func bufload(b *Buffer, q0 int, fd *os.File, nulls *bool) int {
+func bufload(b *Buffer, q0 int, fd io.Reader, nulls *bool) int {
 	if q0 > b.nc {
 		panic_("internal error: bufload")
 	}
@@ -215,12 +214,12 @@ func bufload(b *Buffer, q0 int, fd *os.File, nulls *bool) int {
 	for n > 0 {
 		var err error
 		n, err = fd.Read(p[m : m+Maxblock])
-		if err != nil && err != iopkg.EOF {
+		if err != nil && err != io.EOF {
 			error_(Ebufload)
 			break
 		}
 		m += n
-		nb, nr, nulls1 := cvttorunes(p[:m], r, err == iopkg.EOF)
+		nb, nr, nulls1 := cvttorunes(p[:m], r, err == io.EOF)
 		if nulls1 {
 			*nulls = true
 		}

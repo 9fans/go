@@ -8,7 +8,7 @@ if(~ $1 -std) {
 if(~ $#* 0)
 	*=(testdata/*.txt)
 if(~ $sam(1) ./sam)
-	go build || exit 1
+	go build -race || exit 1
 fail=()
 for(i) {
 	rm -f tmp tmp2

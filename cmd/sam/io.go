@@ -40,12 +40,12 @@ func writef(f *File) {
 		return
 	}
 	genc = string(genstr.s)
-	io, err = os.Create(genc)
+	iofile, err = os.Create(genc)
 	if err != nil {
 		error_r(Ecreate, genc, err)
 	}
 	dprint("%s: ", genc)
-	if info, err := io.Stat(); err == nil && info.Mode()&os.ModeAppend != 0 && info.Size() > 0 {
+	if info, err := iofile.Stat(); err == nil && info.Mode()&os.ModeAppend != 0 && info.Size() > 0 {
 		error_(Eappend)
 	}
 	n := writeio(f)
@@ -80,7 +80,7 @@ func readio(f *File, nulls *bool, setdate, toterm bool) Posn {
 	b := 0
 	var nt Posn
 	if f.unread {
-		nt = bufload(&f.b, 0, io, nulls)
+		nt = bufload(&f.b, 0, iofile, nulls)
 		if toterm {
 			raspload(f)
 		}
@@ -88,7 +88,7 @@ func readio(f *File, nulls *bool, setdate, toterm bool) Posn {
 		var nr int
 		for nt = 0; ; nt += nr {
 			var buf [BLOCKSIZE]byte
-			n, err := io.Read(buf[b:])
+			n, err := iofile.Read(buf[b:])
 			if err != nil || n == 0 {
 				break
 			}
@@ -131,7 +131,7 @@ func readio(f *File, nulls *bool, setdate, toterm bool) Posn {
 		warn(Wnulls)
 	}
 	if setdate {
-		if info, err := io.Stat(); err == nil {
+		if info, err := iofile.Stat(); err == nil {
 			f.info = info
 			checkqid(f)
 		}
@@ -150,7 +150,7 @@ func writeio(f *File) Posn {
 		}
 		bufread(&f.b, p, genbuf[:n])
 		c := []byte(string(genbuf[:n])) // TODO(rsc)
-		if nw, err := io.Write(c); err != nil || nw != len(c) {
+		if nw, err := iofile.Write(c); err != nil || nw != len(c) {
 			// free(c)
 			if p > 0 {
 				p += n
@@ -164,8 +164,8 @@ func writeio(f *File) Posn {
 }
 
 func closeio(p Posn) {
-	io.Close()
-	io = nil
+	iofile.Close()
+	iofile = nil
 	if p >= 0 {
 		dprint("#%d\n", p)
 	}

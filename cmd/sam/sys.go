@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	iopkg "io"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -29,7 +29,7 @@ func syserror(a string, err error) {
 }
 
 func Read(f *os.File, a []byte) int {
-	n, err := iopkg.ReadFull(f, a)
+	n, err := io.ReadFull(f, a)
 	if err != nil {
 		if lastfile != nil {
 			lastfile.rescuing = 1
@@ -43,11 +43,11 @@ func Read(f *os.File, a []byte) int {
 	return n
 }
 
-func Write(f *os.File, b []byte) int {
+func Write(f io.Writer, b []byte) int {
 	m, err := f.Write(b)
 	if err != nil || m != len(b) {
 		if err == nil {
-			err = iopkg.ErrShortWrite
+			err = io.ErrShortWrite
 		}
 		syserror("write", err)
 	}

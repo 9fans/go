@@ -4,7 +4,7 @@
 package main
 
 import (
-	iopkg "io"
+	"io"
 	"os"
 	"os/exec"
 )
@@ -61,29 +61,30 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		}
 	}
 
-	var stdout *os.File
+	var stdout IOFile
 	if type_ == '<' || type_ == '|' {
 		ecmd.Stdout = nil
 		p, err := ecmd.StdoutPipe()
 		if err != nil {
 			error_(Epipe)
 		}
-		stdout = p.(*os.File)
+		stdout = p.(IOFile)
 	}
 
-	var stdin *os.File
+	var stdin IOFile
 	if type_ == '>' || type_ == '|' {
 		ecmd.Stdin = nil
 		p, err := ecmd.StdinPipe()
 		if err != nil {
 			error_(Epipe)
 		}
-		stdin = p.(*os.File)
+		stdin = p.(IOFile)
 	}
 
 	if type_ == '|' {
 		go func() {
 			defer func() {
+				stdin.Close()
 				e := recover()
 				if e == nil {
 					return
@@ -94,16 +95,15 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 				panic(e)
 			}()
 
-			io = stdin
 			var m int
 			for l := 0; l < plan9buf.nc; l += m {
 				m = plan9buf.nc - l
 				if m > BLOCKSIZE-1 {
 					m = BLOCKSIZE - 1
 				}
-				bufread(&plan9buf, l, genbuf[:m])
-				c := []byte(string(genbuf[:m]))
-				Write(io, c)
+				bufread(&plan9buf, l, genbuf2[:m])
+				c := []byte(string(genbuf2[:m]))
+				Write(stdin, c)
 				// free(c)
 			}
 		}()
@@ -118,7 +118,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		}
 		snarf(f, addr.r.p1, addr.r.p2, &snarfbuf, 0)
 		logdelete(f, addr.r.p1, addr.r.p2)
-		io = stdout
+		iofile = stdout
 		f.tdot.p1 = -1
 		var nulls bool
 		f.ndot.r.p2 = addr.r.p2 + readio(f, &nulls, false, false)
@@ -126,7 +126,7 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 		closeio(-1)
 
 	case '>':
-		io = stdin
+		iofile = stdin
 		bpipeok = true
 		writeio(f)
 		bpipeok = false
@@ -158,7 +158,7 @@ func checkerrs() {
 		f, err := os.Open(errfile)
 		if err == nil {
 			buf := make([]byte, BLOCKSIZE-10)
-			n, err := iopkg.ReadFull(f, buf)
+			n, err := io.ReadFull(f, buf)
 			if err == nil && n > 0 {
 				nl := 0
 				p := 0

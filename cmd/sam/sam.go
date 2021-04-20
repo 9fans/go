@@ -9,12 +9,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
 
 var genbuf [BLOCKSIZE]rune
-var io *os.File
+var genbuf2 [BLOCKSIZE]rune
+
+var iofile IOFile
+
+type IOFile interface {
+	io.ReadWriteCloser
+	Stat() (os.FileInfo, error)
+}
+
 var panicking int
 var rescuing int
 var genstr String
@@ -141,14 +150,14 @@ func rescue() {
 	if rescuing++; rescuing > 1 {
 		return
 	}
-	io = nil
+	iofile = nil
 	for _, f := range file {
 		if f == cmd || f.b.nc == 0 || !fileisdirty(f) {
 			continue
 		}
-		if io == nil {
+		if iofile == nil {
 			var err error
-			io, err = os.OpenFile(filepath.Join(home, "sam.save"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+			iofile, err = os.OpenFile(filepath.Join(home, "sam.save"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 			if err != nil {
 				return
 			}
@@ -164,11 +173,11 @@ func rescue() {
 		if root == "" {
 			root = "/usr/local/plan9"
 		}
-		fmt.Fprintf(io, "#!/bin/sh\n%s/bin/samsave '%s' $* <<'---%s'\n", root, buf, buf)
+		fmt.Fprintf(iofile, "#!/bin/sh\n%s/bin/samsave '%s' $* <<'---%s'\n", root, buf, buf)
 		addr.r.p1 = 0
 		addr.r.p2 = f.b.nc
 		writeio(f)
-		fmt.Fprintf(io, "\n---%s\n", (string)(buf))
+		fmt.Fprintf(iofile, "\n---%s\n", (string)(buf))
 	}
 }
 
@@ -207,8 +216,8 @@ func hiccough(s string) {
 	resetcmd()
 	resetxec()
 	resetsys()
-	if io != nil {
-		io.Close()
+	if iofile != nil {
+		iofile.Close()
 	}
 
 	/*
@@ -352,7 +361,7 @@ func edit(f *File, cmd rune) {
 		empty = false
 	}
 	var err error
-	io, err = os.Open(genc)
+	iofile, err = os.Open(genc)
 	if err != nil {
 		if curfile != nil && curfile.unread {
 			curfile.unread = false
