@@ -18,8 +18,8 @@ func LOrigin(i *Image, log draw.Point, scr draw.Point) (int, error) {
 	s := l.Screen
 	oldr := l.Screenr
 	newr := draw.Rect(scr.X, scr.Y, scr.X+oldr.Dx(), scr.Y+oldr.Dy())
-	eqscr := scr.Eq(oldr.Min)
-	eqlog := log.Eq(i.R.Min)
+	eqscr := scr == oldr.Min
+	eqlog := log == i.R.Min
 	if eqscr && eqlog {
 		return 0, nil
 	}
