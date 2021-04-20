@@ -174,7 +174,7 @@ func doubleclick(f *File, p1 Posn) {
 	p = p1
 	for p < f.b.nc {
 		p++
-		if !alnum(filereadc(f, p)) {
+		if !alnum(filereadc(f, p-1)) {
 			break
 		}
 		f.dot.r.p2++

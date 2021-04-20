@@ -1,18 +1,5 @@
-B testdata/gettysburg
-w tmp
-e tmp
-!sleep 1
-!echo hello >>tmp
-,s/i/I/g
-w
-w
-q
+!echo hello world
 -- out --
  -.
- -. testdata/gettysburg
-tmp: #1548
- -. tmp
+hello world
 !
-!
-?warning: write might change good version of `tmp'
-tmp: #1548
