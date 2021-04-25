@@ -104,7 +104,7 @@ func cmdexec(t *Text, cp *Cmd) bool {
 			dot = cmdaddress(cp.addr, dot, 0)
 		}
 		for cp = cp.u.cmd; cp != nil; cp = cp.next {
-			if dot.r.End > t.file.b.nc {
+			if dot.r.End > t.file.b.Len() {
 				editerror("dot extends past end of buffer during { command")
 			}
 			t.q0 = dot.r.Pos
@@ -257,9 +257,9 @@ func e_cmd(t *Text, cp *Cmd) bool {
 			editerror("") /* winclean generated message already */
 		}
 		q0 = 0
-		q1 = f.b.nc
+		q1 = f.b.Len()
 	}
-	allreplaced := (q0 == 0 && q1 == f.b.nc)
+	allreplaced := (q0 == 0 && q1 == f.b.Len())
 	name := cmdname(f, cp.u.text, cp.cmdc == 'e')
 	if name == nil {
 		editerror(Enoname)
@@ -331,7 +331,7 @@ func fcopy(f *File, addr2 Address) {
 		if ni > RBUFSIZE {
 			ni = RBUFSIZE
 		}
-		bufread(&f.b, p, buf[:ni])
+		f.b.Read(p, buf[:ni])
 		eloginsert(addr2.f, addr2.r.End, buf[:ni])
 	}
 	fbuffree(buf)
@@ -409,7 +409,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 						err = "replacement string too long"
 						goto Err
 					}
-					bufread(&t.file.b, sel.r[j].Pos, rbuf[:sel.r[j].End-sel.r[j].Pos])
+					t.file.b.Read(sel.r[j].Pos, rbuf[:sel.r[j].End-sel.r[j].Pos])
 					for k := 0; k < sel.r[j].End-sel.r[j].Pos; k++ {
 						Straddc(buf, rbuf[k])
 					}
@@ -423,7 +423,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 					err = "right hand side too long in substitution"
 					goto Err
 				}
-				bufread(&t.file.b, sel.r[0].Pos, rbuf[:sel.r[0].End-sel.r[0].Pos])
+				t.file.b.Read(sel.r[0].Pos, rbuf[:sel.r[0].End-sel.r[0].Pos])
 				for k := 0; k < sel.r[0].End-sel.r[0].Pos; k++ {
 					Straddc(buf, rbuf[k])
 				}
@@ -580,7 +580,7 @@ func nlcount(t *Text, q0 int, q1 int, pnr *int) int {
 			if nbuf > RBUFSIZE {
 				nbuf = RBUFSIZE
 			}
-			bufread(&t.file.b, q0, buf[:nbuf])
+			t.file.b.Read(q0, buf[:nbuf])
 			i = 0
 		}
 		if buf[i] == '\n' {
@@ -703,8 +703,8 @@ func fappend(f *File, cp *Cmd, p int) bool {
 func pdisplay(f *File) bool {
 	p1 := addr.r.Pos
 	p2 := addr.r.End
-	if p2 > f.b.nc {
-		p2 = f.b.nc
+	if p2 > f.b.Len() {
+		p2 = f.b.Len()
 	}
 	buf := fbufalloc()
 	for p1 < p2 {
@@ -712,7 +712,7 @@ func pdisplay(f *File) bool {
 		if np > RBUFSIZE-1 {
 			np = RBUFSIZE - 1
 		}
-		bufread(&f.b, p1, buf[:np])
+		f.b.Read(p1, buf[:np])
 		warning(nil, "%s", string(buf[:np]))
 		p1 += np
 	}
@@ -925,7 +925,7 @@ func nextmatch(f *File, r *String, p int, sign int) {
 		}
 		if sel.r[0].Pos == sel.r[0].End && sel.r[0].Pos == p {
 			p++
-			if p > f.b.nc {
+			if p > f.b.Len() {
 				p = 0
 			}
 			if !rxexecute(f.curtext, nil, p, 0x7FFFFFFF, &sel) {
@@ -939,7 +939,7 @@ func nextmatch(f *File, r *String, p int, sign int) {
 		if sel.r[0].Pos == sel.r[0].End && sel.r[0].End == p {
 			p--
 			if p < 0 {
-				p = f.b.nc
+				p = f.b.Len()
 			}
 			if !rxbexecute(f.curtext, p, &sel) {
 				editerror("address")
@@ -964,7 +964,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 			mkaddr(&a, f)
 
 		case '$':
-			a.r.End = f.b.nc
+			a.r.End = f.b.Len()
 			a.r.Pos = a.r.End
 
 		case '\'':
@@ -992,7 +992,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 
 		case '*':
 			a.r.Pos = 0
-			a.r.End = f.b.nc
+			a.r.End = f.b.Len()
 			return a
 
 		case ',',
@@ -1014,7 +1014,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 				a2 = cmdaddress(ap.next, a, 0)
 			} else {
 				a2.f = a.f
-				a2.r.End = f.b.nc
+				a2.r.End = f.b.Len()
 				a2.r.Pos = a2.r.End
 			}
 			if a1.f != a2.f {
@@ -1149,7 +1149,7 @@ func charaddr(l int, addr Address, sign int) Address {
 		addr.r.End += l
 		addr.r.Pos = addr.r.End
 	}
-	if addr.r.Pos < 0 || addr.r.End > addr.f.b.nc {
+	if addr.r.Pos < 0 || addr.r.End > addr.f.b.Len() {
 		editerror("address out of range")
 	}
 	return addr
@@ -1182,7 +1182,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 				p++
 			}
 			for n < l {
-				if p >= f.b.nc {
+				if p >= f.b.Len() {
 					editerror("address out of range")
 				}
 				tmp9 := p
@@ -1193,7 +1193,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 			}
 			a.r.Pos = p
 		}
-		for p < f.b.nc {
+		for p < f.b.Len() {
 		}
 		a.r.End = p
 	} else {

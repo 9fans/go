@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/plan9"
@@ -46,11 +47,11 @@ func clampaddr(w *Window) {
 	if w.addr.End < 0 {
 		w.addr.End = 0
 	}
-	if w.addr.Pos > w.body.file.b.nc {
-		w.addr.Pos = w.body.file.b.nc
+	if w.addr.Pos > w.body.file.b.Len() {
+		w.addr.Pos = w.body.file.b.Len()
 	}
-	if w.addr.End > w.body.file.b.nc {
-		w.addr.End = w.body.file.b.nc
+	if w.addr.End > w.body.file.b.Len() {
+		w.addr.End = w.body.file.b.Len()
 	}
 }
 
@@ -133,8 +134,8 @@ func xfidopen(x *Xfid) {
 				respond(x, &fc, Einuse)
 				return
 			}
-			w.rdselfd = tempfile() // TODO(rsc): who deletes this?
-			if w.rdselfd == nil {  // TODO(rsc): impossible
+			w.rdselfd = disk.TempFile() // TODO(rsc): who deletes this?
+			if w.rdselfd == nil {       // TODO(rsc): impossible
 				winunlock(w)
 				respond(x, &fc, "can't create temp file")
 				return
@@ -149,7 +150,7 @@ func xfidopen(x *Xfid) {
 				if n > BUFSIZE/utf8.UTFMax {
 					n = BUFSIZE / utf8.UTFMax
 				}
-				bufread(&t.file.b, q0, r[:n])
+				t.file.b.Read(q0, r[:n])
 				s := []byte(string(r[:n])) // TODO(rsc)
 				if _, err := w.rdselfd.Write(s); err != nil {
 					warning(nil, "can't write temp file for pipe command %v\n", err)
@@ -249,7 +250,7 @@ func xfidclose(x *Xfid) {
 			w.nomark = false
 			t = &w.body
 			/* before: only did this if !w->noscroll, but that didn't seem right in practice */
-			textshow(t, util.Min(w.wrselrange.Pos, t.file.b.nc), util.Min(w.wrselrange.End, t.file.b.nc), true)
+			textshow(t, util.Min(w.wrselrange.Pos, t.file.b.Len()), util.Min(w.wrselrange.End, t.file.b.Len()), true)
 			textscrdraw(t)
 		case QWeditout:
 			w.editoutlk.Unlock()
@@ -306,7 +307,7 @@ func xfidread(x *Xfid) {
 		goto Readbuf
 
 	case QWbody:
-		xfidutfread(x, &w.body, w.body.file.b.nc, QWbody)
+		xfidutfread(x, &w.body, w.body.file.b.Len(), QWbody)
 
 	case QWctl:
 		buf = []byte(winctlprint(w, true))
@@ -317,23 +318,23 @@ func xfidread(x *Xfid) {
 
 	case QWdata:
 		/* BUG: what should happen if q1 > q0? */
-		if w.addr.Pos > w.body.file.b.nc {
+		if w.addr.Pos > w.body.file.b.Len() {
 			respond(x, &fc, Eaddr)
 			break
 		}
-		w.addr.Pos += xfidruneread(x, &w.body, w.addr.Pos, w.body.file.b.nc)
+		w.addr.Pos += xfidruneread(x, &w.body, w.addr.Pos, w.body.file.b.Len())
 		w.addr.End = w.addr.Pos
 
 	case QWxdata:
 		/* BUG: what should happen if q1 > q0? */
-		if w.addr.Pos > w.body.file.b.nc {
+		if w.addr.Pos > w.body.file.b.Len() {
 			respond(x, &fc, Eaddr)
 			break
 		}
 		w.addr.Pos += xfidruneread(x, &w.body, w.addr.Pos, w.addr.End)
 
 	case QWtag:
-		xfidutfread(x, &w.tag, w.tag.file.b.nc, QWtag)
+		xfidutfread(x, &w.tag, w.tag.file.b.Len(), QWtag)
 
 	case QWrdsel:
 		w.rdselfd.Seek(int64(off), 0)
@@ -468,7 +469,7 @@ func xfidwrite(x *Xfid) {
 		a := w.addr
 		t := &w.body
 		wincommit(w, t)
-		if a.Pos > t.file.b.nc || a.End > t.file.b.nc {
+		if a.Pos > t.file.b.Len() || a.End > t.file.b.Len() {
 			respond(x, &fc, Eaddr)
 			break
 		}
@@ -532,11 +533,11 @@ func xfidwrite(x *Xfid) {
 			var q0 int
 			if qid == QWwrsel {
 				q0 = w.wrselrange.End
-				if q0 > t.file.b.nc {
-					q0 = t.file.b.nc
+				if q0 > t.file.b.Len() {
+					q0 = t.file.b.Len()
 				}
 			} else {
-				q0 = t.file.b.nc
+				q0 = t.file.b.Len()
 			}
 			nr := len(r)
 			if qid == QWtag {
@@ -827,7 +828,7 @@ func xfideventwrite(x *Xfid, w *Window) {
 		} else {
 			goto Rescue
 		}
-		if q0 > t.file.b.nc || q1 > t.file.b.nc || q0 > q1 {
+		if q0 > t.file.b.Len() || q1 > t.file.b.Len() || q0 > q1 {
 			goto Rescue
 		}
 
@@ -903,7 +904,7 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 		if nr > BUFSIZE/utf8.UTFMax {
 			nr = BUFSIZE / utf8.UTFMax
 		}
-		bufread(&t.file.b, q, r[:nr])
+		t.file.b.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
 		if boff >= off {
 			m := len(b)
@@ -948,7 +949,7 @@ func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 		if nr > BUFSIZE/utf8.UTFMax {
 			nr = BUFSIZE / utf8.UTFMax
 		}
-		bufread(&t.file.b, q, r[:nr])
+		t.file.b.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
 		nb := len(b)
 		m := nb
@@ -1024,7 +1025,7 @@ func xfidindexread(x *Xfid) {
 		c = row.col[j]
 		for i = 0; i < len(c.w); i++ {
 			w = c.w[i]
-			nmax += Ctlsize + w.tag.file.b.nc*utf8.UTFMax + 1
+			nmax += Ctlsize + w.tag.file.b.Len()*utf8.UTFMax + 1
 		}
 	}
 	nmax++
@@ -1039,8 +1040,8 @@ func xfidindexread(x *Xfid) {
 				continue
 			}
 			buf.WriteString(winctlprint(w, false))
-			m := util.Min(RBUFSIZE, w.tag.file.b.nc)
-			bufread(&w.tag.file.b, 0, r[:m])
+			m := util.Min(RBUFSIZE, w.tag.file.b.Len())
+			w.tag.file.b.Read(0, r[:m])
 			for i := 0; i < m && r[i] != '\n'; i++ {
 				buf.WriteRune(r[i])
 			}

@@ -531,7 +531,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 	sel.r[0].Pos = -1
 	var nc int
 	if t != nil {
-		nc = t.file.b.nc
+		nc = t.file.b.Len()
 	} else {
 		nc = len(r)
 	}
@@ -706,7 +706,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				}
 				list[1][0].inst = nil
 				list[0][0].inst = list[1][0].inst
-				p = t.file.b.nc
+				p = t.file.b.Len()
 				goto doloop
 			case 3:
 				fallthrough
@@ -775,7 +775,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 					goto Switchstmt
 				}
 			case EOL:
-				if p < t.file.b.nc && textreadc(t, p) == '\n' {
+				if p < t.file.b.Len() && textreadc(t, p) == '\n' {
 					inst = inst.next
 					goto Switchstmt
 				}

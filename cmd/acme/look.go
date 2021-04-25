@@ -125,7 +125,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 		n = q1 - q0
 		if n <= EVENTSIZE {
 			r := make([]rune, n)
-			bufread(&t.file.b, q0, r)
+			t.file.b.Read(q0, r)
 			winevent(t.w, "%c%d %d %d %d %s\n", c, q0, q1, f, n, string(r))
 		} else {
 			winevent(t.w, "%c%d %d %d 0 \n", c, q0, q1, f)
@@ -143,12 +143,12 @@ func look3(t *Text, q0, q1 int, external bool) {
 			if e.a1 > e.a0 {
 				r[len(e.name)] = ':'
 				at := e.arg.(*Text)
-				bufread(&at.file.b, e.a0, r[len(e.name)+1:])
+				at.file.b.Read(e.a0, r[len(e.name)+1:])
 			}
 		} else {
 			n = e.q1 - e.q0
 			r = make([]rune, n)
-			bufread(&t.file.b, e.q0, r)
+			t.file.b.Read(e.q0, r)
 		}
 		f &^= 2
 		if n <= EVENTSIZE {
@@ -185,7 +185,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 				for q0 > 0 && func() bool { c = tgetc(t, q0-1); return c != ' ' }() && c != '\t' && c != '\n' {
 					q0--
 				}
-				for q1 < t.file.b.nc && func() bool { c = tgetc(t, q1); return c != ' ' }() && c != '\t' && c != '\n' {
+				for q1 < t.file.b.Len() && func() bool { c = tgetc(t, q1); return c != ' ' }() && c != '\t' && c != '\n' {
 					q1++
 				}
 				if q1 == q0 {
@@ -195,7 +195,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 			}
 		}
 		r = make([]rune, q1-q0)
-		bufread(&t.file.b, q0, r)
+		t.file.b.Read(q0, r)
 		m.Data = []byte(string(r))
 		if len(m.Data) < messagesize-1024 && m.Send(plumbsendfid) == nil {
 			return
@@ -221,7 +221,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 			textsetselect(ct, e.q1, e.q1)
 		}
 		r = make([]rune, e.q1-e.q0)
-		bufread(&t.file.b, e.q0, r)
+		t.file.b.Read(e.q0, r)
 		if search(ct, r) && e.jump {
 			display.MoveCursor(ct.fr.PointOf(ct.fr.P0).Add(draw.Pt(4, ct.fr.Font.Height-4)))
 		}
@@ -289,12 +289,12 @@ func plumbshow(m *plumb.Message) {
 	w.dirty = false
 	winsettag(w)
 	textscrdraw(&w.body)
-	textsetselect(&w.tag, w.tag.file.b.nc, w.tag.file.b.nc)
+	textsetselect(&w.tag, w.tag.file.b.Len(), w.tag.file.b.Len())
 	xfidlog(w, "new")
 }
 
 func search(ct *Text, r []rune) bool {
-	if len(r) == 0 || len(r) > ct.file.b.nc {
+	if len(r) == 0 || len(r) > ct.file.b.Len() {
 		return false
 	}
 	if 2*len(r) > RBUFSIZE {
@@ -307,7 +307,7 @@ func search(ct *Text, r []rune) bool {
 	around := 0
 	q := ct.q1
 	for {
-		if q >= ct.file.b.nc {
+		if q >= ct.file.b.Len() {
 			q = 0
 			around = 1
 			b = b[:0]
@@ -326,12 +326,12 @@ func search(ct *Text, r []rune) bool {
 			b = b[i:]
 		}
 		/* reload if buffer covers neither string nor rest of file */
-		if len(b) < len(r) && len(b) != ct.file.b.nc-q {
-			nb := ct.file.b.nc - q
+		if len(b) < len(r) && len(b) != ct.file.b.Len()-q {
+			nb := ct.file.b.Len() - q
 			if nb >= maxn {
 				nb = maxn - 1
 			}
-			bufread(&ct.file.b, q, s[:nb])
+			ct.file.b.Read(q, s[:nb])
 			b = s[:nb]
 		}
 		/* this runeeq is fishy but the null at b[nb] makes it safe */ // TODO(rsc): NUL done gone
@@ -424,7 +424,7 @@ func dirname(t *Text, r []rune) []rune {
 		goto Rescue
 	}
 	{
-		nt := t.w.tag.file.b.nc
+		nt := t.w.tag.file.b.Len()
 		if nt == 0 {
 			goto Rescue
 		}
@@ -459,7 +459,7 @@ func texthas(t *Text, q0 int, r []rune) bool {
 		return false
 	}
 	for i := 0; i < len(r); i++ {
-		if q0+i >= t.file.b.nc || textreadc(t, q0+i) != r[i] {
+		if q0+i >= t.file.b.Len() || textreadc(t, q0+i) != r[i] {
 			return false
 		}
 	}
@@ -488,7 +488,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	var c rune
 	if q1 == q0 {
 		colon := -1
-		for q1 < t.file.b.nc {
+		for q1 < t.file.b.Len() {
 			c = textreadc(t, q1)
 			if !runes.IsFilename(c) {
 				break
@@ -515,23 +515,23 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		 */
 		if colon >= 0 {
 			q1 = colon
-			if colon < t.file.b.nc-1 && isaddrc(textreadc(t, colon+1)) {
+			if colon < t.file.b.Len()-1 && isaddrc(textreadc(t, colon+1)) {
 				q1 = colon + 1
-				for q1 < t.file.b.nc && isaddrc(textreadc(t, q1)) {
+				for q1 < t.file.b.Len() && isaddrc(textreadc(t, q1)) {
 					q1++
 				}
 			}
 		}
 		if q1 > q0 {
 			if colon >= 0 { /* stop at white space */
-				for amax = colon + 1; amax < t.file.b.nc; amax++ {
+				for amax = colon + 1; amax < t.file.b.Len(); amax++ {
 					c = textreadc(t, amax)
 					if c == ' ' || c == '\t' || c == '\n' {
 						break
 					}
 				}
 			} else {
-				amax = t.file.b.nc
+				amax = t.file.b.Len()
 			}
 		}
 	}
@@ -544,7 +544,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	}
 	/* see if it's a file name */
 	r := make([]rune, n)
-	bufread(&t.file.b, q0, r)
+	t.file.b.Read(q0, r)
 	/* is it a URL? look for http:// and https:// prefix */
 	if hasPrefix(r, Lhttpcss) || hasPrefix(r, Lhttpscss) {
 		// Avoid capturing end-of-sentence punctuation.
@@ -564,7 +564,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	for i = 0; i < n; i++ {
 		c = r[i]
 		if c == ':' && nname < 0 {
-			if q0+i+1 < t.file.b.nc && (i == n-1 || isaddrc(textreadc(t, q0+i+1))) {
+			if q0+i+1 < t.file.b.Len() && (i == n-1 || isaddrc(textreadc(t, q0+i+1))) {
 				amin = q0 + i
 			} else {
 				return false
@@ -586,7 +586,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	 * restrictive enough syntax and checking for a #include earlier on the
 	 * line would be silly.
 	 */
-	if q0 > 0 && textreadc(t, q0-1) == '<' && q1 < t.file.b.nc && textreadc(t, q1) == '>' {
+	if q0 > 0 && textreadc(t, q0-1) == '<' && q1 < t.file.b.Len() && textreadc(t, q1) == '>' {
 		rs := includename(t, r[:nname])
 		r = rs
 		nname = len(rs)
@@ -642,7 +642,7 @@ func expand(t *Text, q0 int, q1 int, e *Expand) bool {
 	}
 
 	if q0 == q1 {
-		for q1 < t.file.b.nc && runes.IsAlphaNum(textreadc(t, q1)) {
+		for q1 < t.file.b.Len() && runes.IsAlphaNum(textreadc(t, q1)) {
 			q1++
 		}
 		for q0 > 0 && runes.IsAlphaNum(textreadc(t, q0-1)) {
@@ -738,7 +738,7 @@ func openfile(t *Text, e *Expand) *Window {
 		t.file.mod = false
 		t.w.dirty = false
 		winsettag(t.w)
-		textsetselect(&t.w.tag, t.w.tag.file.b.nc, t.w.tag.file.b.nc)
+		textsetselect(&t.w.tag, t.w.tag.file.b.Len(), t.w.tag.file.b.Len())
 		if ow != nil {
 			for i := len(ow.incl); ; {
 				i--

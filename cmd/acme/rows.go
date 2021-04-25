@@ -45,7 +45,7 @@ func rowinit(row *Row, r draw.Rectangle) {
 	r1.Max.Y += Border()
 	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
 	textinsert(t, 0, Lcolhdr, true)
-	textsetselect(t, t.file.b.nc, t.file.b.nc)
+	textsetselect(t, t.file.b.Len(), t.file.b.Len())
 }
 
 func rowadd(row *Row, c *Column, x int) *Column {
@@ -336,8 +336,8 @@ func rowdump(row *Row, file *string) {
 			w.body.file.dumpid = 0
 		}
 	}
-	m := util.Min(RBUFSIZE, row.tag.file.b.nc)
-	bufread(&row.tag.file.b, 0, r[:m])
+	m := util.Min(RBUFSIZE, row.tag.file.b.Len())
+	row.tag.file.b.Read(0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
 		n++
@@ -345,8 +345,8 @@ func rowdump(row *Row, file *string) {
 	fmt.Fprintf(b, "w %s\n", string(r[:n]))
 	for i = 0; i < len(row.col); i++ {
 		c = row.col[i]
-		m = util.Min(RBUFSIZE, c.tag.file.b.nc)
-		bufread(&c.tag.file.b, 0, r[:m])
+		m = util.Min(RBUFSIZE, c.tag.file.b.Len())
+		c.tag.file.b.Read(0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
 			n++
@@ -398,11 +398,11 @@ func rowdump(row *Row, file *string) {
 			} else {
 				dumped = true
 				t.file.dumpid = w.id
-				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.file.b.nc, fontname)
+				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.file.b.Len(), fontname)
 			}
 			b.WriteString(winctlprint(w, false))
-			m = util.Min(RBUFSIZE, w.tag.file.b.nc)
-			bufread(&w.tag.file.b, 0, r[:m])
+			m = util.Min(RBUFSIZE, w.tag.file.b.Len())
+			w.tag.file.b.Read(0, r[:m])
 			n = 0
 			for n < m {
 				start := n
@@ -418,13 +418,13 @@ func rowdump(row *Row, file *string) {
 			fmt.Fprintf(b, "\n")
 			if dumped {
 				q0 := 0
-				q1 := t.file.b.nc
+				q1 := t.file.b.Len()
 				for q0 < q1 {
 					n = q1 - q0
 					if n > BUFSIZE/utf8.UTFMax {
 						n = BUFSIZE / utf8.UTFMax
 					}
-					bufread(&t.file.b, q0, r[:n])
+					t.file.b.Read(q0, r[:n])
 					fmt.Fprintf(b, "%s", string(r[:n]))
 					q0 += n
 				}
@@ -598,7 +598,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 						break
 					}
 				}
-				textdelete(&row.col[i].tag, 0, row.col[i].tag.file.b.nc, true)
+				textdelete(&row.col[i].tag, 0, row.col[i].tag.file.b.Len(), true)
 				textinsert(&row.col[i].tag, 0, r[n+1:], true)
 				continue
 			case 'w':
@@ -613,7 +613,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 						break
 					}
 				}
-				textdelete(&row.tag, 0, row.tag.file.b.nc, true)
+				textdelete(&row.tag, 0, row.tag.file.b.Len(), true)
 				textinsert(&row.tag, 0, r, true)
 				continue
 			}
@@ -738,7 +738,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			}
 		}
 		wincleartag(w)
-		textinsert(&w.tag, w.tag.file.b.nc, r[n+1:], true)
+		textinsert(&w.tag, w.tag.file.b.Len(), r[n+1:], true)
 		if ndumped >= 0 {
 			/* simplest thing is to put it in a file and load that */
 			f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
@@ -776,7 +776,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			fmt.Fprintf(os.Stderr, "FONTR %q\n", fontr)
 			fontx(&w.body, nil, nil, false, false, fontr)
 		}
-		if q0 > w.body.file.b.nc || q1 > w.body.file.b.nc || q0 > q1 {
+		if q0 > w.body.file.b.Len() || q1 > w.body.file.b.Len() || q0 > q1 {
 			q1 = 0
 			q0 = q1
 		}

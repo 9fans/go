@@ -40,7 +40,7 @@ func colinit(c *Column, r draw.Rectangle) {
 	r1.Max.Y += Border()
 	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
 	textinsert(t, 0, Lheader, true)
-	textsetselect(t, t.file.b.nc, t.file.b.nc)
+	textsetselect(t, t.file.b.Len(), t.file.b.Len())
 	display.ScreenImage.Draw(t.scrollr, colbutton, nil, colbutton.R.Min)
 	c.safe = true
 }

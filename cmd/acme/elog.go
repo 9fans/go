@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 )
@@ -65,17 +66,17 @@ func eloginit(f *File) {
 	}
 	f.elog.typ = Null
 	if f.elogbuf == nil {
-		f.elogbuf = new(Buffer)
+		f.elogbuf = new(disk.Buffer)
 	}
 	if f.elog.r == nil {
 		f.elog.r = fbufalloc()
 	}
-	bufreset(f.elogbuf)
+	f.elogbuf.Reset()
 }
 
 func elogclose(f *File) {
 	if f.elogbuf != nil {
-		bufclose(f.elogbuf)
+		f.elogbuf.Close()
 		f.elogbuf = nil
 	}
 }
@@ -89,7 +90,7 @@ func elogreset(f *File) {
 func elogterm(f *File) {
 	elogreset(f)
 	if f.elogbuf != nil {
-		bufreset(f.elogbuf)
+		f.elogbuf.Reset()
 	}
 	f.elog.typ = Empty
 	fbuffree(f.elog.r)
@@ -111,12 +112,12 @@ func elogflush(f *File) {
 	case Insert,
 		Replace:
 		if len(f.elog.r) > 0 {
-			bufinsert(f.elogbuf, f.elogbuf.nc, f.elog.r)
+			f.elogbuf.Insert(f.elogbuf.Len(), f.elog.r)
 		}
 		fallthrough
 	/* fall through */
 	case Delete:
-		bufinsert(f.elogbuf, f.elogbuf.nc, buflogrunes(&b))
+		f.elogbuf.Insert(f.elogbuf.Len(), buflogrunes(&b))
 	}
 	elogreset(f)
 }
@@ -148,7 +149,7 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 		if gap < Minstring {
 			if gap > 0 {
 				n := len(f.elog.r)
-				bufread(&f.b, f.elog.q0+f.elog.nd, f.elog.r[n:n+gap])
+				f.b.Read(f.elog.q0+f.elog.nd, f.elog.r[n:n+gap])
 				f.elog.r = f.elog.r[:n+gap]
 			}
 			f.elog.nd += gap + q1 - q0
@@ -254,10 +255,10 @@ func elogapply(f *File) {
 	 * keep things in range.
 	 */
 
-	for log.nc > 0 {
-		up := log.nc - Buflogsize
+	for log.Len() > 0 {
+		up := log.Len() - Buflogsize
 		var b Buflog
-		bufread(log, up, buflogrunes(&b))
+		log.Read(up, buflogrunes(&b))
 		var tq1 int
 		var tq0 int
 		var n int
@@ -283,7 +284,7 @@ func elogapply(f *File) {
 				if n > RBUFSIZE {
 					n = RBUFSIZE
 				}
-				bufread(log, up+i, buf[:n])
+				log.Read(up+i, buf[:n])
 				textinsert(t, tq0+i, buf[:n], true)
 			}
 			if t.q0 == b.q0 && t.q1 == b.q0 {
@@ -316,7 +317,7 @@ func elogapply(f *File) {
 				if n > RBUFSIZE {
 					n = RBUFSIZE
 				}
-				bufread(log, up+i, buf[:n])
+				log.Read(up+i, buf[:n])
 				textinsert(t, tq0+i, buf[:n], true)
 			}
 			if t.q0 == b.q0 && t.q1 == b.q0 {
@@ -338,7 +339,7 @@ func elogapply(f *File) {
 					break;
 			*/
 		}
-		bufdelete(log, up, log.nc)
+		log.Delete(up, log.Len())
 	}
 	fbuffree(buf)
 	elogterm(f)
@@ -347,11 +348,11 @@ func elogapply(f *File) {
 	 * Bad addresses will cause bufload to crash, so double check.
 	 * If changes were out of order, we expect problems so don't complain further.
 	 */
-	if t.q0 > f.b.nc || t.q1 > f.b.nc || t.q0 > t.q1 {
+	if t.q0 > f.b.Len() || t.q1 > f.b.Len() || t.q0 > t.q1 {
 		if !warned {
-			warning(nil, "elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.nc)
+			warning(nil, "elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.Len())
 		}
-		t.q1 = util.Min(t.q1, f.b.nc)
+		t.q1 = util.Min(t.q1, f.b.Len())
 		t.q0 = util.Min(t.q0, t.q1)
 	}
 

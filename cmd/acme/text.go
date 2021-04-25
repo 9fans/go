@@ -192,7 +192,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 }
 
 func textload(t *Text, q0 int, file string, setqid bool) int {
-	if len(t.cache) > 0 || t.file.b.nc != 0 || t.w == nil || t != &t.w.body {
+	if len(t.cache) > 0 || t.file.b.Len() != 0 || t.w == nil || t != &t.w.body {
 		util.Fatal("text.load")
 	}
 	if t.w.isdir && len(t.file.name) == 0 {
@@ -258,7 +258,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		})
 		t.w.dlp = dlp
 		textcolumnate(t, dlp)
-		q1 = t.file.b.nc
+		q1 = t.file.b.Len()
 	} else {
 		t.w.isdir = false
 		t.w.filemenu = true
@@ -283,7 +283,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		if n > RBUFSIZE {
 			n = RBUFSIZE
 		}
-		bufread(&t.file.b, q, rp[:n])
+		t.file.b.Read(q, rp[:n])
 		if q < t.org {
 			t.org += n
 		} else if q <= t.org+t.fr.NumChars {
@@ -297,7 +297,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 	for i = 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
 		if u != t {
-			if u.org > u.file.b.nc { /* will be 0 because of reset(), but safety first */
+			if u.org > u.file.b.Len() { /* will be 0 because of reset(), but safety first */
 				u.org = 0
 			}
 			textresize(u, u.all, true)
@@ -423,14 +423,14 @@ func textfill(t *Text) {
 	}
 	rp := fbufalloc()
 	for {
-		n := t.file.b.nc - (t.org + t.fr.NumChars)
+		n := t.file.b.Len() - (t.org + t.fr.NumChars)
 		if n == 0 {
 			break
 		}
 		if n > 2000 { /* educated guess at reasonable amount */
 			n = 2000
 		}
-		bufread(&t.file.b, t.org+t.fr.NumChars, rp[:n])
+		t.file.b.Read(t.org+t.fr.NumChars, rp[:n])
 		/*
 		 * it's expensive to frinsert more than we need, so
 		 * count newlines.
@@ -518,8 +518,8 @@ func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 }
 
 func textconstrain(t *Text, q0 int, q1 int, p0 *int, p1 *int) {
-	*p0 = util.Min(q0, t.file.b.nc)
-	*p1 = util.Min(q1, t.file.b.nc)
+	*p0 = util.Min(q0, t.file.b.Len())
+	*p1 = util.Min(q1, t.file.b.Len())
 }
 
 func textreadc(t *Text, q int) rune {
@@ -527,7 +527,7 @@ func textreadc(t *Text, q int) rune {
 	if t.cq0 <= q && q < t.cq0+len(t.cache) {
 		r[0] = t.cache[q-t.cq0]
 	} else {
-		bufread(&t.file.b, q, r[:])
+		t.file.b.Read(q, r[:])
 	}
 	return r[0]
 }
@@ -577,7 +577,7 @@ func textfilewidth(t *Text, q0 int, oneelement bool) int {
 
 func textcomplete(t *Text) []rune {
 	/* control-f: filename completion; works back to white space or / */
-	if t.q0 < t.file.b.nc && textreadc(t, t.q0) > ' ' { /* must be at end of word */
+	if t.q0 < t.file.b.Len() && textreadc(t, t.q0) > ' ' { /* must be at end of word */
 		return nil
 	}
 	nstr := textfilewidth(t, t.q0, true)
@@ -666,7 +666,7 @@ func texttype(t *Text, r rune) {
 		return
 	case draw.KeyRight:
 		typecommit(t)
-		if t.q1 < t.file.b.nc {
+		if t.q1 < t.file.b.Len() {
 			textshow(t, t.q1+1, t.q1+1, true)
 		}
 		return
@@ -726,14 +726,14 @@ func texttype(t *Text, r rune) {
 	case draw.KeyEnd:
 		typecommit(t)
 		if t.iq1 > t.org+t.fr.NumChars {
-			if t.iq1 > t.file.b.nc {
+			if t.iq1 > t.file.b.Len() {
 				// should not happen, but does. and it will crash textbacknl.
-				t.iq1 = t.file.b.nc
+				t.iq1 = t.file.b.Len()
 			}
 			q0 = textbacknl(t, t.iq1, 1)
 			textsetorigin(t, q0, true)
 		} else {
-			textshow(t, t.file.b.nc, t.file.b.nc, false)
+			textshow(t, t.file.b.Len(), t.file.b.Len(), false)
 		}
 		return
 	case 0x01: /* ^A: beginning of line */
@@ -748,7 +748,7 @@ func texttype(t *Text, r rune) {
 	case 0x05: /* ^E: end of line */
 		typecommit(t)
 		q0 = t.q0
-		for q0 < t.file.b.nc && textreadc(t, q0) != '\n' {
+		for q0 < t.file.b.Len() && textreadc(t, q0) != '\n' {
 			q0++
 		}
 		textshow(t, q0, q0, true)
@@ -972,7 +972,7 @@ func textframescroll(t *Text, dl int) {
 			textsetselect(t, selectq, t.org+t.fr.P0)
 		}
 	} else {
-		if t.org+t.fr.NumChars == t.file.b.nc {
+		if t.org+t.fr.NumChars == t.file.b.Len() {
 			return
 		}
 		q0 = t.org + t.fr.CharOf(draw.Pt(t.fr.R.Min.X, t.fr.R.Min.Y+dl*t.fr.Font.Height))
@@ -1026,7 +1026,7 @@ func textselect(t *Text) {
 		t.fr.Scroll = framescroll
 		t.fr.Select(mousectl)
 		/* horrible botch: while asleep, may have lost selection altogether */
-		if selectq > t.file.b.nc {
+		if selectq > t.file.b.Len() {
 			selectq = t.org + t.fr.P0
 		}
 		t.fr.Scroll = nil
@@ -1108,7 +1108,7 @@ func textshow(t *Text, q0 int, q1 int, doselect bool) {
 	}
 	qe := t.org + t.fr.NumChars
 	tsd := false /* do we call textscrdraw? */
-	nc := t.file.b.nc + len(t.cache)
+	nc := t.file.b.Len() + len(t.cache)
 	if t.org <= q0 {
 		if nc == 0 || q0 < qe {
 			tsd = true
@@ -1403,7 +1403,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 			return
 		}
 		/* try matching character to right, looking left */
-		if q == t.file.b.nc {
+		if q == t.file.b.Len() {
 			c = '\n'
 		} else {
 			c = textreadc(t, q)
@@ -1412,7 +1412,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		if pi >= 0 {
 			if textclickmatch(t, c, l[pi], -1, &q) {
 				*q1 = *q0
-				if *q0 < t.file.b.nc && c == '\n' {
+				if *q0 < t.file.b.Len() && c == '\n' {
 					(*q1)++
 				}
 				*q0 = q
@@ -1425,7 +1425,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 	}
 
 	/* try filling out word to right */
-	for *q1 < t.file.b.nc && runes.IsAlphaNum(textreadc(t, *q1)) {
+	for *q1 < t.file.b.Len() && runes.IsAlphaNum(textreadc(t, *q1)) {
 		(*q1)++
 	}
 	/* try filling out word to left */
@@ -1439,7 +1439,7 @@ func textclickmatch(t *Text, cl rune, cr rune, dir int, q *int) bool {
 	for {
 		var c rune
 		if dir > 0 {
-			if *q == t.file.b.nc {
+			if *q == t.file.b.Len() {
 				break
 			}
 			c = textreadc(t, *q)
@@ -1467,7 +1467,7 @@ func textclickmatch(t *Text, cl rune, cr rune, dir int, q *int) bool {
 // Return 1 for <a>, -1 for </a>, 0 for no tag or <a />.
 // Set *q1, if non-nil, to the location after the tag.
 func ishtmlstart(t *Text, q int, q1 *int) int {
-	if q+2 > t.file.b.nc {
+	if q+2 > t.file.b.Len() {
 		return 0
 	}
 	tmp28 := q
@@ -1480,7 +1480,7 @@ func ishtmlstart(t *Text, q int, q1 *int) int {
 	c1 := c
 	c2 := c
 	for c != '>' {
-		if q >= t.file.b.nc {
+		if q >= t.file.b.Len() {
 			return 0
 		}
 		c2 = c
@@ -1542,7 +1542,7 @@ func textclickhtmlmatch(t *Text, q0 *int, q1 *int) int {
 	// after opening tag?  scan forward for closing tag
 	if ishtmlend(t, q, nil) == 1 {
 		depth = 1
-		for q < t.file.b.nc {
+		for q < t.file.b.Len() {
 			n = ishtmlstart(t, q, &nq)
 			if n != 0 {
 				depth += n
@@ -1612,7 +1612,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 	if org > 0 && !exact && textreadc(t, org-1) != '\n' {
 		/* org is an estimate of the char posn; find a newline */
 		/* don't try harder than 256 chars */
-		for i := 0; i < 256 && org < t.file.b.nc; i++ {
+		for i := 0; i < 256 && org < t.file.b.Len(); i++ {
 			if textreadc(t, org) == '\n' {
 				org++
 				break
@@ -1628,7 +1628,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 	} else if a < 0 && -a < t.fr.NumChars {
 		n := t.org - org
 		r := make([]rune, n)
-		bufread(&t.file.b, org, r)
+		t.file.b.Read(org, r)
 		t.fr.Insert(r, 0)
 	} else {
 		t.fr.Delete(0, t.fr.NumChars)
@@ -1652,5 +1652,5 @@ func textreset(t *Text) {
 	t.q0 = 0
 	t.q1 = 0
 	filereset(t.file)
-	bufreset(&t.file.b)
+	t.file.b.Reset()
 }

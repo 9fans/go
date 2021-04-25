@@ -46,7 +46,7 @@ func isregexc(r rune) bool {
 // the end of the current line.
 // It returns the final position.
 func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
-	for nl > 0 && q0 < t.file.b.nc {
+	for nl > 0 && q0 < t.file.b.Len() {
 		tmp1 := q0
 		q0++
 		if textreadc(t, tmp1) == '\n' {
@@ -56,7 +56,7 @@ func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
 	if nl > 0 {
 		return q0
 	}
-	for nr > 0 && q0 < t.file.b.nc && textreadc(t, q0) != '\n' {
+	for nr > 0 && q0 < t.file.b.Len() && textreadc(t, q0) != '\n' {
 		q0++
 		nr--
 	}
@@ -71,11 +71,11 @@ func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, 
 			line = r.End + line
 		} else if dir == Back {
 			if r.Pos == 0 && line > 0 {
-				r.Pos = t.file.b.nc
+				r.Pos = t.file.b.Len()
 			}
 			line = r.Pos - line
 		}
-		if line < 0 || line > t.file.b.nc {
+		if line < 0 || line > t.file.b.Len() {
 			goto Rescue
 		}
 		*evalp = true
@@ -88,14 +88,14 @@ func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, 
 		goto Forward
 	case Fore:
 		if q1 > 0 {
-			for q1 < t.file.b.nc && textreadc(t, q1-1) != '\n' {
+			for q1 < t.file.b.Len() && textreadc(t, q1-1) != '\n' {
 				q1++
 			}
 		}
 		q0 = q1
 		goto Forward
 	case Back:
-		if q0 < t.file.b.nc {
+		if q0 < t.file.b.Len() {
 			for q0 > 0 && textreadc(t, q0-1) != '\n' {
 				q0--
 			}
@@ -123,17 +123,17 @@ Return:
 	return runes.Rng(q0, q1)
 
 Forward:
-	for line > 0 && q1 < t.file.b.nc {
+	for line > 0 && q1 < t.file.b.Len() {
 		tmp2 := q1
 		q1++
-		if textreadc(t, tmp2) == '\n' || q1 == t.file.b.nc {
+		if textreadc(t, tmp2) == '\n' || q1 == t.file.b.Len() {
 			line--
 			if line > 0 {
 				q0 = q1
 			}
 		}
 	}
-	if line == 1 && q1 == t.file.b.nc { // 6 goes to end of 5-line file
+	if line == 1 && q1 == t.file.b.Len() { // 6 goes to end of 5-line file
 		goto Return
 	}
 	if line > 0 {
@@ -208,7 +208,7 @@ func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface
 				r.Pos = 0
 			}
 			if q >= q1 && t != nil && t.file != nil { /* rhs defaults to $ */
-				r.End = t.file.b.nc
+				r.End = t.file.b.Len()
 			} else {
 				nr = address(showerr, t, lim, ar, a, q, q1, getc, evalp, &q)
 				r.End = nr.End
@@ -233,7 +233,7 @@ func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface
 				if c == '.' {
 					r = ar
 				} else {
-					r = runes.Rng(t.file.b.nc, t.file.b.nc)
+					r = runes.Rng(t.file.b.Len(), t.file.b.Len())
 				}
 			}
 			if q < q1 {

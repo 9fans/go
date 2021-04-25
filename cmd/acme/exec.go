@@ -28,6 +28,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -36,7 +37,7 @@ import (
 	"9fans.net/go/plan9/client"
 )
 
-var snarfbuf Buffer
+var snarfbuf disk.Buffer
 
 /*
  * These functions get called as:
@@ -125,7 +126,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 			q0 = t.q0
 			q1 = t.q1
 		} else {
-			for q1 < t.file.b.nc && func() bool { c = textreadc(t, q1); return isexecc(c) }() && c != ':' {
+			for q1 < t.file.b.Len() && func() bool { c = textreadc(t, q1); return isexecc(c) }() && c != ':' {
 				q1++
 			}
 			for q0 > 0 && func() bool { c = textreadc(t, q0-1); return isexecc(c) }() && c != ':' {
@@ -137,7 +138,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		}
 	}
 	r := make([]rune, q1-q0)
-	bufread(&t.file.b, q0, r)
+	t.file.b.Read(q0, r)
 	e := lookup(r)
 	var a, aa *string
 	var n int
@@ -147,7 +148,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 			f |= 1
 		}
 		if q0 != aq0 || q1 != aq1 {
-			bufread(&t.file.b, aq0, r[:aq1-aq0])
+			t.file.b.Read(aq0, r[:aq1-aq0])
 			f |= 2
 		}
 		aa = getbytearg(argt, true, true, &a)
@@ -174,7 +175,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		}
 		if q0 != aq0 || q1 != aq1 {
 			n = q1 - q0
-			bufread(&t.file.b, q0, r[:n])
+			t.file.b.Read(q0, r[:n])
 			if n <= EVENTSIZE {
 				winevent(t.w, "%c%d %d 0 %d %s\n", c, q0, q1, n, string(r[:n]))
 			} else {
@@ -252,7 +253,7 @@ func getarg(argt *Text, doaddr, dofile bool, rp *[]rune) *string {
 	}
 	n := e.q1 - e.q0
 	*rp = make([]rune, n)
-	bufread(&argt.file.b, e.q0, *rp)
+	argt.file.b.Read(e.q0, *rp)
 	if doaddr {
 		a = printarg(argt, e.q0, e.q1)
 	}
@@ -456,7 +457,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 			return
 		}
 	}
-	if !et.w.isdir && (et.w.body.file.b.nc > 0 && !winclean(et.w, true)) {
+	if !et.w.isdir && (et.w.body.file.b.Len() > 0 && !winclean(et.w, true)) {
 		return
 	}
 	w := et.w
@@ -504,7 +505,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 	t.file.unread = false
 	for i := 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
-		textsetselect(&u.w.tag, u.w.tag.file.b.nc, u.w.tag.file.b.nc)
+		textsetselect(&u.w.tag, u.w.tag.file.b.Len(), u.w.tag.file.b.Len())
 		if samename {
 			a := &addr[i]
 			// warning(nil, "%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
@@ -592,7 +593,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 			if n > BUFSIZE/utf8.UTFMax {
 				n = BUFSIZE / utf8.UTFMax
 			}
-			bufread(&f.b, q, r[:n])
+			f.b.Read(q, r[:n])
 			buf := []byte(string(r[:n])) // TODO(rsc)
 			h.Write(buf)
 			if _, err := b.Write(buf); err != nil { // TODO(rsc): avoid alloc
@@ -610,7 +611,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 		goto Rescue2 // flush or close failed
 	}
 	if runes.Equal(namer, f.name) {
-		if q0 != 0 || q1 != f.b.nc {
+		if q0 != 0 || q1 != f.b.Len() {
 			f.mod = true
 			w.dirty = true
 			f.unread = true
@@ -667,7 +668,7 @@ func trimspaces(et *Text) {
 	}
 
 	r := fbufalloc()
-	q0 := f.b.nc
+	q0 := f.b.Len()
 	delstart := q0 /* end of current space run, or 0 if no active run; = q0 to delete spaces before EOF */
 	for q0 > 0 {
 		n := RBUFSIZE
@@ -675,7 +676,7 @@ func trimspaces(et *Text) {
 			n = q0
 		}
 		q0 -= n
-		bufread(&f.b, q0, r[:n])
+		f.b.Read(q0, r[:n])
 		for i := n; ; i-- {
 			if i == 0 || (r[i-1] != ' ' && r[i-1] != '\t') {
 				// Found non-space or start of buffer. Delete active space run.
@@ -724,7 +725,7 @@ func put(et, _, argt *Text, _, _ bool, arg []rune) {
 		trimspaces(et)
 	}
 	namer := []rune(name)
-	putfile(f, 0, f.b.nc, namer)
+	putfile(f, 0, f.b.Len(), namer)
 	xfidlog(w, "put")
 }
 
@@ -785,15 +786,15 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 	if dosnarf {
 		q0 := t.q0
 		q1 := t.q1
-		bufdelete(&snarfbuf, 0, snarfbuf.nc)
+		snarfbuf.Delete(0, snarfbuf.Len())
 		r := fbufalloc()
 		for q0 < q1 {
 			n := q1 - q0
 			if n > RBUFSIZE {
 				n = RBUFSIZE
 			}
-			bufread(&t.file.b, q0, r[:n])
-			bufinsert(&snarfbuf, snarfbuf.nc, r[:n])
+			t.file.b.Read(q0, r[:n])
+			snarfbuf.Insert(snarfbuf.Len(), r[:n])
 			q0 += n
 		}
 		fbuffree(r)
@@ -826,7 +827,7 @@ func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 	}
 
 	acmegetsnarf()
-	if t == nil || snarfbuf.nc == 0 {
+	if t == nil || snarfbuf.Len() == 0 {
 		return
 	}
 	if t.w != nil && et.w != t.w {
@@ -839,14 +840,14 @@ func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 	cut(t, t, nil, false, true, nil)
 	q := 0
 	q0 := t.q0
-	q1 := t.q0 + snarfbuf.nc
+	q1 := t.q0 + snarfbuf.Len()
 	r := fbufalloc()
 	for q0 < q1 {
 		n := q1 - q0
 		if n > RBUFSIZE {
 			n = RBUFSIZE
 		}
-		bufread(&snarfbuf, q, r[:n])
+		snarfbuf.Read(q, r[:n])
 		textinsert(t, q0, r[:n], true)
 		q += n
 		q0 += n
@@ -877,7 +878,7 @@ func look(et, t, argt *Text, _, _ bool, arg []rune) {
 		getarg(argt, false, false, &r)
 		if r == nil {
 			r = make([]rune, t.q1-t.q0)
-			bufread(&t.file.b, t.q0, r)
+			t.file.b.Read(t.q0, r)
 		}
 		search(t, r)
 	}
@@ -893,11 +894,11 @@ func sendx(et, t, _ *Text, _, _ bool, _ []rune) {
 	if t.q0 != t.q1 {
 		cut(t, t, nil, true, false, nil)
 	}
-	textsetselect(t, t.file.b.nc, t.file.b.nc)
+	textsetselect(t, t.file.b.Len(), t.file.b.Len())
 	paste(t, t, nil, true, true, nil)
-	if textreadc(t, t.file.b.nc-1) != '\n' {
-		textinsert(t, t.file.b.nc, Lnl, true)
-		textsetselect(t, t.file.b.nc, t.file.b.nc)
+	if textreadc(t, t.file.b.Len()-1) != '\n' {
+		textinsert(t, t.file.b.Len(), Lnl, true)
+		textsetselect(t, t.file.b.Len(), t.file.b.Len())
 	}
 	t.iq1 = t.q1
 	textshow(t, t.q1, t.q1, true)

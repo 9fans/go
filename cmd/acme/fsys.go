@@ -100,7 +100,7 @@ var mnt Mnt
 
 var user string = "Wile E. Coyote"
 var closing bool
-var messagesize int = Maxblock + plan9.IOHDRSZ /* good start */
+var messagesize int = 8192 + plan9.IOHDRSZ /* good start */
 
 func fsysinit() {
 	initfcall()

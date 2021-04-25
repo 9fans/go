@@ -5,6 +5,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -38,32 +39,7 @@ const (
 	QMAX
 )
 
-const Blockincr = 256
-const Maxblock = 8 * 1024
 const NRange = 10
-
-type Block struct {
-	addr int64
-	u    struct {
-		n    int
-		next *Block
-	}
-}
-
-type Disk struct {
-	fd   *os.File
-	addr int64
-	free [Maxblock/Blockincr + 1]*Block
-}
-
-type Buffer struct {
-	nc     int
-	c      []rune // cnc was len(c), cmax was cap(c)
-	cq     int
-	cdirty bool
-	cbi    int
-	bl     []*Block // nbl was len(bl) == cap(bl)
-}
 
 type Elog struct {
 	typ int
@@ -73,10 +49,10 @@ type Elog struct {
 }
 
 type File struct {
-	b         Buffer
-	delta     Buffer
-	epsilon   Buffer
-	elogbuf   *Buffer
+	b         disk.Buffer
+	delta     disk.Buffer
+	epsilon   disk.Buffer
+	elogbuf   *disk.Buffer
 	elog      Elog
 	name      []rune
 	info      os.FileInfo
@@ -264,7 +240,7 @@ type Expand struct {
 
 /* fbufalloc() guarantees room off end of BUFSIZE */
 const (
-	BUFSIZE   = Maxblock
+	BUFSIZE   = 8192
 	RUNESIZE  = int(unsafe.Sizeof(rune(0)))
 	RBUFSIZE  = BUFSIZE / runes.RuneSize
 	EVENTSIZE = 256
@@ -313,7 +289,6 @@ var but2col *draw.Image
 var but3col *draw.Image
 var row Row
 var timerpid int
-var disk *Disk
 var seltext *Text
 var argtext *Text
 var mousetext *Text /* global because Text.close needs to clear it */

@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -143,7 +144,7 @@ func main() {
 	fsysinit()
 
 	const WPERCOL = 8
-	disk = diskinit()
+	disk.Init()
 	if loadfile == "" || !rowload(&row, &loadfile, true) {
 		rowinit(&row, display.ScreenImage.Clipr)
 		argc := flag.NArg()
@@ -215,7 +216,7 @@ func readfile(c *Column, s string) {
 	winsettag(w)
 	winresize(w, w.r, false, true)
 	textscrdraw(&w.body)
-	textsetselect(&w.tag, w.tag.file.b.nc, w.tag.file.b.nc)
+	textsetselect(&w.tag, w.tag.file.b.Len(), w.tag.file.b.Len())
 	xfidlog(w, "new")
 }
 
@@ -942,21 +943,21 @@ func appendRune(buf []byte, r rune) []byte {
 }
 
 func acmeputsnarf() {
-	if snarfbuf.nc == 0 {
+	if snarfbuf.Len() == 0 {
 		return
 	}
-	if snarfbuf.nc > MAXSNARF {
+	if snarfbuf.Len() > MAXSNARF {
 		return
 	}
 
 	var buf []byte
 	var n int
-	for i := 0; i < snarfbuf.nc; i += n {
-		n = snarfbuf.nc - i
+	for i := 0; i < snarfbuf.Len(); i += n {
+		n = snarfbuf.Len() - i
 		if n >= NSnarf {
 			n = NSnarf
 		}
-		bufread(&snarfbuf, i, snarfrune[:n])
+		snarfbuf.Read(i, snarfrune[:n])
 		var rbuf [utf8.UTFMax]byte
 		for _, r := range snarfrune[:n] {
 			w := utf8.EncodeRune(rbuf[:], r)
@@ -982,8 +983,8 @@ func acmegetsnarf() {
 
 	r := make([]rune, utf8.RuneCount(buf))
 	_, nr, _ := runes.Convert(buf, r, true)
-	bufreset(&snarfbuf)
-	bufinsert(&snarfbuf, 0, r[:nr])
+	snarfbuf.Reset()
+	snarfbuf.Insert(0, r[:nr])
 }
 
 func ismtpt(file string) bool {

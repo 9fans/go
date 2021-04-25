@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 
+	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -103,7 +104,7 @@ func errorwinforwin(w *Window) *Window {
 
 type Warning struct {
 	md   *Mntdir
-	buf  Buffer
+	buf  disk.Buffer
 	next *Warning
 }
 
@@ -112,7 +113,7 @@ var warnings *Warning
 func addwarningtext(md *Mntdir, r []rune) {
 	for warn := warnings; warn != nil; warn = warn.next {
 		if warn.md == md {
-			bufinsert(&warn.buf, warn.buf.nc, r)
+			warn.buf.Insert(warn.buf.Len(), r)
 			return
 		}
 	}
@@ -123,7 +124,7 @@ func addwarningtext(md *Mntdir, r []rune) {
 		fsysincid(md)
 	}
 	warnings = warn
-	bufinsert(&warn.buf, 0, r)
+	warn.buf.Insert(0, r)
 	select {
 	case cwarn <- 0:
 	default:
@@ -150,23 +151,23 @@ func flushwarnings() {
 		 * place), to avoid a big memory footprint.
 		 */
 		r := fbufalloc()
-		q0 := t.file.b.nc
+		q0 := t.file.b.Len()
 		var nr int
-		for n := 0; n < warn.buf.nc; n += nr {
-			nr = warn.buf.nc - n
+		for n := 0; n < warn.buf.Len(); n += nr {
+			nr = warn.buf.Len() - n
 			if nr > RBUFSIZE {
 				nr = RBUFSIZE
 			}
-			bufread(&warn.buf, n, r[:nr])
-			textbsinsert(t, t.file.b.nc, r[:nr], true, &nr)
+			warn.buf.Read(n, r[:nr])
+			textbsinsert(t, t.file.b.Len(), r[:nr], true, &nr)
 		}
-		textshow(t, q0, t.file.b.nc, true)
+		textshow(t, q0, t.file.b.Len(), true)
 		winsettag(t.w)
 		textscrdraw(t)
 		w.owner = owner
 		w.dirty = false
 		winunlock(w)
-		bufclose(&warn.buf)
+		warn.buf.Close()
 		next = warn.next
 		if warn.md != nil {
 			fsysdelid(warn.md)
@@ -189,7 +190,7 @@ func rgetc(v interface{}, n int) rune {
 
 func tgetc(a interface{}, n int) rune {
 	t := a.(*Text)
-	if n >= t.file.b.nc {
+	if n >= t.file.b.Len() {
 		return 0
 	}
 	return textreadc(t, n)

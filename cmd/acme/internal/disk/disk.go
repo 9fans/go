@@ -1,18 +1,4 @@
-// #include <u.h>
-// #include <libc.h>
-// #include <draw.h>
-// #include <thread.h>
-// #include <cursor.h>
-// #include <mouse.h>
-// #include <keyboard.h>
-// #include <frame.h>
-// #include <fcall.h>
-// #include <plumb.h>
-// #include <libsec.h>
-// #include "dat.h"
-// #include "fns.h"
-
-package main
+package disk
 
 import (
 	"fmt"
@@ -27,48 +13,61 @@ import (
 	"9fans.net/go/cmd/acme/internal/util"
 )
 
-var blist *Block
+const blockincr = 256
 
-func tempfile() *os.File {
-	f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
-	if err != nil {
-		// TODO rescue()
-		log.Fatalf("creating temp file: %v", err)
-	}
-	return f
+const maxblock = 8 * 1024
+
+var disk *Disk
+
+type Disk struct {
+	fd   *os.File
+	addr int64
+	free [maxblock/blockincr + 1]*block
 }
 
-func diskinit() *Disk {
+type block struct {
+	addr int64
+	u    struct {
+		n    int
+		next *block
+	}
+}
+
+func Init() {
+	disk = newDisk()
+}
+
+func newDisk() *Disk {
 	d := new(Disk)
-	d.fd = tempfile()
+	d.fd = TempFile()
 	return d
 }
 
-func ntosize(n int, ip *int) int {
-	if n > Maxblock {
+func roundSize(n int, ip *int) int {
+	if n > maxblock {
 		util.Fatal("internal error: ntosize")
 	}
 	size := n
-	if size&(Blockincr-1) != 0 {
-		size += Blockincr - (size & (Blockincr - 1))
+	if size&(blockincr-1) != 0 {
+		size += blockincr - (size & (blockincr - 1))
 	}
 	/* last bucket holds blocks of exactly Maxblock */
 	if ip != nil {
-		*ip = size / Blockincr
+		*ip = size / blockincr
 	}
 	return size * runes.RuneSize
 }
 
-func disknewblock(d *Disk, n int) *Block {
+func (d *Disk) allocBlock(n int) *block {
 	var i int
-	size := ntosize(n, &i)
+	size := roundSize(n, &i)
 	b := d.free[i]
 	if b != nil {
 		d.free[i] = b.u.next
 	} else {
 		/* allocate in chunks to reduce malloc overhead */
 		if blist == nil {
-			bb := make([]Block, 100)
+			bb := make([]block, 100)
 			for j := 0; j < 100-1; j++ {
 				bb[j].u.next = &bb[j+1]
 			}
@@ -86,9 +85,9 @@ func disknewblock(d *Disk, n int) *Block {
 	return b
 }
 
-func diskrelease(d *Disk, b *Block) {
+func (d *Disk) freeBlock(b *block) {
 	var i int
-	ntosize(b.u.n, &i)
+	roundSize(b.u.n, &i)
 	b.u.next = d.free[i]
 	d.free[i] = b
 }
@@ -102,14 +101,14 @@ func runedata(r []rune) []byte {
 	return b
 }
 
-func diskwrite(d *Disk, bp **Block, r []rune) {
+func (d *Disk) write(bp **block, r []rune) {
 	n := len(r)
 	b := *bp
-	size := ntosize(b.u.n, nil)
-	nsize := ntosize(n, nil)
+	size := roundSize(b.u.n, nil)
+	nsize := roundSize(n, nil)
 	if size != nsize {
-		diskrelease(d, b)
-		b = disknewblock(d, n)
+		d.freeBlock(b)
+		b = d.allocBlock(n)
 		*bp = b
 	}
 	if nw, err := d.fd.WriteAt(runedata(r), b.addr); nw != n*runes.RuneSize || err != nil {
@@ -121,14 +120,23 @@ func diskwrite(d *Disk, bp **Block, r []rune) {
 	b.u.n = n
 }
 
-func diskread(d *Disk, b *Block, r []rune) {
+func (d *Disk) read(b *block, r []rune) {
 	n := len(r)
 	if n > b.u.n {
 		util.Fatal("internal error: diskread")
 	}
 
-	ntosize(b.u.n, nil) /* called only for sanity check on Maxblock */
+	roundSize(b.u.n, nil) /* called only for sanity check on Maxblock */
 	if nr, err := d.fd.ReadAt(runedata(r), b.addr); nr != n*runes.RuneSize || err != nil {
 		util.Fatal("read error from temp file")
 	}
+}
+
+func TempFile() *os.File {
+	f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
+	if err != nil {
+		// TODO rescue()
+		log.Fatalf("creating temp file: %v", err)
+	}
+	return f
 }
