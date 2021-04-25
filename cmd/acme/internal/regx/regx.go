@@ -12,7 +12,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package regx
 
 import (
 	"fmt"
@@ -56,7 +56,7 @@ var rechan chan *Inst
 
 type Ilist struct {
 	inst   *Inst
-	se     Rangeset
+	se     Ranges
 	startp int
 }
 
@@ -65,7 +65,7 @@ const NLIST = 127
 var tl []Ilist
 var nl []Ilist               /* This list, next list */
 var list [2][NLIST + 1]Ilist /* +1 for trailing null */
-var sempty Rangeset
+var sempty Ranges
 
 /*
  * Actions and Tokens
@@ -123,7 +123,7 @@ const DCLASS = 10 /* allocation increment */
 var class [][]rune
 var negateclass bool
 
-func rxinit() {
+func Init() {
 	rechan = make(chan *Inst)
 }
 
@@ -177,7 +177,7 @@ func realcompile(s []rune) {
 	rechan <- andstack[andp].first
 }
 
-func rxcompile(r []rune) bool {
+func Compile(r []rune) bool {
 	if runesEqual(lastregexp, r) {
 		return true
 	}
@@ -494,12 +494,12 @@ func classmatch(classno int, c rune, negate bool) bool {
  * 	*l must be pending when addinst called; if *l has been looked
  *		at already, the optimization is a bug.
  */
-func addinst(l []Ilist, inst *Inst, sep *Rangeset) int {
+func addinst(l []Ilist, inst *Inst, sep *Ranges) int {
 	i := 0
 	p := &l[i]
 	for p.inst != nil {
 		if p.inst == inst {
-			if sep.r[0].Pos < p.se.r[0].End {
+			if sep.R[0].Pos < p.se.R[0].End {
 				p.se = *sep /* this would be bug */
 			}
 			return 0 /* It's already there */
@@ -513,12 +513,12 @@ func addinst(l []Ilist, inst *Inst, sep *Rangeset) int {
 	return 1
 }
 
-func rxnull() bool {
+func Null() bool {
 	return startinst == nil || bstartinst == nil
 }
 
 /* either t!=nil or r!=nil, and we match the string in the appropriate place */
-func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
+func Match(t runes.Text, r []rune, startp int, eof int, rp *Ranges) bool {
 	flag := 0
 	p := startp
 	startchar := rune(0)
@@ -529,10 +529,10 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 	}
 	list[1][0].inst = nil
 	list[0][0].inst = list[1][0].inst
-	sel.r[0].Pos = -1
+	Sel.R[0].Pos = -1
 	var nc int
 	if t != nil {
-		nc = t.file.b.Len()
+		nc = t.Len()
 	} else {
 		nc = len(r)
 	}
@@ -548,7 +548,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				2:
 				break
 			case 1: /* expired; wrap to beginning */
-				if sel.r[0].Pos >= 0 || eof != runes.Infinity {
+				if Sel.R[0].Pos >= 0 || eof != runes.Infinity {
 					goto Return
 				}
 				list[1][0].inst = nil
@@ -560,11 +560,11 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 			}
 			c = 0
 		} else {
-			if ((wrapped != 0 && p >= startp) || sel.r[0].Pos > 0) && nnl == 0 {
+			if ((wrapped != 0 && p >= startp) || Sel.R[0].Pos > 0) && nnl == 0 {
 				break
 			}
 			if t != nil {
-				c = textreadc(t, p)
+				c = t.RuneAt(p)
 			} else {
 				c = r[p]
 			}
@@ -579,9 +579,9 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 		nl[0].inst = nil
 		ntl := nnl
 		nnl = 0
-		if sel.r[0].Pos < 0 && (wrapped == 0 || p < startp || startp == eof) {
+		if Sel.R[0].Pos < 0 && (wrapped == 0 || p < startp || startp == eof) {
 			/* Add first instruction to this list */
-			sempty.r[0].Pos = p
+			sempty.R[0].Pos = p
 			if addinst(tl, startinst, &sempty) != 0 {
 				ntl++
 				if ntl >= NLIST {
@@ -603,13 +603,13 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				}
 			case LBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].Pos = p
+					tl[tlp].se.R[inst.subid].Pos = p
 				}
 				inst = inst.next
 				goto Switchstmt
 			case RBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].End = p
+					tl[tlp].se.R[inst.subid].End = p
 				}
 				inst = inst.next
 				goto Switchstmt
@@ -618,7 +618,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 					goto Addinst
 				}
 			case BOL:
-				if p == 0 || (t != nil && textreadc(t, p-1) == '\n') || (r != nil && r[p-1] == '\n') {
+				if p == 0 || (t != nil && t.RuneAt(p-1) == '\n') || (r != nil && r[p-1] == '\n') {
 					inst = inst.next
 					goto Switchstmt
 				}
@@ -647,7 +647,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				inst = inst.next
 				goto Switchstmt
 			case END: /* Match! */
-				tl[tlp].se.r[0].End = p
+				tl[tlp].se.R[0].End = p
 				newmatch(&tl[tlp].se)
 			}
 			continue
@@ -663,22 +663,22 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 		}
 	}
 Return:
-	*rp = sel
-	return sel.r[0].Pos >= 0
+	*rp = Sel
+	return Sel.R[0].Pos >= 0
 
 Overflow:
 	alog.Printf("regexp list overflow\n")
-	sel.r[0].Pos = -1
+	Sel.R[0].Pos = -1
 	goto Return
 }
 
-func newmatch(sp *Rangeset) {
-	if sel.r[0].Pos < 0 || sp.r[0].Pos < sel.r[0].Pos || (sp.r[0].Pos == sel.r[0].Pos && sp.r[0].End > sel.r[0].End) {
-		sel = *sp
+func newmatch(sp *Ranges) {
+	if Sel.R[0].Pos < 0 || sp.R[0].Pos < Sel.R[0].Pos || (sp.R[0].Pos == Sel.R[0].Pos && sp.R[0].End > Sel.R[0].End) {
+		Sel = *sp
 	}
 }
 
-func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
+func MatchBackward(t runes.Text, startp int, rp *Ranges) bool {
 	flag := 0
 	nnl := 0
 	wrapped := 0
@@ -689,7 +689,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 	}
 	list[1][0].inst = nil
 	list[0][0].inst = list[1][0].inst
-	sel.r[0].Pos = -1
+	Sel.R[0].Pos = -1
 	/* Execute machine once for each character, including terminal NUL */
 	for ; ; p-- {
 	doloop:
@@ -702,12 +702,12 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				2:
 				break
 			case 1: /* expired; wrap to end */
-				if sel.r[0].Pos >= 0 {
+				if Sel.R[0].Pos >= 0 {
 					goto Return
 				}
 				list[1][0].inst = nil
 				list[0][0].inst = list[1][0].inst
-				p = t.file.b.Len()
+				p = t.Len()
 				goto doloop
 			case 3:
 				fallthrough
@@ -716,10 +716,10 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 			}
 			c = 0
 		} else {
-			if ((wrapped != 0 && p <= startp) || sel.r[0].Pos > 0) && nnl == 0 {
+			if ((wrapped != 0 && p <= startp) || Sel.R[0].Pos > 0) && nnl == 0 {
 				break
 			}
-			c = textreadc(t, p-1)
+			c = t.RuneAt(p - 1)
 		}
 		/* fast check for first char */
 		if startchar != 0 && nnl == 0 && c != startchar {
@@ -731,10 +731,10 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 		nl[0].inst = nil
 		ntl := nnl
 		nnl = 0
-		if sel.r[0].Pos < 0 && (wrapped == 0 || p > startp) {
+		if Sel.R[0].Pos < 0 && (wrapped == 0 || p > startp) {
 			/* Add first instruction to this list */
 			/* the minus is so the optimizations in addinst work */
-			sempty.r[0].Pos = -p
+			sempty.R[0].Pos = -p
 			if addinst(tl, bstartinst, &sempty) != 0 {
 				ntl++
 				if ntl >= NLIST {
@@ -756,13 +756,13 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				}
 			case LBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].Pos = p
+					tl[tlp].se.R[inst.subid].Pos = p
 				}
 				inst = inst.next
 				goto Switchstmt
 			case RBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].End = p
+					tl[tlp].se.R[inst.subid].End = p
 				}
 				inst = inst.next
 				goto Switchstmt
@@ -776,7 +776,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 					goto Switchstmt
 				}
 			case EOL:
-				if p < t.file.b.Len() && textreadc(t, p) == '\n' {
+				if p < t.Len() && t.RuneAt(p) == '\n' {
 					inst = inst.next
 					goto Switchstmt
 				}
@@ -800,8 +800,8 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				inst = inst.next
 				goto Switchstmt
 			case END: /* Match! */
-				tl[tlp].se.r[0].Pos = -tl[tlp].se.r[0].Pos /* minus sign */
-				tl[tlp].se.r[0].End = p
+				tl[tlp].se.R[0].Pos = -tl[tlp].se.R[0].Pos /* minus sign */
+				tl[tlp].se.R[0].End = p
 				bnewmatch(&tl[tlp].se)
 			}
 			continue
@@ -817,20 +817,20 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 		}
 	}
 Return:
-	*rp = sel
-	return sel.r[0].Pos >= 0
+	*rp = Sel
+	return Sel.R[0].Pos >= 0
 
 Overflow:
 	alog.Printf("regexp list overflow\n")
-	sel.r[0].Pos = -1
+	Sel.R[0].Pos = -1
 	goto Return
 }
 
-func bnewmatch(sp *Rangeset) {
-	if sel.r[0].Pos < 0 || sp.r[0].Pos > sel.r[0].End || (sp.r[0].Pos == sel.r[0].End && sp.r[0].End < sel.r[0].Pos) {
+func bnewmatch(sp *Ranges) {
+	if Sel.R[0].Pos < 0 || sp.R[0].Pos > Sel.R[0].End || (sp.R[0].Pos == Sel.R[0].End && sp.R[0].End < Sel.R[0].Pos) {
 		for i := 0; i < NRange; i++ { /* note the reversal; q0<=q1 */
-			sel.r[i].Pos = sp.r[i].End
-			sel.r[i].End = sp.r[i].Pos
+			Sel.R[i].Pos = sp.R[i].End
+			Sel.R[i].End = sp.R[i].Pos
 		}
 	}
 }
@@ -846,3 +846,11 @@ func runesEqual(x, y []rune) bool {
 	}
 	return true
 }
+
+const NRange = 10
+
+type Ranges struct {
+	R [NRange]runes.Range
+}
+
+var Sel Ranges

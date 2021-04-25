@@ -127,10 +127,10 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 			q0 = t.q0
 			q1 = t.q1
 		} else {
-			for q1 < t.file.b.Len() && func() bool { c = textreadc(t, q1); return isexecc(c) }() && c != ':' {
+			for q1 < t.Len() && func() bool { c = t.RuneAt(q1); return isexecc(c) }() && c != ':' {
 				q1++
 			}
-			for q0 > 0 && func() bool { c = textreadc(t, q0-1); return isexecc(c) }() && c != ':' {
+			for q0 > 0 && func() bool { c = t.RuneAt(q0 - 1); return isexecc(c) }() && c != ':' {
 				q0--
 			}
 			if q1 == q0 {
@@ -458,7 +458,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 			return
 		}
 	}
-	if !et.w.isdir && (et.w.body.file.b.Len() > 0 && !winclean(et.w, true)) {
+	if !et.w.isdir && (et.w.body.Len() > 0 && !winclean(et.w, true)) {
 		return
 	}
 	w := et.w
@@ -506,7 +506,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 	t.file.unread = false
 	for i := 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
-		textsetselect(&u.w.tag, u.w.tag.file.b.Len(), u.w.tag.file.b.Len())
+		textsetselect(&u.w.tag, u.w.tag.Len(), u.w.tag.Len())
 		if samename {
 			a := &addr[i]
 			// Printf("%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
@@ -895,11 +895,11 @@ func sendx(et, t, _ *Text, _, _ bool, _ []rune) {
 	if t.q0 != t.q1 {
 		cut(t, t, nil, true, false, nil)
 	}
-	textsetselect(t, t.file.b.Len(), t.file.b.Len())
+	textsetselect(t, t.Len(), t.Len())
 	paste(t, t, nil, true, true, nil)
-	if textreadc(t, t.file.b.Len()-1) != '\n' {
-		textinsert(t, t.file.b.Len(), Lnl, true)
-		textsetselect(t, t.file.b.Len(), t.file.b.Len())
+	if t.RuneAt(t.Len()-1) != '\n' {
+		textinsert(t, t.Len(), Lnl, true)
+		textsetselect(t, t.Len(), t.Len())
 	}
 	t.iq1 = t.q1
 	textshow(t, t.q1, t.q1, true)

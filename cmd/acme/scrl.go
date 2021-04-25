@@ -72,7 +72,7 @@ func textscrdraw(t *Text) {
 	r1 := r
 	r1.Min.X = 0
 	r1.Max.X = r.Dx()
-	r2 := scrpos(r1, t.org, t.org+t.fr.NumChars, t.file.b.Len())
+	r2 := scrpos(r1, t.org, t.org+t.fr.NumChars, t.Len())
 	if !(r2 == t.lastsr) {
 		t.lastsr = r2
 		b.Draw(r1, t.fr.Cols[frame.BORD], nil, draw.ZP)
@@ -115,7 +115,7 @@ func textscroll(t *Text, but int) {
 		var p0 int
 		if but == 2 {
 			y := my
-			p0 = int(int64(t.file.b.Len()) * int64(y-s.Min.Y) / int64(h))
+			p0 = int(int64(t.Len()) * int64(y-s.Min.Y) / int64(h))
 			if p0 >= t.q1 {
 				p0 = textbacknl(t, p0, 2)
 			}

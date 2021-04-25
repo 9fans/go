@@ -151,7 +151,7 @@ func flushwarnings() {
 		 * place), to avoid a big memory footprint.
 		 */
 		r := fbufalloc()
-		q0 := t.file.b.Len()
+		q0 := t.Len()
 		var nr int
 		for n := 0; n < warn.buf.Len(); n += nr {
 			nr = warn.buf.Len() - n
@@ -159,9 +159,9 @@ func flushwarnings() {
 				nr = RBUFSIZE
 			}
 			warn.buf.Read(n, r[:nr])
-			textbsinsert(t, t.file.b.Len(), r[:nr], true, &nr)
+			textbsinsert(t, t.Len(), r[:nr], true, &nr)
 		}
-		textshow(t, q0, t.file.b.Len(), true)
+		textshow(t, q0, t.Len(), true)
 		winsettag(t.w)
 		textscrdraw(t)
 		w.owner = owner
@@ -190,10 +190,10 @@ func rgetc(v interface{}, n int) rune {
 
 func tgetc(a interface{}, n int) rune {
 	t := a.(*Text)
-	if n >= t.file.b.Len() {
+	if n >= t.Len() {
 		return 0
 	}
-	return textreadc(t, n)
+	return t.RuneAt(n)
 }
 
 func savemouse(w *Window) {

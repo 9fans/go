@@ -2,6 +2,7 @@ package main
 
 import (
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"strings"
 )
@@ -47,17 +48,17 @@ func isregexc(r rune) bool {
 // the end of the current line.
 // It returns the final position.
 func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
-	for nl > 0 && q0 < t.file.b.Len() {
+	for nl > 0 && q0 < t.Len() {
 		tmp1 := q0
 		q0++
-		if textreadc(t, tmp1) == '\n' {
+		if t.RuneAt(tmp1) == '\n' {
 			nl--
 		}
 	}
 	if nl > 0 {
 		return q0
 	}
-	for nr > 0 && q0 < t.file.b.Len() && textreadc(t, q0) != '\n' {
+	for nr > 0 && q0 < t.Len() && t.RuneAt(q0) != '\n' {
 		q0++
 		nr--
 	}
@@ -72,11 +73,11 @@ func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, 
 			line = r.End + line
 		} else if dir == Back {
 			if r.Pos == 0 && line > 0 {
-				r.Pos = t.file.b.Len()
+				r.Pos = t.Len()
 			}
 			line = r.Pos - line
 		}
-		if line < 0 || line > t.file.b.Len() {
+		if line < 0 || line > t.Len() {
 			goto Rescue
 		}
 		*evalp = true
@@ -89,21 +90,21 @@ func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, 
 		goto Forward
 	case Fore:
 		if q1 > 0 {
-			for q1 < t.file.b.Len() && textreadc(t, q1-1) != '\n' {
+			for q1 < t.Len() && t.RuneAt(q1-1) != '\n' {
 				q1++
 			}
 		}
 		q0 = q1
 		goto Forward
 	case Back:
-		if q0 < t.file.b.Len() {
-			for q0 > 0 && textreadc(t, q0-1) != '\n' {
+		if q0 < t.Len() {
+			for q0 > 0 && t.RuneAt(q0-1) != '\n' {
 				q0--
 			}
 		}
 		q1 = q0
 		for line > 0 && q0 > 0 {
-			if textreadc(t, q0-1) == '\n' {
+			if t.RuneAt(q0-1) == '\n' {
 				line--
 				if line >= 0 {
 					q1 = q0
@@ -115,7 +116,7 @@ func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, 
 		if line > 1 {
 			goto Rescue
 		}
-		for q0 > 0 && textreadc(t, q0-1) != '\n' {
+		for q0 > 0 && t.RuneAt(q0-1) != '\n' {
 			q0--
 		}
 	}
@@ -124,17 +125,17 @@ Return:
 	return runes.Rng(q0, q1)
 
 Forward:
-	for line > 0 && q1 < t.file.b.Len() {
+	for line > 0 && q1 < t.Len() {
 		tmp2 := q1
 		q1++
-		if textreadc(t, tmp2) == '\n' || q1 == t.file.b.Len() {
+		if t.RuneAt(tmp2) == '\n' || q1 == t.Len() {
 			line--
 			if line > 0 {
 				q0 = q1
 			}
 		}
 	}
-	if line == 1 && q1 == t.file.b.Len() { // 6 goes to end of 5-line file
+	if line == 1 && q1 == t.Len() { // 6 goes to end of 5-line file
 		goto Return
 	}
 	if line > 0 {
@@ -151,21 +152,21 @@ Rescue:
 }
 
 func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, dir rune, foundp *bool) runes.Range {
-	if pat[0] == '\x00' && rxnull() {
+	if pat[0] == '\x00' && regx.Null() {
 		if showerr {
 			alog.Printf("no previous regular expression\n")
 		}
 		*foundp = false
 		return r
 	}
-	if pat[0] != 0 && !rxcompile(pat) {
+	if pat[0] != 0 && !regx.Compile(pat) {
 		*foundp = false
 		return r
 	}
 	var found bool
-	var sel Rangeset
+	var sel regx.Ranges
 	if dir == Back {
-		found = rxbexecute(t, r.Pos, &sel)
+		found = regx.MatchBackward(t, r.Pos, &sel)
 	} else {
 		var q int
 		if lim.Pos < 0 {
@@ -173,13 +174,13 @@ func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, d
 		} else {
 			q = lim.End
 		}
-		found = rxexecute(t, nil, r.End, q, &sel)
+		found = regx.Match(t, nil, r.End, q, &sel)
 	}
 	if !found && showerr {
 		alog.Printf("no match for regexp\n")
 	}
 	*foundp = found
-	return sel.r[0]
+	return sel.R[0]
 }
 
 func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) runes.Range {
@@ -209,7 +210,7 @@ func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface
 				r.Pos = 0
 			}
 			if q >= q1 && t != nil && t.file != nil { /* rhs defaults to $ */
-				r.End = t.file.b.Len()
+				r.End = t.Len()
 			} else {
 				nr = address(showerr, t, lim, ar, a, q, q1, getc, evalp, &q)
 				r.End = nr.End
@@ -234,7 +235,7 @@ func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface
 				if c == '.' {
 					r = ar
 				} else {
-					r = runes.Rng(t.file.b.Len(), t.file.b.Len())
+					r = runes.Rng(t.Len(), t.Len())
 				}
 			}
 			if q < q1 {

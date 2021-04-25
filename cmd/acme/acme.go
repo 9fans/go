@@ -13,6 +13,7 @@ import (
 
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
+	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -130,7 +131,7 @@ func main() {
 
 	iconinit()
 	// TODO timerinit()
-	rxinit()
+	regx.Init()
 
 	mousectl = display.InitMouse()
 	if mousectl == nil {
@@ -219,7 +220,7 @@ func readfile(c *Column, s string) {
 	winsettag(w)
 	winresize(w, w.r, false, true)
 	textscrdraw(&w.body)
-	textsetselect(&w.tag, w.tag.file.b.Len(), w.tag.file.b.Len())
+	textsetselect(&w.tag, w.tag.Len(), w.tag.Len())
 	xfidlog(w, "new")
 }
 

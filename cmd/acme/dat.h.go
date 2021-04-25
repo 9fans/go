@@ -39,8 +39,6 @@ const (
 	QMAX
 )
 
-const NRange = 10
-
 type Elog struct {
 	typ int
 	q0  int
@@ -215,10 +213,6 @@ type Reffont struct {
 	lk  sync.Mutex
 	ref uint32
 	f   *draw.Font
-}
-
-type Rangeset struct {
-	r [NRange]runes.Range
 }
 
 type Dirlist struct {

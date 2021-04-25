@@ -53,8 +53,8 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 	w.tag.what = Tag
 	/* tag is a copy of the contents, not a tracked image */
 	if clone != nil {
-		textdelete(&w.tag, 0, w.tag.file.b.Len(), true)
-		nc := clone.tag.file.b.Len()
+		textdelete(&w.tag, 0, w.tag.Len(), true)
+		nc := clone.tag.Len()
 		rp := make([]rune, nc)
 		clone.tag.file.b.Read(0, rp)
 		textinsert(&w.tag, 0, rp, true)
@@ -118,7 +118,7 @@ func windrawbutton(w *Window) {
 func delrunepos(w *Window) int {
 	_, i := parsetag(w, 0)
 	i += 2
-	if i >= w.tag.file.b.Len() {
+	if i >= w.tag.Len() {
 		return -1
 	}
 	return i
@@ -164,9 +164,9 @@ func wintaglines(w *Window, r draw.Rectangle) int {
 
 	/* if tag ends with \n, include empty line at end for typing */
 	n = w.tag.fr.NumLines
-	if w.tag.file.b.Len() > 0 {
+	if w.tag.Len() > 0 {
 		var rune_ [1]rune
-		w.tag.file.b.Read(w.tag.file.b.Len()-1, rune_[:])
+		w.tag.file.b.Read(w.tag.Len()-1, rune_[:])
 		if rune_[0] == '\n' {
 			n++
 		}
@@ -351,7 +351,7 @@ func wintype(w *Window, t *Text, r rune) {
 
 func wincleartag(w *Window) {
 	/* w must be committed */
-	n := w.tag.file.b.Len()
+	n := w.tag.Len()
 	r, i := parsetag(w, 0)
 	for ; i < n; i++ {
 		if r[i] == '|' {
@@ -378,7 +378,7 @@ var Lspacepipe = []rune(" |")
 var Ltabpipe = []rune("\t|")
 
 func parsetag(w *Window, extra int) ([]rune, int) {
-	r := make([]rune, w.tag.file.b.Len(), w.tag.file.b.Len()+extra+1)
+	r := make([]rune, w.tag.Len(), w.tag.Len()+extra+1)
 	w.tag.file.b.Read(0, r)
 
 	/*
@@ -396,7 +396,7 @@ func parsetag(w *Window, extra int) ([]rune, int) {
 	if p >= 0 && (pipe < 0 || p < pipe) {
 		i = p
 	} else {
-		for i = 0; i < w.tag.file.b.Len(); i++ {
+		for i = 0; i < w.tag.Len(); i++ {
 			if r[i] == ' ' || r[i] == '\t' {
 				break
 			}
@@ -422,7 +422,7 @@ func winsettag1(w *Window) {
 	if !runes.Equal(old[:ii], w.body.file.name) {
 		textdelete(&w.tag, 0, ii, true)
 		textinsert(&w.tag, 0, w.body.file.name, true)
-		old = make([]rune, w.tag.file.b.Len())
+		old = make([]rune, w.tag.Len())
 		w.tag.file.b.Read(0, old)
 	}
 
@@ -488,7 +488,7 @@ func winsettag1(w *Window) {
 		}
 	}
 	w.tag.file.mod = false
-	n = w.tag.file.b.Len() + len(w.tag.cache)
+	n = w.tag.Len() + len(w.tag.cache)
 	if w.tag.q0 > n {
 		w.tag.q0 = n
 	}
@@ -571,7 +571,7 @@ func winclean(w *Window, conservative bool) bool {
 		if len(w.body.file.name) != 0 {
 			alog.Printf("%s modified\n", string(w.body.file.name))
 		} else {
-			if w.body.file.b.Len() < 100 { /* don't whine if it's too small */
+			if w.body.Len() < 100 { /* don't whine if it's too small */
 				return true
 			}
 			alog.Printf("unnamed file modified\n")
@@ -591,7 +591,7 @@ func winctlprint(w *Window, fonts bool) string {
 	if w.dirty {
 		dirty = 1
 	}
-	base := fmt.Sprintf("%11d %11d %11d %11d %11d ", w.id, w.tag.file.b.Len(), w.body.file.b.Len(), isdir, dirty)
+	base := fmt.Sprintf("%11d %11d %11d %11d %11d ", w.id, w.tag.Len(), w.body.Len(), isdir, dirty)
 	if fonts {
 		base += fmt.Sprintf("%11d %q %11d ", w.body.fr.R.Dx(), w.body.reffont.f.Name, w.body.fr.MaxTab)
 	}

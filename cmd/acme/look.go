@@ -186,7 +186,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 				for q0 > 0 && func() bool { c = tgetc(t, q0-1); return c != ' ' }() && c != '\t' && c != '\n' {
 					q0--
 				}
-				for q1 < t.file.b.Len() && func() bool { c = tgetc(t, q1); return c != ' ' }() && c != '\t' && c != '\n' {
+				for q1 < t.Len() && func() bool { c = tgetc(t, q1); return c != ' ' }() && c != '\t' && c != '\n' {
 					q1++
 				}
 				if q1 == q0 {
@@ -290,12 +290,12 @@ func plumbshow(m *plumb.Message) {
 	w.dirty = false
 	winsettag(w)
 	textscrdraw(&w.body)
-	textsetselect(&w.tag, w.tag.file.b.Len(), w.tag.file.b.Len())
+	textsetselect(&w.tag, w.tag.Len(), w.tag.Len())
 	xfidlog(w, "new")
 }
 
 func search(ct *Text, r []rune) bool {
-	if len(r) == 0 || len(r) > ct.file.b.Len() {
+	if len(r) == 0 || len(r) > ct.Len() {
 		return false
 	}
 	if 2*len(r) > RBUFSIZE {
@@ -308,7 +308,7 @@ func search(ct *Text, r []rune) bool {
 	around := 0
 	q := ct.q1
 	for {
-		if q >= ct.file.b.Len() {
+		if q >= ct.Len() {
 			q = 0
 			around = 1
 			b = b[:0]
@@ -327,8 +327,8 @@ func search(ct *Text, r []rune) bool {
 			b = b[i:]
 		}
 		/* reload if buffer covers neither string nor rest of file */
-		if len(b) < len(r) && len(b) != ct.file.b.Len()-q {
-			nb := ct.file.b.Len() - q
+		if len(b) < len(r) && len(b) != ct.Len()-q {
+			nb := ct.Len() - q
 			if nb >= maxn {
 				nb = maxn - 1
 			}
@@ -425,7 +425,7 @@ func dirname(t *Text, r []rune) []rune {
 		goto Rescue
 	}
 	{
-		nt := t.w.tag.file.b.Len()
+		nt := t.w.tag.Len()
 		if nt == 0 {
 			goto Rescue
 		}
@@ -460,7 +460,7 @@ func texthas(t *Text, q0 int, r []rune) bool {
 		return false
 	}
 	for i := 0; i < len(r); i++ {
-		if q0+i >= t.file.b.Len() || textreadc(t, q0+i) != r[i] {
+		if q0+i >= t.Len() || t.RuneAt(q0+i) != r[i] {
 			return false
 		}
 	}
@@ -489,8 +489,8 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	var c rune
 	if q1 == q0 {
 		colon := -1
-		for q1 < t.file.b.Len() {
-			c = textreadc(t, q1)
+		for q1 < t.Len() {
+			c = t.RuneAt(q1)
 			if !runes.IsFilename(c) {
 				break
 			}
@@ -501,7 +501,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 			q1++
 		}
 		for q0 > 0 {
-			c = textreadc(t, q0-1)
+			c = t.RuneAt(q0 - 1)
 			if !runes.IsFilename(c) && !isaddrc(c) && !isregexc(c) {
 				break
 			}
@@ -516,23 +516,23 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		 */
 		if colon >= 0 {
 			q1 = colon
-			if colon < t.file.b.Len()-1 && isaddrc(textreadc(t, colon+1)) {
+			if colon < t.Len()-1 && isaddrc(t.RuneAt(colon+1)) {
 				q1 = colon + 1
-				for q1 < t.file.b.Len() && isaddrc(textreadc(t, q1)) {
+				for q1 < t.Len() && isaddrc(t.RuneAt(q1)) {
 					q1++
 				}
 			}
 		}
 		if q1 > q0 {
 			if colon >= 0 { /* stop at white space */
-				for amax = colon + 1; amax < t.file.b.Len(); amax++ {
-					c = textreadc(t, amax)
+				for amax = colon + 1; amax < t.Len(); amax++ {
+					c = t.RuneAt(amax)
 					if c == ' ' || c == '\t' || c == '\n' {
 						break
 					}
 				}
 			} else {
-				amax = t.file.b.Len()
+				amax = t.Len()
 			}
 		}
 	}
@@ -565,7 +565,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	for i = 0; i < n; i++ {
 		c = r[i]
 		if c == ':' && nname < 0 {
-			if q0+i+1 < t.file.b.Len() && (i == n-1 || isaddrc(textreadc(t, q0+i+1))) {
+			if q0+i+1 < t.Len() && (i == n-1 || isaddrc(t.RuneAt(q0+i+1))) {
 				amin = q0 + i
 			} else {
 				return false
@@ -587,7 +587,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	 * restrictive enough syntax and checking for a #include earlier on the
 	 * line would be silly.
 	 */
-	if q0 > 0 && textreadc(t, q0-1) == '<' && q1 < t.file.b.Len() && textreadc(t, q1) == '>' {
+	if q0 > 0 && t.RuneAt(q0-1) == '<' && q1 < t.Len() && t.RuneAt(q1) == '>' {
 		rs := includename(t, r[:nname])
 		r = rs
 		nname = len(rs)
@@ -643,10 +643,10 @@ func expand(t *Text, q0 int, q1 int, e *Expand) bool {
 	}
 
 	if q0 == q1 {
-		for q1 < t.file.b.Len() && runes.IsAlphaNum(textreadc(t, q1)) {
+		for q1 < t.Len() && runes.IsAlphaNum(t.RuneAt(q1)) {
 			q1++
 		}
-		for q0 > 0 && runes.IsAlphaNum(textreadc(t, q0-1)) {
+		for q0 > 0 && runes.IsAlphaNum(t.RuneAt(q0-1)) {
 			q0--
 		}
 	}
@@ -739,7 +739,7 @@ func openfile(t *Text, e *Expand) *Window {
 		t.file.mod = false
 		t.w.dirty = false
 		winsettag(t.w)
-		textsetselect(&t.w.tag, t.w.tag.file.b.Len(), t.w.tag.file.b.Len())
+		textsetselect(&t.w.tag, t.w.tag.Len(), t.w.tag.Len())
 		if ow != nil {
 			for i := len(ow.incl); ; {
 				i--
