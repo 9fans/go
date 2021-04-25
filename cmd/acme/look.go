@@ -385,7 +385,7 @@ func runesIndex(r, s []rune) int {
 		if len(r)-i < len(s) {
 			break
 		}
-		if ri == c && runeeq(r[i:], s) {
+		if ri == c && runeeq(r[i:i+len(s)], s) {
 			return i
 		}
 	}
@@ -845,7 +845,7 @@ func new_(et, t, argt *Text, flag1, flag2 bool, arg []rune) {
 			}
 			break
 		}
-		nf := len(a) - len(arg)
+		nf := len(arg) - len(a)
 		f := runestrdup(arg[:nf])
 		rs := dirname(et, f)
 		var e Expand
