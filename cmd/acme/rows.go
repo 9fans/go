@@ -333,11 +333,7 @@ func rowdump(row *Row, file *string) {
 			b.WriteByte(' ')
 		}
 	}
-	for _, c := range row.col {
-		for _, w := range c.w {
-			w.body.file.dumpid = 0
-		}
-	}
+	dumpid := make(map[*File]int)
 	m := util.Min(bufs.RuneLen, row.tag.Len())
 	row.tag.file.Read(0, r[:m])
 	n := 0
@@ -387,19 +383,19 @@ func rowdump(row *Row, file *string) {
 				a = string(t.file.Name())
 			}
 			var dumped bool
-			if t.file.dumpid != 0 {
+			if dumpid[t.file] != 0 {
 				dumped = false
-				fmt.Fprintf(b, "x%11d %11d %11d %11d %11.7f %s\n", i, t.file.dumpid, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
+				fmt.Fprintf(b, "x%11d %11d %11d %11d %11.7f %s\n", i, dumpid[t.file], w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
 			} else if w.dumpstr != "" {
 				dumped = false
-				fmt.Fprintf(b, "e%11d %11d %11d %11d %11.7f %s\n", i, t.file.dumpid, 0, 0, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
+				fmt.Fprintf(b, "e%11d %11d %11d %11d %11.7f %s\n", i, 0, 0, 0, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
 			} else if (!w.dirty && !exists(a)) || w.isdir {
 				dumped = false
-				t.file.dumpid = w.id
+				dumpid[t.file] = w.id
 				fmt.Fprintf(b, "f%11d %11d %11d %11d %11.7f %s\n", i, w.id, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
 			} else {
 				dumped = true
-				t.file.dumpid = w.id
+				dumpid[t.file] = w.id
 				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.Len(), fontname)
 			}
 			b.WriteString(winctlprint(w, false))
@@ -580,6 +576,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 	var ns int
 	var r []rune
 	hdrdone := false
+	byDumpID := make(map[int]*Window)
 	for {
 		l, err = rdline(b, &line)
 		if err != nil {
@@ -702,12 +699,12 @@ func rowload(row *Row, file *string, initing bool) bool {
 		if dumpid == 0 {
 			w = coladd(c, nil, nil, y)
 		} else {
-			w = coladd(c, nil, lookid(dumpid, true), y)
+			w = coladd(c, nil, byDumpID[dumpid], y)
 		}
 		if w == nil {
 			continue
 		}
-		w.dumpid = j
+		byDumpID[j] = w
 		l, err = rdline(b, &line)
 		if err != nil {
 			return bad()

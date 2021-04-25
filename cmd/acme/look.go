@@ -680,13 +680,10 @@ func lookfile(s []rune) *Window {
 	return nil
 }
 
-func lookid(id int, dump bool) *Window {
+func lookid(id int) *Window {
 	for _, c := range row.col {
 		for _, w := range c.w {
-			if dump && w.dumpid == id {
-				return w
-			}
-			if !dump && w.id == id {
+			if w.id == id {
 				return w
 			}
 		}

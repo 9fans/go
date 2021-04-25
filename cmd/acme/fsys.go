@@ -372,7 +372,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 			}
 			id, _ = strconv.Atoi(x.fcall.Wname[i])
 			row.lk.Lock()
-			w = lookid(id, false)
+			w = lookid(id)
 			if w == nil {
 				row.lk.Unlock()
 				break
