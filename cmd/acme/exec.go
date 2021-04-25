@@ -28,6 +28,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -154,7 +155,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		aa = getbytearg(argt, true, true, &a)
 		if a != nil {
 			if len(*a) > EVENTSIZE { /* too big; too bad */
-				warning(nil, "argument string too long\n")
+				alog.Printf("argument string too long\n")
 				return
 			}
 			f |= 8
@@ -277,7 +278,7 @@ var doabort_n int
 func doabort(_, _, _ *Text, _, _ bool, _ []rune) {
 	if doabort_n == 0 {
 		doabort_n++
-		warning(nil, "executing Abort again will call abort()\n")
+		alog.Printf("executing Abort again will call abort()\n")
 		return
 	}
 	panic("abort")
@@ -302,7 +303,7 @@ func delcol(et, _, _ *Text, _, _ bool, _ []rune) {
 	for i := 0; i < len(c.w); i++ {
 		w := c.w[i]
 		if w.nopen[QWevent]+w.nopen[QWaddr]+w.nopen[QWdata]+w.nopen[QWxdata] > 0 {
-			warning(nil, "can't delete column; %s is running an external command\n", string(w.body.file.name))
+			alog.Printf("can't delete column; %s is running an external command\n", string(w.body.file.name))
 			return
 		}
 	}
@@ -430,7 +431,7 @@ func zeroxx(et, t, _ *Text, _, _ bool, _ []rune) {
 	}
 	t = &t.w.body
 	if t.w.isdir {
-		warning(nil, "%s is a directory; Zerox illegal\n", string(t.file.name))
+		alog.Printf("%s is a directory; Zerox illegal\n", string(t.file.name))
 	} else {
 		nw := coladd(t.w.col, nil, t.w, -1)
 		/* ugly: fix locks so w->unlock works */
@@ -464,12 +465,12 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 	t = &w.body
 	name := getname(t, argt, arg, false)
 	if name == "" {
-		warning(nil, "no file name\n")
+		alog.Printf("no file name\n")
 		return
 	}
 	if len(t.file.text) > 1 {
 		if info, err := os.Stat(name); err == nil && info.IsDir() {
-			warning(nil, "%s is a directory; can't read with multiple windows on it\n", name)
+			alog.Printf("%s is a directory; can't read with multiple windows on it\n", name)
 			return
 		}
 	}
@@ -508,7 +509,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 		textsetselect(&u.w.tag, u.w.tag.file.b.Len(), u.w.tag.file.b.Len())
 		if samename {
 			a := &addr[i]
-			// warning(nil, "%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
+			// Printf("%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
 			q0 := nlcounttopos(u, 0, a.lq0, a.rq0)
 			q1 := nlcounttopos(u, q0, a.lq1, a.rq1)
 			textsetselect(u, q0, q1)
@@ -556,9 +557,9 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 		}
 		if !sameInfo(info, f.info) {
 			if f.unread {
-				warning(nil, "%s not written; file already exists\n", name)
+				alog.Printf("%s not written; file already exists\n", name)
 			} else {
-				warning(nil, "%s modified since last read\n\twas %v; now %v\n", name, f.info.ModTime().Format(timefmt), info.ModTime().Format(timefmt))
+				alog.Printf("%s modified since last read\n\twas %v; now %v\n", name, f.info.ModTime().Format(timefmt), info.ModTime().Format(timefmt))
 			}
 			f.info = info
 			return
@@ -566,7 +567,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 	}
 	fd, err := os.Create(name)
 	if err != nil {
-		warning(nil, "can't create file %s: %v\n", name, err)
+		alog.Printf("can't create file %s: %v\n", name, err)
 		return
 	}
 	defer fd.Close() // for Rescue case
@@ -583,7 +584,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 	h := sha1.New()
 	isAppend := err == nil && info.Size() > 0 && info.Mode()&os.ModeAppend != 0
 	if isAppend {
-		warning(nil, "%s not written; file is append only\n", name)
+		alog.Printf("%s not written; file is append only\n", name)
 		goto Rescue2
 	}
 	{
@@ -597,17 +598,17 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 			buf := []byte(string(r[:n])) // TODO(rsc)
 			h.Write(buf)
 			if _, err := b.Write(buf); err != nil { // TODO(rsc): avoid alloc
-				warning(nil, "can't write file %s: %v\n", name, err)
+				alog.Printf("can't write file %s: %v\n", name, err)
 				goto Rescue2
 			}
 		}
 	}
 	if err := b.Flush(); err != nil {
-		warning(nil, "can't write file %s: %v\n", name, err)
+		alog.Printf("can't write file %s: %v\n", name, err)
 		goto Rescue2
 	}
 	if err := fd.Close(); err != nil {
-		warning(nil, "can't write file %s: %v\n", name, err)
+		alog.Printf("can't write file %s: %v\n", name, err)
 		goto Rescue2 // flush or close failed
 	}
 	if runes.Equal(namer, f.name) {
@@ -718,7 +719,7 @@ func put(et, _, argt *Text, _, _ bool, arg []rune) {
 	f := w.body.file
 	name := getname(&w.body, argt, arg, true)
 	if name == "" {
-		warning(nil, "no file name\n")
+		alog.Printf("no file name\n")
 		return
 	}
 	if w.autoindent {
@@ -938,7 +939,7 @@ func putall(et, _, _ *Text, _, _ bool, _ []rune) {
 			_, e := os.Stat(a)
 			if w.body.file.mod || len(w.body.cache) != 0 {
 				if e != nil {
-					warning(nil, "no auto-Put of %s: %v\n", a, e)
+					alog.Printf("no auto-Put of %s: %v\n", a, e)
 				} else {
 					wincommit(w, &w.body)
 					put(&w.body, nil, nil, XXX, XXX, nil)
@@ -950,7 +951,7 @@ func putall(et, _, _ *Text, _, _ bool, _ []rune) {
 
 func id(et, _, _ *Text, _, _ bool, _ []rune) {
 	if et != nil && et.w != nil {
-		warning(nil, "/mnt/acme/%d/\n", et.w.id)
+		alog.Printf("/mnt/acme/%d/\n", et.w.id)
 	}
 }
 
@@ -1077,9 +1078,9 @@ func incl(et, _, argt *Text, _, _ bool, arg []rune) {
 			if n < 0 {
 				break
 			}
-			warning(nil, "%s ", string(w.incl[n]))
+			alog.Printf("%s ", string(w.incl[n]))
 		}
-		warning(nil, "\n")
+		alog.Printf("\n")
 	}
 }
 
@@ -1100,12 +1101,12 @@ func indentval(s []rune) int {
 	}
 	if runes.Equal(s, LON) {
 		globalautoindent = true
-		warning(nil, "Indent ON\n")
+		alog.Printf("Indent ON\n")
 		return IGlobal
 	}
 	if runes.Equal(s, LOFF) {
 		globalautoindent = false
-		warning(nil, "Indent OFF\n")
+		alog.Printf("Indent OFF\n")
 		return IGlobal
 	}
 	if runes.Equal(s, Lon) {
@@ -1169,7 +1170,7 @@ func tab(et, _, argt *Text, _, _ bool, arg []rune) {
 			winresize(w, w.r, false, true)
 		}
 	} else {
-		warning(nil, "%s: Tab %d\n", string(w.body.file.name), w.body.tabstop)
+		alog.Printf("%s: Tab %d\n", string(w.body.file.name), w.body.tabstop)
 	}
 }
 
@@ -1254,7 +1255,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 		// TODO(rsc): This is "Local foo".
 		// Interpret the command since a subshell will not be Local.
 		// Can look for 'Local cd' and 'Local x=y'.
-		warning(nil, "Local not implemented")
+		alog.Printf("Local not implemented")
 		goto Fail
 	}
 	if win != nil {
@@ -1355,7 +1356,7 @@ Hard:
 			}
 			return
 		}
-		warning(nil, "exec %s: %v\n", shell, err)
+		alog.Printf("exec %s: %v\n", shell, err)
 		/* threadexec hasn't happened, so send a zero */
 	}
 

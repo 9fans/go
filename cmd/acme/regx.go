@@ -19,6 +19,7 @@ import (
 	"runtime"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 )
@@ -128,7 +129,7 @@ func rxinit() {
 
 func regerror(e string) {
 	lastregexp = lastregexp[:0]
-	warning(nil, "regexp: %s\n", e)
+	alog.Printf("regexp: %s\n", e)
 	rechan <- nil
 	runtime.Goexit() // TODO(rsc)
 }
@@ -666,7 +667,7 @@ Return:
 	return sel.r[0].Pos >= 0
 
 Overflow:
-	warning(nil, "regexp list overflow\n")
+	alog.Printf("regexp list overflow\n")
 	sel.r[0].Pos = -1
 	goto Return
 }
@@ -820,7 +821,7 @@ Return:
 	return sel.r[0].Pos >= 0
 
 Overflow:
-	warning(nil, "regexp list overflow\n")
+	alog.Printf("regexp list overflow\n")
 	sel.r[0].Pos = -1
 	goto Return
 }

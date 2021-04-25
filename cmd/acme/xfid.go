@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -153,7 +154,7 @@ func xfidopen(x *Xfid) {
 				t.file.b.Read(q0, r[:n])
 				s := []byte(string(r[:n])) // TODO(rsc)
 				if _, err := w.rdselfd.Write(s); err != nil {
-					warning(nil, "can't write temp file for pipe command %v\n", err)
+					alog.Printf("can't write temp file for pipe command %v\n", err)
 					break
 				}
 				q0 += n
@@ -283,7 +284,7 @@ func xfidread(x *Xfid) {
 			xfidlogread(x)
 			return
 		default:
-			warning(nil, "unknown qid %d\n", q)
+			alog.Printf("unknown qid %d\n", q)
 		}
 		respond(x, &fc, "")
 		return

@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -546,12 +547,12 @@ func winaddincl(w *Window, r []rune) {
 			info, err = os.Stat(a)
 		}
 		if err != nil {
-			warning(nil, "%s: %v", a, err)
+			alog.Printf("%s: %v", a, err)
 			return
 		}
 	}
 	if !info.IsDir() {
-		warning(nil, "%s: not a directory\n", a)
+		alog.Printf("%s: not a directory\n", a)
 		return
 	}
 	w.incl = append(w.incl, nil)
@@ -568,12 +569,12 @@ func winclean(w *Window, conservative bool) bool {
 	}
 	if w.dirty {
 		if len(w.body.file.name) != 0 {
-			warning(nil, "%s modified\n", string(w.body.file.name))
+			alog.Printf("%s modified\n", string(w.body.file.name))
 		} else {
 			if w.body.file.b.Len() < 100 { /* don't whine if it's too small */
 				return true
 			}
-			warning(nil, "unnamed file modified\n")
+			alog.Printf("unnamed file modified\n")
 		}
 		w.dirty = false
 		return false

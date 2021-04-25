@@ -1,6 +1,7 @@
 package main
 
 import (
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"strings"
 )
@@ -143,7 +144,7 @@ Forward:
 
 Rescue:
 	if showerr {
-		warning(nil, "address out of range\n")
+		alog.Printf("address out of range\n")
 	}
 	*evalp = false
 	return r
@@ -152,7 +153,7 @@ Rescue:
 func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, dir rune, foundp *bool) runes.Range {
 	if pat[0] == '\x00' && rxnull() {
 		if showerr {
-			warning(nil, "no previous regular expression\n")
+			alog.Printf("no previous regular expression\n")
 		}
 		*foundp = false
 		return r
@@ -175,7 +176,7 @@ func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, d
 		found = rxexecute(t, nil, r.End, q, &sel)
 	}
 	if !found && showerr {
-		warning(nil, "no match for regexp\n")
+		alog.Printf("no match for regexp\n")
 	}
 	*foundp = found
 	return sel.r[0]

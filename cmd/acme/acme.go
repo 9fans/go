@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -69,6 +70,8 @@ func main() {
 		os.Exit(2)
 	}
 	flag.Parse()
+
+	alog.Init(func(msg string) { warning(nil, "%s", msg) })
 
 	cputype = os.Getenv("cputype")
 	objtype = os.Getenv("objtype")
@@ -578,7 +581,7 @@ func waitthread() {
 		case errb := <-cerr:
 			bigLock()
 			row.lk.Lock()
-			warning(nil, "%s", errb)
+			alog.Printf("%s", errb)
 			display.Flush()
 			row.lk.Unlock()
 
@@ -590,14 +593,14 @@ func waitthread() {
 				if runes.Equal(c.name[:len(c.name)-1], cmd) {
 					/* TODO postnote
 					if postnote(PNGROUP, c.pid, "kill") < 0 {
-						warning(nil, "kill %S: %r\n", cmd)
+						Printf("kill %S: %r\n", cmd)
 					}
 					*/
 					found = true
 				}
 			}
 			if !found {
-				warning(nil, "Kill: no process %s\n", string(cmd))
+				alog.Printf("Kill: no process %s\n", string(cmd))
 			}
 
 		case w := <-cwait:
@@ -739,7 +742,7 @@ func rfget(fix, save, setfont bool, name string) *Reffont {
 		}
 		f, err := display.OpenFont(name)
 		if err != nil {
-			warning(nil, "can't open font file %s: %v\n", name, err)
+			alog.Printf("can't open font file %s: %v\n", name, err)
 			return nil
 		}
 		r = new(Reffont)
@@ -779,7 +782,7 @@ func rfclose(r *Reffont) {
 				goto Found
 			}
 		}
-		warning(nil, "internal error: can't find font in cache\n")
+		alog.Printf("internal error: can't find font in cache\n")
 	Found:
 		r.f.Free()
 	}

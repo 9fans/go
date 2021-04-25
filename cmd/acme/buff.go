@@ -19,6 +19,7 @@ import (
 	"os"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -43,7 +44,7 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune)
 		var err error
 		n, err = fd.Read(p[m : m+BUFSIZE])
 		if err != nil && err != io.EOF {
-			warning(nil, "read error in Buffer.load: %v", err)
+			alog.Printf("read error in Buffer.load: %v", err)
 			break
 		}
 		if h != nil {

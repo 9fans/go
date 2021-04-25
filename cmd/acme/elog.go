@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -106,7 +107,7 @@ func elogflush(f *File) {
 	b.nr = len(f.elog.r)
 	switch f.elog.typ {
 	default:
-		warning(nil, "unknown elog type %#x\n", f.elog.typ)
+		alog.Printf("unknown elog type %#x\n", f.elog.typ)
 	case Null:
 		break
 	case Insert,
@@ -139,7 +140,7 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 	if f.elog.typ != Null && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
-			warning(nil, Wsequence)
+			alog.Printf(Wsequence)
 		}
 		elogflush(f)
 	}
@@ -176,7 +177,7 @@ func eloginsert(f *File, q0 int, r []rune) {
 	if f.elog.typ != Null && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
-			warning(nil, Wsequence)
+			alog.Printf(Wsequence)
 		}
 		elogflush(f)
 	}
@@ -206,7 +207,7 @@ func elogdelete(f *File, q0 int, q1 int) {
 	if f.elog.typ != Null && q0 < f.elog.q0+f.elog.nd {
 		if !warned {
 			warned = true
-			warning(nil, Wsequence)
+			alog.Printf(Wsequence)
 		}
 		elogflush(f)
 	}
@@ -270,7 +271,7 @@ func elogapply(f *File) {
 
 		case Replace:
 			if tracelog {
-				warning(nil, "elog replace %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
+				alog.Printf("elog replace %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
@@ -293,7 +294,7 @@ func elogapply(f *File) {
 
 		case Delete:
 			if tracelog {
-				warning(nil, "elog delete %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
+				alog.Printf("elog delete %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
@@ -304,7 +305,7 @@ func elogapply(f *File) {
 
 		case Insert:
 			if tracelog {
-				warning(nil, "elog insert %d %d (%d %d)\n", b.q0, b.q0+b.nr, t.q0, t.q1)
+				alog.Printf("elog insert %d %d (%d %d)\n", b.q0, b.q0+b.nr, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
@@ -350,7 +351,7 @@ func elogapply(f *File) {
 	 */
 	if t.q0 > f.b.Len() || t.q1 > f.b.Len() || t.q0 > t.q1 {
 		if !warned {
-			warning(nil, "elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.Len())
+			alog.Printf("elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.Len())
 		}
 		t.q1 = util.Min(t.q1, f.b.Len())
 		t.q0 = util.Min(t.q0, t.q1)

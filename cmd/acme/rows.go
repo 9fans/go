@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 )
@@ -304,7 +305,7 @@ func rowdump(row *Row, file *string) {
 	// defer fbuffree(buf)
 	if file == nil {
 		if home == "" {
-			warning(nil, "can't find file for dump: $home not defined\n")
+			alog.Printf("can't find file for dump: $home not defined\n")
 			return
 		}
 		s := fmt.Sprintf("%s/acme.dump", home)
@@ -312,7 +313,7 @@ func rowdump(row *Row, file *string) {
 	}
 	f, err := os.Create(*file)
 	if err != nil {
-		warning(nil, "can't open %s: %v\n", *file, err)
+		alog.Printf("can't open %s: %v\n", *file, err)
 		return
 	}
 	b := bufio.NewWriter(f)
@@ -487,7 +488,7 @@ func rowloadfonts(file string) {
 func rowload(row *Row, file *string, initing bool) bool {
 	if file == nil {
 		if home == "" {
-			warning(nil, "can't find file for load: $home not defined\n")
+			alog.Printf("can't find file for load: $home not defined\n")
 			return false
 		}
 		s := fmt.Sprintf("%s/acme.dump", home)
@@ -495,7 +496,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 	}
 	f, err := os.Open(*file)
 	if err != nil {
-		warning(nil, "can't open load file %s: %v\n", *file, err)
+		alog.Printf("can't open load file %s: %v\n", *file, err)
 		return false
 	}
 	defer f.Close()
@@ -504,7 +505,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 	/* current directory */
 	line := 0
 	bad := func() bool {
-		warning(nil, "bad load file %s:%d\n", *file, line)
+		alog.Printf("bad load file %s:%d\n", *file, line)
 		return false
 	}
 	l, err := rdline(b, &line)
@@ -513,7 +514,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 	}
 	l = l[:len(l)-1]
 	if err := os.Chdir(l); err != nil {
-		warning(nil, "can't chdir %s\n", l)
+		alog.Printf("can't chdir %s\n", l)
 		return bad()
 	}
 
@@ -743,7 +744,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			/* simplest thing is to put it in a file and load that */
 			f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
 			if err != nil {
-				warning(nil, "can't create temp file: %v\n", err)
+				alog.Printf("can't create temp file: %v\n", err)
 				return bad()
 			}
 			defer f.Close()

@@ -23,6 +23,7 @@ import (
 	"sort"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -196,22 +197,22 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		util.Fatal("text.load")
 	}
 	if t.w.isdir && len(t.file.name) == 0 {
-		warning(nil, "empty directory name")
+		alog.Printf("empty directory name")
 		return -1
 	}
 	if ismtpt(file) {
-		warning(nil, "will not open self mount point %s\n", file)
+		alog.Printf("will not open self mount point %s\n", file)
 		return -1
 	}
 	f, err := os.Open(file)
 	if err != nil {
-		warning(nil, "can't open %s: %v\n", file, err)
+		alog.Printf("can't open %s: %v\n", file, err)
 		return -1
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil {
-		warning(nil, "can't fstat %s: %v\n", file, err)
+		alog.Printf("can't fstat %s: %v\n", file, err)
 		return -1
 	}
 	nulls := false
@@ -223,7 +224,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 	if info.IsDir() {
 		/* this is checked in get() but it's possible the file changed underfoot */
 		if len(t.file.text) > 1 {
-			warning(nil, "%s is a directory; can't read with multiple windows on it\n", file)
+			alog.Printf("%s is a directory; can't read with multiple windows on it\n", file)
 			return -1
 		}
 		t.w.isdir = true
@@ -306,7 +307,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		textsetselect(u, q0, q0)
 	}
 	if nulls {
-		warning(nil, "%s: NUL bytes elided\n", file)
+		alog.Printf("%s: NUL bytes elided\n", file)
 	}
 	return q1 - q0
 }
@@ -618,7 +619,7 @@ func textcomplete(t *Text) []rune {
 
 	c, err := complete(string(dir), string(str))
 	if err != nil {
-		warning(nil, "error attempting completion: %v\n", err)
+		alog.Printf("error attempting completion: %v\n", err)
 		return nil
 	}
 	defer freecompletion(c)
@@ -632,9 +633,9 @@ func textcomplete(t *Text) []rune {
 		if c.nmatch == 0 {
 			more = ": no matches in:"
 		}
-		warning(nil, "%s%s%s*%s\n", string(dir), sep, string(str), more)
+		alog.Printf("%s%s%s*%s\n", string(dir), sep, string(str), more)
 		for i = 0; i < len(c.filename); i++ {
-			warning(nil, " %s\n", c.filename[i])
+			alog.Printf(" %s\n", c.filename[i])
 		}
 	}
 

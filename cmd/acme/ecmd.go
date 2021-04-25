@@ -20,6 +20,7 @@ import (
 	"os"
 	"strings"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 )
@@ -278,7 +279,7 @@ func e_cmd(t *Text, cp *Cmd) bool {
 	nulls := false
 	loadfile(fd, q1, &nulls, readloader, f, nil)
 	if nulls {
-		warning(nil, "%s: NUL bytes elided\n", s)
+		alog.Printf("%s: NUL bytes elided\n", s)
 	} else if allreplaced && samename {
 		f.editclean = true
 	}
@@ -299,7 +300,7 @@ func f_cmd(t *Text, cp *Cmd) bool {
 
 func g_cmd(t *Text, cp *Cmd) bool {
 	if t.file != addr.f {
-		warning(nil, "internal error: g_cmd f!=addr.f\n")
+		alog.Printf("internal error: g_cmd f!=addr.f\n")
 		return false
 	}
 	if !rxcompile(cp.re.r) {
@@ -605,7 +606,7 @@ const (
 
 func printposn(t *Text, mode int) {
 	if t != nil && t.file != nil && t.file.name != nil {
-		warning(nil, "%s:", string(t.file.name))
+		alog.Printf("%s:", string(t.file.name))
 	}
 	var l1 int
 	var l2 int
@@ -614,11 +615,11 @@ func printposn(t *Text, mode int) {
 
 	switch mode {
 	case PosnChars:
-		warning(nil, "#%d", addr.r.Pos)
+		alog.Printf("#%d", addr.r.Pos)
 		if addr.r.End != addr.r.Pos {
-			warning(nil, ",#%d", addr.r.End)
+			alog.Printf(",#%d", addr.r.End)
 		}
-		warning(nil, "\n")
+		alog.Printf("\n")
 		return
 
 	default:
@@ -629,11 +630,11 @@ func printposn(t *Text, mode int) {
 		if addr.r.End > 0 && addr.r.End > addr.r.Pos && textreadc(t, addr.r.End-1) == '\n' {
 			l2--
 		}
-		warning(nil, "%d", l1)
+		alog.Printf("%d", l1)
 		if l2 != l1 {
-			warning(nil, ",%d", l2)
+			alog.Printf(",%d", l2)
 		}
-		warning(nil, "\n")
+		alog.Printf("\n")
 		return
 
 	case PosnLineChars:
@@ -642,11 +643,11 @@ func printposn(t *Text, mode int) {
 		if l2 == l1 {
 			r2 += r1
 		}
-		warning(nil, "%d+#%d", l1, r1)
+		alog.Printf("%d+#%d", l1, r1)
 		if l2 != l1 {
-			warning(nil, ",%d+#%d", l2, r2)
+			alog.Printf(",%d+#%d", l2, r2)
 		}
-		warning(nil, "\n")
+		alog.Printf("\n")
 		return
 	}
 }
@@ -713,7 +714,7 @@ func pdisplay(f *File) bool {
 			np = RBUFSIZE - 1
 		}
 		f.b.Read(p1, buf[:np])
-		warning(nil, "%s", string(buf[:np]))
+		alog.Printf("%s", string(buf[:np]))
 		p1 += np
 	}
 	fbuffree(buf)
@@ -732,7 +733,7 @@ func pfilename(f *File) {
 		}
 		return s[0]
 	}
-	warning(nil, "%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.name))
+	alog.Printf("%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.name))
 }
 
 func loopcmd(f *File, cp *Cmd, rp []runes.Range) {
@@ -1239,7 +1240,7 @@ func allfilecheck(w *Window, v interface{}) {
 		return
 	}
 	if runes.Equal(fp.r, f.name) {
-		warning(nil, "warning: duplicate file name \"%s\"\n", string(fp.r))
+		alog.Printf("warning: duplicate file name \"%s\"\n", string(fp.r))
 	}
 }
 

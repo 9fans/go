@@ -23,6 +23,7 @@ import (
 	"path"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -241,7 +242,7 @@ func plumbgetc(a interface{}, n int) rune {
 
 func plumblook(m *plumb.Message) {
 	if len(m.Data) >= BUFSIZE {
-		warning(nil, "insanely long file name (%d bytes) in plumb message (%.32s...)\n", len(m.Data), m.Data)
+		alog.Printf("insanely long file name (%d bytes) in plumb message (%.32s...)\n", len(m.Data), m.Data)
 		return
 	}
 	var e Expand
@@ -298,7 +299,7 @@ func search(ct *Text, r []rune) bool {
 		return false
 	}
 	if 2*len(r) > RBUFSIZE {
-		warning(nil, "string too long\n") // TODO(rsc): why???????
+		alog.Printf("string too long\n") // TODO(rsc): why???????
 		return false
 	}
 	maxn := util.Max(2*len(r), RBUFSIZE)
@@ -763,7 +764,7 @@ func openfile(t *Text, e *Expand) *Window {
 		r = address(true, t, runes.Rng(-1, -1), runes.Rng(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
 		if r.Pos > r.End {
 			eval = false
-			warning(nil, "addresses out of order\n")
+			alog.Printf("addresses out of order\n")
 		}
 		if !eval {
 			e.jump = false /* don't jump if invalid address */

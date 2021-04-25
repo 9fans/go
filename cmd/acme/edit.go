@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"strings"
 
+	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/util"
 )
 
@@ -149,7 +150,7 @@ func editcmd(ct *Text, r []rune) {
 		return
 	}
 	if 2*len(r) > RBUFSIZE { // TODO(rsc): why 2*len?
-		warning(nil, "string too long\n")
+		alog.Printf("string too long\n")
 		return
 	}
 
@@ -174,7 +175,7 @@ func editcmd(ct *Text, r []rune) {
 	err := <-editerrc
 	editing = Inactive
 	if err != "" {
-		warning(nil, "Edit: %s\n", err)
+		alog.Printf("Edit: %s\n", err)
 	}
 
 	/* update everyone whose edit log has data */
