@@ -37,12 +37,10 @@ const (
 	QMAX
 )
 
-const (
-	Blockincr = 256
-	Maxblock  = 8 * 1024
-	NRange    = 10
-	Infinity  = 0x7FFFFFFF
-)
+const Blockincr = 256
+const Maxblock = 8 * 1024
+const NRange = 10
+const Infinity = 0x7FFFFFFF
 
 type Runestr struct { // TODO(rsc): replace with []rune
 	r []rune
