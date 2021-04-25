@@ -436,6 +436,7 @@ func parsecmd(nest int) *Cmd {
 					if nextc() == c {
 						getch()
 						if nextc() == 'g' {
+							getch()
 							cmd.flag = true
 						}
 					}
