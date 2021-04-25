@@ -52,13 +52,15 @@ func plumbthread() {
 			}
 			time.Sleep(2 * time.Second)
 		}
+		big.Lock() // TODO still racy
 		plumbeditfid = fid
 		plumbsendfid, _ = plumb.Open("send", plan9.OWRITE|plan9.OCEXEC)
+		big.Unlock()
 
 		/*
 		 * Relay messages.
 		 */
-		bedit := bufio.NewReader(plumbeditfid)
+		bedit := bufio.NewReader(fid)
 		for {
 			m := new(plumb.Message)
 			err := m.Recv(bedit)
@@ -71,12 +73,16 @@ func plumbthread() {
 		/*
 		 * Lost connection.
 		 */
+		big.Lock() // TODO still racy
 		fid = plumbsendfid
 		plumbsendfid = nil
+		big.Unlock()
 		fid.Close()
 
+		big.Lock() // TODO still racy
 		fid = plumbeditfid
 		plumbeditfid = nil
+		big.Unlock()
 		fid.Close()
 	}
 }
