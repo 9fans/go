@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/plan9"
 )
 
@@ -196,30 +197,6 @@ func xfidopen(x *Xfid) {
 	respond(x, &fc, "")
 }
 
-type QLock struct {
-	held chan bool
-}
-
-func (l *QLock) TryLock() bool {
-	if l.held == nil {
-		panic("missing held")
-	}
-	select {
-	case l.held <- true:
-		return true
-	default:
-		return false
-	}
-}
-
-func (l *QLock) Unlock() {
-	<-l.held
-}
-
-func (l *QLock) Lock() {
-	l.held <- true
-}
-
 func xfidclose(x *Xfid) {
 	w := x.f.w
 	x.f.busy = false
@@ -272,7 +249,7 @@ func xfidclose(x *Xfid) {
 			w.nomark = false
 			t = &w.body
 			/* before: only did this if !w->noscroll, but that didn't seem right in practice */
-			textshow(t, min(w.wrselrange.Pos, t.file.b.nc), min(w.wrselrange.End, t.file.b.nc), true)
+			textshow(t, util.Min(w.wrselrange.Pos, t.file.b.nc), util.Min(w.wrselrange.End, t.file.b.nc), true)
 			textscrdraw(t)
 		case QWeditout:
 			w.editoutlk.Unlock()
@@ -937,7 +914,7 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 			n += m
 		} else if boff+int64(len(b)) > off {
 			if n != 0 {
-				error_("bad count in utfrune")
+				util.Fatal("bad count in utfrune")
 			}
 			m := int(int64(len(b)) - (off - boff))
 			if m > int(x.fcall.Count) {
@@ -1062,7 +1039,7 @@ func xfidindexread(x *Xfid) {
 				continue
 			}
 			buf.WriteString(winctlprint(w, false))
-			m := min(RBUFSIZE, w.tag.file.b.nc)
+			m := util.Min(RBUFSIZE, w.tag.file.b.nc)
 			bufread(&w.tag.file.b, 0, r[:m])
 			for i := 0; i < m && r[i] != '\n'; i++ {
 				buf.WriteRune(r[i])

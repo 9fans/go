@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 var Glooping int
@@ -528,7 +529,7 @@ func runpipe(t *Text, cmd rune, cr []rune, state int) {
 	}
 	editing = state
 	if t != nil && t.w != nil {
-		incref(&t.w.ref) /* run will decref */
+		util.Incref(&t.w.ref) /* run will decref */
 	}
 	run(w, string(s), dir, true, nil, nil, true)
 	if t != nil && t.w != nil {
@@ -536,7 +537,7 @@ func runpipe(t *Text, cmd rune, cr []rune, state int) {
 	}
 	row.lk.Unlock()
 	<-cedit
-	var q *QLock
+	var q *util.QLock
 	/*
 	 * The editoutlk exists only so that we can tell when
 	 * the editout file has been closed.  It can get closed *after*
@@ -852,7 +853,7 @@ func alllooper(w *Window, v interface{}) {
 
 func alllocker(w *Window, v interface{}) {
 	if v.(bool) {
-		incref(&w.ref)
+		util.Incref(&w.ref)
 	} else {
 		winclose(w)
 	}
@@ -1037,7 +1038,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 				a = lineaddr(1, a, sign)
 			}
 		default:
-			error_("cmdaddress")
+			util.Fatal("cmdaddress")
 			return a
 		}
 		ap = ap.next

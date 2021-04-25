@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -40,7 +41,7 @@ var fontnames = []string{
 var command *Command
 
 func derror(d *draw.Display, errorstr string) {
-	error_(errorstr)
+	util.Fatal(errorstr)
 }
 
 func main() {
@@ -118,8 +119,8 @@ func main() {
 
 	reffont.f = font
 	reffonts[0] = &reffont
-	incref(&reffont.ref) /* one to hold up 'font' variable */
-	incref(&reffont.ref) /* one to hold up reffonts[0] */
+	util.Incref(&reffont.ref) /* one to hold up 'font' variable */
+	util.Incref(&reffont.ref) /* one to hold up reffonts[0] */
 	fontcache = make([]*Reffont, 1)
 	fontcache[0] = &reffont
 
@@ -165,7 +166,7 @@ func main() {
 		for i = 0; i < ncol; i++ {
 			c = rowadd(&row, nil, -1)
 			if c == nil && i == 0 {
-				error_("initializing columns")
+				util.Fatal("initializing columns")
 			}
 		}
 		c = row.col[len(row.col)-1]
@@ -398,7 +399,7 @@ func mousethread() {
 		case <-mousectl.Resize:
 			bigLock()
 			if err := display.Attach(draw.RefNone); err != nil {
-				error_("attach to window: " + err.Error())
+				util.Fatal("attach to window: " + err.Error())
 			}
 			display.ScreenImage.Draw(display.ScreenImage.R, display.White, nil, draw.ZP)
 			iconinit()
@@ -746,7 +747,7 @@ func rfget(fix, save, setfont bool, name string) *Reffont {
 	}
 Found:
 	if save {
-		incref(&r.ref)
+		util.Incref(&r.ref)
 		if reffonts[fixi] != nil {
 			rfclose(reffonts[fixi])
 		}
@@ -757,19 +758,19 @@ Found:
 	}
 	if setfont {
 		reffont.f = r.f
-		incref(&r.ref)
+		util.Incref(&r.ref)
 		rfclose(reffonts[0])
 		font = r.f
 		reffonts[0] = r
-		incref(&r.ref)
+		util.Incref(&r.ref)
 		iconinit()
 	}
-	incref(&r.ref)
+	util.Incref(&r.ref)
 	return r
 }
 
 func rfclose(r *Reffont) {
-	if decref(&r.ref) == 0 {
+	if util.Decref(&r.ref) == 0 {
 		for i := range fontcache {
 			if fontcache[i] == r {
 				copy(fontcache[i:], fontcache[i+1:])

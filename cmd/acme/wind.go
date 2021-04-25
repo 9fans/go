@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -33,9 +34,9 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 	w.body.w = w
 	winid++
 	w.id = winid
-	incref(&w.ref)
+	util.Incref(&w.ref)
 	if globalincref != 0 {
-		incref(&w.ref)
+		util.Incref(&w.ref)
 	}
 	w.ctlfid = ^0
 	w.utflastqid = -1
@@ -45,7 +46,7 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 	w.tagtop.Max.Y = r.Min.Y + font.Height
 	r1.Max.Y = r1.Min.Y + w.taglines*font.Height
 
-	incref(&reffont.ref)
+	util.Incref(&reffont.ref)
 	f := fileaddtext(nil, &w.tag)
 	textinit(&w.tag, f, r1, &reffont, tagcols[:])
 	w.tag.what = Tag
@@ -184,12 +185,12 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	w.tagtop.Max.Y = r.Min.Y + font.Height
 
 	r1 := r
-	r1.Max.Y = min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
+	r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 
 	/* If needed, recompute number of lines in tag. */
 	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		w.taglines = wintaglines(w, r)
-		r1.Max.Y = min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
+		r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 	}
 
 	/* If needed, resize & redraw tag. */
@@ -226,7 +227,7 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 			r1.Max.Y = y + 1
 			display.ScreenImage.Draw(r1, tagcols[frame.BORD], nil, draw.ZP)
 			y++
-			r1.Min.Y = min(y, r.Max.Y)
+			r1.Min.Y = util.Min(y, r.Max.Y)
 			r1.Max.Y = r.Max.Y
 		} else {
 			r1.Min.Y = y
@@ -238,12 +239,12 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		textscrdraw(&w.body)
 		w.body.all.Min.Y = oy
 	}
-	w.maxlines = min(w.body.fr.NumLines, max(w.maxlines, w.body.fr.MaxLines))
+	w.maxlines = util.Min(w.body.fr.NumLines, util.Max(w.maxlines, w.body.fr.MaxLines))
 	return w.r.Max.Y
 }
 
 func winlock1(w *Window, owner rune) {
-	incref(&w.ref)
+	util.Incref(&w.ref)
 	w.lk.Lock()
 	w.owner = owner
 }
@@ -279,7 +280,7 @@ func windirfree(w *Window) {
 }
 
 func winclose(w *Window) {
-	if decref(&w.ref) == 0 {
+	if util.Decref(&w.ref) == 0 {
 		xfidlog(w, "del")
 		windirfree(w)
 		textclose(&w.tag)
@@ -601,7 +602,7 @@ func winevent(w *Window, format string, args ...interface{}) {
 		return
 	}
 	if w.owner == 0 {
-		error_("no window owner")
+		util.Fatal("no window owner")
 	}
 	b := fmt.Sprintf(format, args...)
 	w.events = append(w.events, byte(w.owner))

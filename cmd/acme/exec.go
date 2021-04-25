@@ -29,6 +29,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
@@ -211,7 +212,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 	}
 	aa = getbytearg(argt, true, true, &a)
 	if t.w != nil {
-		incref(&t.w.ref)
+		util.Incref(&t.w.ref)
 	}
 	run(t.w, b, dir, true, aa, a, false)
 }

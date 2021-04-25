@@ -24,6 +24,7 @@ import (
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 var blist *Block
@@ -45,7 +46,7 @@ func diskinit() *Disk {
 
 func ntosize(n int, ip *int) int {
 	if n > Maxblock {
-		error_("internal error: ntosize")
+		util.Fatal("internal error: ntosize")
 	}
 	size := n
 	if size&(Blockincr-1) != 0 {
@@ -77,7 +78,7 @@ func disknewblock(d *Disk, n int) *Block {
 		blist = b.u.next
 		b.addr = d.addr
 		if d.addr+int64(size) < d.addr {
-			error_("temp file overflow")
+			util.Fatal("temp file overflow")
 		}
 		d.addr += int64(size)
 	}
@@ -115,7 +116,7 @@ func diskwrite(d *Disk, bp **Block, r []rune) {
 		if err == nil {
 			err = io.ErrShortWrite
 		}
-		error_(fmt.Sprintf("writing temp file: %v", err))
+		util.Fatal(fmt.Sprintf("writing temp file: %v", err))
 	}
 	b.u.n = n
 }
@@ -123,11 +124,11 @@ func diskwrite(d *Disk, bp **Block, r []rune) {
 func diskread(d *Disk, b *Block, r []rune) {
 	n := len(r)
 	if n > b.u.n {
-		error_("internal error: diskread")
+		util.Fatal("internal error: diskread")
 	}
 
 	ntosize(b.u.n, nil) /* called only for sanity check on Maxblock */
 	if nr, err := d.fd.ReadAt(runedata(r), b.addr); nr != n*runes.RuneSize || err != nil {
-		error_("read error from temp file")
+		util.Fatal("read error from temp file")
 	}
 }

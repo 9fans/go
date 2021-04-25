@@ -17,6 +17,7 @@ package main
 import (
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -55,7 +56,7 @@ func scrlresize() {
 	var err error
 	scrtmp, err = display.AllocImage(draw.Rect(0, 0, 32, display.ScreenImage.R.Max.Y), display.ScreenImage.Pix, false, draw.NoFill)
 	if err != nil {
-		error_("scroll alloc")
+		util.Fatal("scroll alloc")
 	}
 }
 

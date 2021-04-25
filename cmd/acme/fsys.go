@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/plan9"
 )
 
@@ -105,15 +106,15 @@ func fsysinit() {
 	initfcall()
 	r1, w1, err := os.Pipe()
 	if err != nil {
-		error_("can't create pipe")
+		util.Fatal("can't create pipe")
 	}
 	r2, w2, err := os.Pipe()
 	if err != nil {
-		error_("can't create pipe")
+		util.Fatal("can't create pipe")
 	}
 	sfdR, sfdW = r1, w2
 	if err := post9pservice(r2, w1, "acme", mtpt); err != nil {
-		error_("can't post service")
+		util.Fatal("can't post service")
 	}
 	u := os.Getenv("USER")
 	if u != "" {
@@ -134,7 +135,7 @@ func fsysproc() {
 			if closing {
 				break
 			}
-			error_("i/o error on server channel")
+			util.Fatal("i/o error on server channel")
 		}
 		if DEBUG != 0 {
 			fmt.Fprintf(os.Stderr, "-> %v\n", fc)
@@ -243,7 +244,7 @@ func respond(x *Xfid, t *plan9.Fcall, err string) *Xfid {
 		fmt.Fprintf(os.Stderr, "<- %v\n", t)
 	}
 	if err := plan9.WriteFcall(sfdW, t); err != nil {
-		error_("write error in respond")
+		util.Fatal("write error in respond")
 	}
 	return x
 }
@@ -327,7 +328,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 		nf.w = f.w
 		nf.rpart = nf.rpart[:0] /* not open, so must be zero */
 		if nf.w != nil {
-			incref(&nf.w.ref)
+			util.Incref(&nf.w.ref)
 		}
 		f = nf /* walk f */
 	}
@@ -376,7 +377,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				row.lk.Unlock()
 				break
 			}
-			incref(&w.ref) /* we'll drop reference at end if there's an error */
+			util.Incref(&w.ref) /* we'll drop reference at end if there's an error */
 			path_ = Qdir
 			typ = plan9.QTDIR
 			row.lk.Unlock()
@@ -386,11 +387,11 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 		Regular:
 			if x.fcall.Wname[i] == "new" {
 				if w != nil {
-					error_("w set in walk to new")
+					util.Fatal("w set in walk to new")
 				}
 				cnewwindow <- nil /* signal newwindowthread */
 				w = <-cnewwindow  /* receive new window */
-				incref(&w.ref)
+				util.Incref(&w.ref)
 				typ = plan9.QTDIR
 				path_ = Qdir
 				id = w.id

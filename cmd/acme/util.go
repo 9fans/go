@@ -16,18 +16,14 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 )
 
 var prevmouse draw.Point
 var mousew *Window
-
-func error_(s string) {
-	log.Fatalf("acme: %s\n", s)
-}
 
 var Lpluserrors = []rune("+Errors")
 
@@ -42,7 +38,7 @@ func errorwin1(dir []rune, incl [][]rune) *Window {
 	if w == nil {
 		if len(row.col) == 0 {
 			if rowadd(&row, nil, -1) == nil {
-				error_("can't create column to make error window")
+				util.Fatal("can't create column to make error window")
 			}
 		}
 		w = coladd(row.col[len(row.col)-1], nil, nil, -1)
@@ -183,20 +179,6 @@ func warning(md *Mntdir, format string, args ...interface{}) {
 	addwarningtext(md, []rune(fmt.Sprintf(format, args...)))
 }
 
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a int, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func rgetc(v interface{}, n int) rune {
 	r := v.([]rune)
 	if n >= len(r) {
@@ -245,7 +227,7 @@ func makenewwindow(t *Text) *Window {
 		c = t.col
 	} else {
 		if len(row.col) == 0 && rowadd(&row, nil, -1) == nil {
-			error_("can't make column")
+			util.Fatal("can't make column")
 		}
 		c = row.col[len(row.col)-1]
 	}

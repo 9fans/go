@@ -20,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 // var sel Rangeset - in ecmd.go
@@ -252,7 +253,7 @@ func operator(t int) {
 
 func pushand(f *Inst, l *Inst) {
 	if andp >= len(andstack) {
-		error_("operand stack overflow")
+		util.Fatal("operand stack overflow")
 	}
 	a := &andstack[andp]
 	andp++
@@ -262,7 +263,7 @@ func pushand(f *Inst, l *Inst) {
 
 func pushator(t int) {
 	if atorp >= NSTACK {
-		error_("operator stack overflow")
+		util.Fatal("operator stack overflow")
 	}
 	atorstack[atorp] = t
 	atorp++
@@ -289,7 +290,7 @@ func popand(op int) *Node {
 
 func popator() int {
 	if atorp <= 0 {
-		error_("operator stack underflow")
+		util.Fatal("operator stack underflow")
 	}
 	subidp--
 	atorp--
@@ -315,7 +316,7 @@ func evaluntil(pri int) {
 			pushand(inst1, inst2)
 			return /* must have been RBRA */
 		default:
-			error_("unknown regexp operator")
+			util.Fatal("unknown regexp operator")
 		case OR:
 			op2 = popand('|')
 			op1 = popand('|')

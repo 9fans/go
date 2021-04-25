@@ -32,6 +32,7 @@ import (
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 type Undo struct {
@@ -61,7 +62,7 @@ func filedeltext(f *File, t *Text) {
 			goto Found
 		}
 	}
-	error_("can't find text in filedeltext")
+	util.Fatal("can't find text in filedeltext")
 
 Found:
 	copy(f.text[i:], f.text[i+1:])
@@ -77,7 +78,7 @@ Found:
 
 func fileinsert(f *File, p0 int, s []rune) {
 	if p0 > f.b.nc {
-		error_("internal error: fileinsert")
+		util.Fatal("internal error: fileinsert")
 	}
 	if f.seq > 0 {
 		fileuninsert(f, &f.delta, p0, len(s))
@@ -110,7 +111,7 @@ func fileuninsert(f *File, delta *Buffer, p0 int, ns int) {
 
 func filedelete(f *File, p0 int, p1 int) {
 	if !(p0 <= p1 && p0 <= f.b.nc) || !(p1 <= f.b.nc) {
-		error_("internal error: filedelete")
+		util.Fatal("internal error: filedelete")
 	}
 	if f.seq > 0 {
 		fileundelete(f, &f.delta, p0, p1)
@@ -167,7 +168,7 @@ func fileunsetname(f *File, delta *Buffer) {
 
 func fileload(f *File, p0 int, fd *os.File, nulls *bool, h io.Writer) int {
 	if f.seq > 0 {
-		error_("undo in file.load unimplemented")
+		util.Fatal("undo in file.load unimplemented")
 	}
 	return bufload(&f.b, p0, fd, nulls, h)
 }

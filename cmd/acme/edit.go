@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 var linex = "\n"
@@ -198,7 +200,7 @@ func nextc() rune {
 func ungetch() {
 	cmdp--
 	if cmdp < 0 {
-		error_("ungetch")
+		util.Fatal("ungetch")
 	}
 }
 
@@ -299,7 +301,7 @@ func getrhs(s *String, delim, cmd rune) {
 		if c == '\\' {
 			c = getch()
 			if c <= 0 {
-				error_("bad right hand side")
+				util.Fatal("bad right hand side")
 			}
 			if c == '\n' {
 				ungetch()
@@ -458,7 +460,7 @@ func parsecmd(nest int) *Cmd {
 			} else {
 				cmd.u.cmd = parsecmd(nest)
 				if cmd.u.cmd == nil {
-					error_("defcmd")
+					util.Fatal("defcmd")
 				}
 			}
 		} else if ct.text {
@@ -602,7 +604,7 @@ func simpleaddr() *Addr {
 			'-':
 			break
 		default:
-			error_("simpleaddr")
+			util.Fatal("simpleaddr")
 		}
 	}
 	ap := newaddr()

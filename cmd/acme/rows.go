@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 )
 
@@ -73,7 +74,7 @@ func rowadd(row *Row, c *Column, x int) *Column {
 		}
 		display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
 		r1 := r
-		r1.Max.X = min(x-Border(), r.Max.X-50)
+		r1.Max.X = util.Min(x-Border(), r.Max.X-50)
 		if r1.Dx() < 50 {
 			r1.Max.X = r1.Min.X + 50
 		}
@@ -86,7 +87,7 @@ func rowadd(row *Row, c *Column, x int) *Column {
 	if c == nil {
 		c = new(Column)
 		colinit(c, r)
-		incref(&reffont.ref)
+		util.Incref(&reffont.ref)
 	} else {
 		colresize(c, r)
 	}
@@ -153,7 +154,7 @@ func rowdragcol(row *Row, c *Column, _0 int) {
 			goto Found
 		}
 	}
-	error_("can't find column")
+	util.Fatal("can't find column")
 
 Found:
 	p := mouse.Point
@@ -208,7 +209,7 @@ func rowclose(row *Row, c *Column, dofree bool) {
 			goto Found
 		}
 	}
-	error_("can't find column")
+	util.Fatal("can't find column")
 Found:
 	r := c.r
 	if dofree {
@@ -335,7 +336,7 @@ func rowdump(row *Row, file *string) {
 			w.body.file.dumpid = 0
 		}
 	}
-	m := min(RBUFSIZE, row.tag.file.b.nc)
+	m := util.Min(RBUFSIZE, row.tag.file.b.nc)
 	bufread(&row.tag.file.b, 0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
@@ -344,7 +345,7 @@ func rowdump(row *Row, file *string) {
 	fmt.Fprintf(b, "w %s\n", string(r[:n]))
 	for i = 0; i < len(row.col); i++ {
 		c = row.col[i]
-		m = min(RBUFSIZE, c.tag.file.b.nc)
+		m = util.Min(RBUFSIZE, c.tag.file.b.nc)
 		bufread(&c.tag.file.b, 0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
@@ -400,7 +401,7 @@ func rowdump(row *Row, file *string) {
 				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.file.b.nc, fontname)
 			}
 			b.WriteString(winctlprint(w, false))
-			m = min(RBUFSIZE, w.tag.file.b.nc)
+			m = util.Min(RBUFSIZE, w.tag.file.b.nc)
 			bufread(&w.tag.file.b, 0, r[:m])
 			n = 0
 			for n < m {
@@ -780,7 +781,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			q0 = q1
 		}
 		textshow(&w.body, q0, q1, true)
-		w.maxlines = min(w.body.fr.NumLines, max(w.maxlines, w.body.fr.MaxLines))
+		w.maxlines = util.Min(w.body.fr.NumLines, util.Max(w.maxlines, w.body.fr.MaxLines))
 		xfidlog(w, "new")
 	}
 	return true

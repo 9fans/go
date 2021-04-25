@@ -22,6 +22,7 @@ import (
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 var Wsequence = "warning: changes out of sequence\n"
@@ -350,8 +351,8 @@ func elogapply(f *File) {
 		if !warned {
 			warning(nil, "elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.nc)
 		}
-		t.q1 = min(t.q1, f.b.nc)
-		t.q0 = min(t.q0, t.q1)
+		t.q1 = util.Min(t.q1, f.b.nc)
+		t.q0 = util.Min(t.q0, t.q1)
 	}
 
 	if t.w != nil {

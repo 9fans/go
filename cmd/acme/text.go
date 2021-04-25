@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -62,7 +63,7 @@ func textredraw(t *Text, r draw.Rectangle, f *draw.Font, b *draw.Image, odx int)
 	maxt := maxtab
 	if t.what == Body {
 		if t.w.isdir {
-			maxt = min(TABDIR, maxtab)
+			maxt = util.Min(TABDIR, maxtab)
 		} else {
 			maxt = t.tabstop
 		}
@@ -134,7 +135,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 	}
 	mint := t.fr.Font.StringWidth("0")
 	/* go for narrower tabs if set more than 3 wide */
-	t.fr.MaxTab = min(maxtab, TABDIR) * mint
+	t.fr.MaxTab = util.Min(maxtab, TABDIR) * mint
 	maxt := t.fr.MaxTab
 	colw := 0
 	var i int
@@ -157,7 +158,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 	if colw == 0 {
 		ncol = 1
 	} else {
-		ncol = max(1, t.fr.R.Dx()/colw)
+		ncol = util.Max(1, t.fr.R.Dx()/colw)
 	}
 	nrow := (len(dlp) + ncol - 1) / ncol
 
@@ -192,7 +193,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 
 func textload(t *Text, q0 int, file string, setqid bool) int {
 	if len(t.cache) > 0 || t.file.b.nc != 0 || t.w == nil || t != &t.w.body {
-		error_("text.load")
+		util.Fatal("text.load")
 	}
 	if t.w.isdir && len(t.file.name) == 0 {
 		warning(nil, "empty directory name")
@@ -354,7 +355,7 @@ Err:
 
 func textinsert(t *Text, q0 int, r []rune, tofile bool) {
 	if tofile && len(t.cache) > 0 {
-		error_("text.insert")
+		util.Fatal("text.insert")
 	}
 	if len(r) == 0 {
 		return
@@ -457,7 +458,7 @@ func textfill(t *Text) {
 
 func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 	if tofile && len(t.cache) > 0 {
-		error_("text.delete")
+		util.Fatal("text.delete")
 	}
 	n := q1 - q0
 	if n == 0 {
@@ -482,13 +483,13 @@ func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 		}
 	}
 	if q0 < t.iq1 {
-		t.iq1 -= min(n, t.iq1-q0)
+		t.iq1 -= util.Min(n, t.iq1-q0)
 	}
 	if q0 < t.q0 {
-		t.q0 -= min(n, t.q0-q0)
+		t.q0 -= util.Min(n, t.q0-q0)
 	}
 	if q0 < t.q1 {
-		t.q1 -= min(n, t.q1-q0)
+		t.q1 -= util.Min(n, t.q1-q0)
 	}
 	if q1 <= t.org {
 		t.org -= n
@@ -517,8 +518,8 @@ func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 }
 
 func textconstrain(t *Text, q0 int, q1 int, p0 *int, p1 *int) {
-	*p0 = min(q0, t.file.b.nc)
-	*p1 = min(q1, t.file.b.nc)
+	*p0 = util.Min(q0, t.file.b.nc)
+	*p1 = util.Min(q1, t.file.b.nc)
 }
 
 func textreadc(t *Text, q int) rune {
@@ -794,7 +795,7 @@ func texttype(t *Text, r rune) {
 	}
 	if t.q1 > t.q0 {
 		if len(t.cache) != 0 {
-			error_("text.type")
+			util.Fatal("text.type")
 		}
 		cut(t, t, nil, true, true, nil)
 		t.eq0 = ^0
@@ -851,7 +852,7 @@ func texttype(t *Text, r rune) {
 			n = len(u.cache)
 			if n > 0 {
 				if q1 != u.cq0+n {
-					error_("text.type backspace")
+					util.Fatal("text.type backspace")
 				}
 				if n > nb {
 					n = nb
@@ -903,7 +904,7 @@ func texttype(t *Text, r rune) {
 		if len(u.cache) == 0 {
 			u.cq0 = t.q0
 		} else if t.q0 != u.cq0+len(u.cache) {
-			error_("text.type cq1")
+			util.Fatal("text.type cq1")
 		}
 		/*
 		 * Change the tag before we add to ncache,
@@ -952,7 +953,7 @@ var selectq int
  */
 func framescroll(f *frame.Frame, dl int) {
 	if f != &selecttext.fr {
-		error_("frameselect not right frame")
+		util.Fatal("frameselect not right frame")
 	}
 	textframescroll(selecttext, dl)
 }

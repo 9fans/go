@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
@@ -300,7 +301,7 @@ func search(ct *Text, r []rune) bool {
 		warning(nil, "string too long\n") // TODO(rsc): why???????
 		return false
 	}
-	maxn := max(2*len(r), RBUFSIZE)
+	maxn := util.Max(2*len(r), RBUFSIZE)
 	s := fbufalloc()
 	b := s[:0]
 	around := 0

@@ -20,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 )
 
 func sizecache(b *Buffer, n int) {
@@ -31,7 +32,7 @@ func sizecache(b *Buffer, n int) {
 
 func addblock(b *Buffer, i int, n int) {
 	if i > len(b.bl) {
-		error_("internal error: addblock")
+		util.Fatal("internal error: addblock")
 	}
 	b.bl = append(b.bl, nil)
 	copy(b.bl[i+1:], b.bl[i:])
@@ -40,7 +41,7 @@ func addblock(b *Buffer, i int, n int) {
 
 func delblock(b *Buffer, i int) {
 	if i >= len(b.bl) {
-		error_("internal error: delblock")
+		util.Fatal("internal error: delblock")
 	}
 
 	diskrelease(disk, b.bl[i])
@@ -66,7 +67,7 @@ func flush(b *Buffer) {
 
 func setcache(b *Buffer, q0 int) {
 	if q0 > b.nc {
-		error_("internal error: setcache")
+		util.Fatal("internal error: setcache")
 	}
 	/*
 	 * flush and reload if q0 is not in cache.
@@ -95,7 +96,7 @@ func setcache(b *Buffer, q0 int) {
 		q += (*blp).u.n
 		i++
 		if i >= len(b.bl) {
-			error_("block not found")
+			util.Fatal("block not found")
 		}
 		blp = &b.bl[i]
 	}
@@ -111,7 +112,7 @@ func setcache(b *Buffer, q0 int) {
 func bufinsert(b *Buffer, q0 int, s []rune) {
 	n := len(s)
 	if q0 > b.nc {
-		error_("internal error: bufinsert")
+		util.Fatal("internal error: bufinsert")
 	}
 
 	for n > 0 {
@@ -124,7 +125,7 @@ func bufinsert(b *Buffer, q0 int, s []rune) {
 			m = n
 			if b.bl == nil { /* allocate */
 				if len(b.c) != 0 {
-					error_("internal error: bufinsert1 cnc!=0")
+					util.Fatal("internal error: bufinsert1 cnc!=0")
 				}
 				addblock(b, 0, t)
 				b.cbi = 0
@@ -141,11 +142,11 @@ func bufinsert(b *Buffer, q0 int, s []rune) {
 			if b.cdirty {
 				flush(b)
 			}
-			m = min(n, Maxblock)
+			m = util.Min(n, Maxblock)
 			var i int
 			if b.bl == nil { /* allocate */
 				if len(b.c) != 0 {
-					error_("internal error: bufinsert2 cnc!=0")
+					util.Fatal("internal error: bufinsert2 cnc!=0")
 				}
 				i = 0
 			} else {
@@ -175,7 +176,7 @@ func bufinsert(b *Buffer, q0 int, s []rune) {
 			 * Now at end of block.  Take as much input
 			 * as possible and tack it on end of block.
 			 */
-			m = min(n, Maxblock-len(b.c))
+			m = util.Min(n, Maxblock-len(b.c))
 			n := len(b.c)
 			sizecache(b, n+m)
 			copy(b.c[n:], s)
@@ -191,7 +192,7 @@ func bufinsert(b *Buffer, q0 int, s []rune) {
 
 func bufdelete(b *Buffer, q0 int, q1 int) {
 	if !(q0 <= q1 && q0 <= b.nc) || !(q1 <= b.nc) {
-		error_("internal error: bufdelete")
+		util.Fatal("internal error: bufdelete")
 	}
 	for q1 > q0 {
 		setcache(b, q0)
@@ -252,7 +253,7 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune)
 
 func bufload(b *Buffer, q0 int, fd *os.File, nulls *bool, h io.Writer) int {
 	if q0 > b.nc {
-		error_("internal error: bufload")
+		util.Fatal("internal error: bufload")
 	}
 	return loadfile(fd, q0, nulls, bufloader, b, h)
 }
@@ -260,12 +261,12 @@ func bufload(b *Buffer, q0 int, fd *os.File, nulls *bool, h io.Writer) int {
 func bufread(b *Buffer, q0 int, s []rune) {
 	n := len(s)
 	if !(q0 <= b.nc) || !(q0+n <= b.nc) {
-		error_("bufread: internal error")
+		util.Fatal("bufread: internal error")
 	}
 
 	for n > 0 {
 		setcache(b, q0)
-		m := min(n, len(b.c)-(q0-b.cq))
+		m := util.Min(n, len(b.c)-(q0-b.cq))
 		copy(s[:m], b.c[q0-b.cq:])
 		q0 += m
 		s = s[m:]

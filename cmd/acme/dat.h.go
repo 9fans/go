@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 	"sync"
-	"sync/atomic"
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
@@ -162,7 +162,7 @@ type Window struct {
 	tagexpand   bool
 	taglines    int
 	tagtop      draw.Rectangle
-	editoutlk   QLock
+	editoutlk   util.QLock
 }
 
 type Column struct {
@@ -239,11 +239,6 @@ type Reffont struct {
 	lk  sync.Mutex
 	ref uint32
 	f   *draw.Font
-}
-
-func incref(p *uint32) { atomic.AddUint32(p, 1) }
-func decref(p *uint32) uint32 {
-	return atomic.AddUint32(p, ^uint32(0))
 }
 
 type Rangeset struct {
@@ -364,6 +359,6 @@ var (
 	cwarn      = make(chan int, 1)
 )
 
-var editoutlk QLock // atomic flag
+var editoutlk util.QLock // atomic flag
 
 // #define	STACK	65536
