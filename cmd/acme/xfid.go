@@ -23,6 +23,7 @@ import (
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -145,12 +146,12 @@ func xfidopen(x *Xfid) {
 			w.nopen[q]++
 			q0 := t.q0
 			q1 := t.q1
-			r := fbufalloc()
-			s := fbufalloc()
+			r := bufs.AllocRunes()
+			s := bufs.AllocRunes()
 			for q0 < q1 {
 				n := q1 - q0
-				if n > BUFSIZE/utf8.UTFMax {
-					n = BUFSIZE / utf8.UTFMax
+				if n > bufs.Len/utf8.UTFMax {
+					n = bufs.Len / utf8.UTFMax
 				}
 				t.file.b.Read(q0, r[:n])
 				s := []byte(string(r[:n])) // TODO(rsc)
@@ -160,8 +161,8 @@ func xfidopen(x *Xfid) {
 				}
 				q0 += n
 			}
-			fbuffree(s)
-			fbuffree(r)
+			bufs.FreeRunes(s)
+			bufs.FreeRunes(r)
 		case QWwrsel:
 			w.nopen[q]++
 			seq++
@@ -341,10 +342,10 @@ func xfidread(x *Xfid) {
 	case QWrdsel:
 		w.rdselfd.Seek(int64(off), 0)
 		n := int(x.fcall.Count)
-		if x.fcall.Count > BUFSIZE {
-			n = BUFSIZE
+		if x.fcall.Count > bufs.Len {
+			n = bufs.Len
 		}
-		b := make([]byte, BUFSIZE) // TODO fbufalloc()
+		b := make([]byte, bufs.Len) // TODO fbufalloc()
 		n, err := w.rdselfd.Read(b[:n])
 		if err != nil && err != io.EOF {
 			respond(x, &fc, "I/O error in temp file")
@@ -578,8 +579,8 @@ func xfidctlwrite(x *Xfid, w *Window) {
 	settag := false
 	isfbuf := true
 	var r []rune
-	if int(x.fcall.Count) < RBUFSIZE {
-		r = fbufalloc()
+	if int(x.fcall.Count) < bufs.RuneLen {
+		r = bufs.AllocRunes()
 	} else {
 		isfbuf = false
 		r = make([]rune, x.fcall.Count*utf8.UTFMax)
@@ -760,7 +761,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 	}
 
 	if isfbuf {
-		fbuffree(r)
+		bufs.FreeRunes(r)
 	}
 	n := len(x.fcall.Data)
 	if err != "" {
@@ -780,8 +781,8 @@ func xfidctlwrite(x *Xfid, w *Window) {
 func xfideventwrite(x *Xfid, w *Window) {
 	isfbuf := true
 	var r []rune
-	if len(x.fcall.Data) < RBUFSIZE {
-		r = fbufalloc()
+	if len(x.fcall.Data) < bufs.RuneLen {
+		r = bufs.AllocRunes()
 	} else {
 		isfbuf = false
 		r = make([]rune, len(x.fcall.Data)*utf8.UTFMax)
@@ -856,7 +857,7 @@ Rescue:
 
 Out:
 	if isfbuf {
-		fbuffree(r)
+		bufs.FreeRunes(r)
 	}
 	n := len(x.fcall.Data)
 	if err != "" {
@@ -880,8 +881,8 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 	w := t.w
 	wincommit(w, t)
 	off := int64(x.fcall.Offset)
-	r := fbufalloc()
-	b1 := make([]byte, BUFSIZE) // fbufalloc()
+	r := bufs.AllocRunes()
+	b1 := make([]byte, bufs.Len) // fbufalloc()
 	n := 0
 	var q int
 	var boff int64
@@ -903,8 +904,8 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 		w.utflastboff = boff
 		w.utflastq = q
 		nr := q1 - q
-		if nr > BUFSIZE/utf8.UTFMax {
-			nr = BUFSIZE / utf8.UTFMax
+		if nr > bufs.Len/utf8.UTFMax {
+			nr = bufs.Len / utf8.UTFMax
 		}
 		t.file.b.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
@@ -929,7 +930,7 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 		boff += int64(len(b))
 		q += nr
 	}
-	fbuffree(r)
+	bufs.FreeRunes(r)
 	var fc plan9.Fcall
 	fc.Count = uint32(n)
 	fc.Data = b1[:n]
@@ -940,16 +941,16 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 	w := t.w
 	wincommit(w, t)
-	r := fbufalloc()
+	r := bufs.AllocRunes()
 	// b := fbufalloc()
-	b1 := make([]byte, BUFSIZE) // fbufalloc()
+	b1 := make([]byte, bufs.Len) // fbufalloc()
 	n := 0
 	q := q0
 	boff := 0
 	for q < q1 && n < int(x.fcall.Count) {
 		nr := q1 - q
-		if nr > BUFSIZE/utf8.UTFMax {
-			nr = BUFSIZE / utf8.UTFMax
+		if nr > bufs.Len/utf8.UTFMax {
+			nr = bufs.Len / utf8.UTFMax
 		}
 		t.file.b.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
@@ -977,7 +978,7 @@ func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 		boff += nb
 		q += nr
 	}
-	fbuffree(r)
+	bufs.FreeRunes(r)
 	var fc plan9.Fcall
 	fc.Count = uint32(n)
 	fc.Data = b1[:n]
@@ -1032,7 +1033,7 @@ func xfidindexread(x *Xfid) {
 	}
 	nmax++
 	var buf bytes.Buffer
-	r := fbufalloc()
+	r := bufs.AllocRunes()
 	for j = 0; j < len(row.col); j++ {
 		c = row.col[j]
 		for i = 0; i < len(c.w); i++ {
@@ -1042,7 +1043,7 @@ func xfidindexread(x *Xfid) {
 				continue
 			}
 			buf.WriteString(winctlprint(w, false))
-			m := util.Min(RBUFSIZE, w.tag.Len())
+			m := util.Min(bufs.RuneLen, w.tag.Len())
 			w.tag.file.b.Read(0, r[:m])
 			for i := 0; i < m && r[i] != '\n'; i++ {
 				buf.WriteRune(r[i])
@@ -1050,7 +1051,7 @@ func xfidindexread(x *Xfid) {
 			buf.WriteRune('\n')
 		}
 	}
-	fbuffree(r)
+	bufs.FreeRunes(r)
 	row.lk.Unlock()
 	off := int(x.fcall.Offset)
 	cnt := int(x.fcall.Count)

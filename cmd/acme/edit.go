@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/util"
 )
 
@@ -149,7 +150,7 @@ func editcmd(ct *Text, r []rune) {
 	if len(r) == 0 {
 		return
 	}
-	if 2*len(r) > RBUFSIZE { // TODO(rsc): why 2*len?
+	if 2*len(r) > bufs.RuneLen { // TODO(rsc): why 2*len?
 		alog.Printf("string too long\n")
 		return
 	}
@@ -522,7 +523,7 @@ func getregexp(delim rune) *String {
 		} else if c == delim || c == '\n' {
 			break
 		}
-		if i >= RBUFSIZE {
+		if i >= bufs.RuneLen {
 			editerror("regular expression too long")
 		}
 		Straddc(buf, c)

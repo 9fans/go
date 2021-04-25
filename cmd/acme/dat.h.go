@@ -5,6 +5,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -236,7 +237,7 @@ type Expand struct {
 const (
 	BUFSIZE   = 8192
 	RUNESIZE  = int(unsafe.Sizeof(rune(0)))
-	RBUFSIZE  = BUFSIZE / runes.RuneSize
+	RBUFSIZE  = bufs.Len / runes.RuneSize
 	EVENTSIZE = 256
 )
 

@@ -22,6 +22,7 @@ import (
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -58,7 +59,7 @@ const (
 
 const (
 	Minstring = 16
-	Maxstring = RBUFSIZE
+	Maxstring = bufs.RuneLen
 )
 
 func eloginit(f *File) {
@@ -70,7 +71,7 @@ func eloginit(f *File) {
 		f.elogbuf = new(disk.Buffer)
 	}
 	if f.elog.r == nil {
-		f.elog.r = fbufalloc()
+		f.elog.r = bufs.AllocRunes()
 	}
 	f.elogbuf.Reset()
 }
@@ -94,7 +95,7 @@ func elogterm(f *File) {
 		f.elogbuf.Reset()
 	}
 	f.elog.typ = Empty
-	fbuffree(f.elog.r)
+	bufs.FreeRunes(f.elog.r)
 	f.elog.r = nil
 	warned = false
 }
@@ -162,7 +163,7 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 	f.elog.typ = Replace
 	f.elog.q0 = q0
 	f.elog.nd = q1 - q0
-	if len(r) > RBUFSIZE {
+	if len(r) > bufs.RuneLen {
 		editerror("internal error: replacement string too large(%d)", len(r))
 	}
 	f.elog.r = f.elog.r[:len(r)]
@@ -191,8 +192,8 @@ func eloginsert(f *File, q0 int, r []rune) {
 		f.elog.typ = Insert
 		f.elog.q0 = q0
 		n := len(r)
-		if n > RBUFSIZE {
-			n = RBUFSIZE
+		if n > bufs.RuneLen {
+			n = bufs.RuneLen
 		}
 		f.elog.r = append(f.elog.r, r[:n]...)
 		r = r[n:]
@@ -229,7 +230,7 @@ func elogapply(f *File) {
 	log := f.elogbuf
 	t := f.curtext
 
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	mod := false
 
 	owner := rune(0)
@@ -282,8 +283,8 @@ func elogapply(f *File) {
 			up -= b.nr
 			for i = 0; i < b.nr; i += n {
 				n = b.nr - i
-				if n > RBUFSIZE {
-					n = RBUFSIZE
+				if n > bufs.RuneLen {
+					n = bufs.RuneLen
 				}
 				log.Read(up+i, buf[:n])
 				textinsert(t, tq0+i, buf[:n], true)
@@ -315,8 +316,8 @@ func elogapply(f *File) {
 			up -= b.nr
 			for i = 0; i < b.nr; i += n {
 				n = b.nr - i
-				if n > RBUFSIZE {
-					n = RBUFSIZE
+				if n > bufs.RuneLen {
+					n = bufs.RuneLen
 				}
 				log.Read(up+i, buf[:n])
 				textinsert(t, tq0+i, buf[:n], true)
@@ -342,7 +343,7 @@ func elogapply(f *File) {
 		}
 		log.Delete(up, log.Len())
 	}
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 	elogterm(f)
 
 	/*

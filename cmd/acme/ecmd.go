@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -319,23 +320,23 @@ func i_cmd(t *Text, cp *Cmd) bool {
 }
 
 func fbufalloc() []rune {
-	return make([]rune, BUFSIZE/runes.RuneSize)
+	return make([]rune, bufs.Len/runes.RuneSize)
 }
 
 func fbuffree(b []rune) {}
 
 func fcopy(f *File, addr2 Address) {
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	var ni int
 	for p := addr.r.Pos; p < addr.r.End; p += ni {
 		ni = addr.r.End - p
-		if ni > RBUFSIZE {
-			ni = RBUFSIZE
+		if ni > bufs.RuneLen {
+			ni = bufs.RuneLen
 		}
 		f.b.Read(p, buf[:ni])
 		eloginsert(addr2.f, addr2.r.End, buf[:ni])
 	}
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 }
 
 func move(f *File, addr2 Address) {
@@ -393,7 +394,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 		}
 		rp = append(rp, regx.Sel)
 	}
-	rbuf := fbufalloc()
+	rbuf := bufs.AllocRunes()
 	buf := allocstring(0)
 	var err string
 	for m := 0; m < len(rp); m++ {
@@ -406,7 +407,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 				c = cp.u.text.r[i]
 				if '1' <= c && c <= '9' {
 					j := c - '0'
-					if regx.Sel.R[j].End-regx.Sel.R[j].Pos > RBUFSIZE {
+					if regx.Sel.R[j].End-regx.Sel.R[j].Pos > bufs.RuneLen {
 						err = "replacement string too long"
 						goto Err
 					}
@@ -420,7 +421,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 			} else if c != '&' {
 				Straddc(buf, c)
 			} else {
-				if regx.Sel.R[0].End-regx.Sel.R[0].Pos > RBUFSIZE {
+				if regx.Sel.R[0].End-regx.Sel.R[0].Pos > bufs.RuneLen {
 					err = "right hand side too long in substitution"
 					goto Err
 				}
@@ -439,7 +440,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 		}
 	}
 	freestring(buf)
-	fbuffree(rbuf)
+	bufs.FreeRunes(rbuf)
 	if !didsub && nest == 0 {
 		editerror("no substitution")
 	}
@@ -449,7 +450,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 
 Err:
 	freestring(buf)
-	fbuffree(rbuf)
+	bufs.FreeRunes(rbuf)
 	editerror(err)
 	return false
 }
@@ -570,7 +571,7 @@ func pipe_cmd(t *Text, cp *Cmd) bool {
 }
 
 func nlcount(t *Text, q0 int, q1 int, pnr *int) int {
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	nbuf := 0
 	nl := 0
 	i := nl
@@ -578,8 +579,8 @@ func nlcount(t *Text, q0 int, q1 int, pnr *int) int {
 	for q0 < q1 {
 		if i == nbuf {
 			nbuf = q1 - q0
-			if nbuf > RBUFSIZE {
-				nbuf = RBUFSIZE
+			if nbuf > bufs.RuneLen {
+				nbuf = bufs.RuneLen
 			}
 			t.file.b.Read(q0, buf[:nbuf])
 			i = 0
@@ -591,7 +592,7 @@ func nlcount(t *Text, q0 int, q1 int, pnr *int) int {
 		i++
 		q0++
 	}
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 	if pnr != nil {
 		*pnr = q0 - start
 	}
@@ -707,17 +708,17 @@ func pdisplay(f *File) bool {
 	if p2 > f.b.Len() {
 		p2 = f.b.Len()
 	}
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	for p1 < p2 {
 		np := p2 - p1
-		if np > RBUFSIZE-1 {
-			np = RBUFSIZE - 1
+		if np > bufs.RuneLen-1 {
+			np = bufs.RuneLen - 1
 		}
 		f.b.Read(p1, buf[:np])
 		alog.Printf("%s", string(buf[:np]))
 		p1 += np
 	}
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 	f.curtext.q0 = addr.r.Pos
 	f.curtext.q1 = addr.r.End
 	return true

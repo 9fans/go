@@ -30,6 +30,7 @@ import (
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -527,7 +528,7 @@ func checksha1(name string, f *File, info os.FileInfo) {
 	if err != nil {
 		return
 	}
-	buf := make([]byte, BUFSIZE)
+	buf := make([]byte, bufs.Len)
 	h := sha1.New()
 	for {
 		n, err := fd.Read(buf)
@@ -579,8 +580,8 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 	// file systems that mishandle unaligned writes.
 	// https://codereview.appspot.com/89550043/
 	b := bufio.NewWriter(fd)
-	r := fbufalloc()
-	s := fbufalloc()
+	r := bufs.AllocRunes()
+	s := bufs.AllocRunes()
 	info, err = fd.Stat()
 	h := sha1.New()
 	isAppend := err == nil && info.Size() > 0 && info.Mode()&os.ModeAppend != 0
@@ -592,8 +593,8 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 		var n int
 		for q := q0; q < q1; q += n {
 			n = q1 - q
-			if n > BUFSIZE/utf8.UTFMax {
-				n = BUFSIZE / utf8.UTFMax
+			if n > bufs.Len/utf8.UTFMax {
+				n = bufs.Len / utf8.UTFMax
 			}
 			f.b.Read(q, r[:n])
 			buf := []byte(string(r[:n])) // TODO(rsc)
@@ -645,13 +646,13 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 			f.text[i].w.dirty = w.dirty
 		}
 	}
-	fbuffree(s)
+	bufs.FreeRunes(s)
 	winsettag(w)
 	return
 
 Rescue2:
-	fbuffree(s)
-	fbuffree(r)
+	bufs.FreeRunes(s)
+	bufs.FreeRunes(r)
 	/* fall through */
 }
 
@@ -669,11 +670,11 @@ func trimspaces(et *Text) {
 		winlock(t.w, c)
 	}
 
-	r := fbufalloc()
+	r := bufs.AllocRunes()
 	q0 := f.b.Len()
 	delstart := q0 /* end of current space run, or 0 if no active run; = q0 to delete spaces before EOF */
 	for q0 > 0 {
-		n := RBUFSIZE
+		n := bufs.RuneLen
 		if n > q0 {
 			n = q0
 		}
@@ -704,7 +705,7 @@ func trimspaces(et *Text) {
 			}
 		}
 	}
-	fbuffree(r)
+	bufs.FreeRunes(r)
 
 	if t.w != nil && et.w != t.w {
 		winunlock(t.w)
@@ -789,17 +790,17 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 		q0 := t.q0
 		q1 := t.q1
 		snarfbuf.Delete(0, snarfbuf.Len())
-		r := fbufalloc()
+		r := bufs.AllocRunes()
 		for q0 < q1 {
 			n := q1 - q0
-			if n > RBUFSIZE {
-				n = RBUFSIZE
+			if n > bufs.RuneLen {
+				n = bufs.RuneLen
 			}
 			t.file.b.Read(q0, r[:n])
 			snarfbuf.Insert(snarfbuf.Len(), r[:n])
 			q0 += n
 		}
-		fbuffree(r)
+		bufs.FreeRunes(r)
 		acmeputsnarf()
 	}
 	if docut {
@@ -843,18 +844,18 @@ func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 	q := 0
 	q0 := t.q0
 	q1 := t.q0 + snarfbuf.Len()
-	r := fbufalloc()
+	r := bufs.AllocRunes()
 	for q0 < q1 {
 		n := q1 - q0
-		if n > RBUFSIZE {
-			n = RBUFSIZE
+		if n > bufs.RuneLen {
+			n = bufs.RuneLen
 		}
 		snarfbuf.Read(q, r[:n])
 		textinsert(t, q0, r[:n], true)
 		q += n
 		q0 += n
 	}
-	fbuffree(r)
+	bufs.FreeRunes(r)
 	if selectall {
 		textsetselect(t, t.q0, q1)
 	} else {

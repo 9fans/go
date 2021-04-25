@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -150,13 +151,13 @@ func flushwarnings() {
 		 * this in blocks (and putting the text in a buffer in the first
 		 * place), to avoid a big memory footprint.
 		 */
-		r := fbufalloc()
+		r := bufs.AllocRunes()
 		q0 := t.Len()
 		var nr int
 		for n := 0; n < warn.buf.Len(); n += nr {
 			nr = warn.buf.Len() - n
-			if nr > RBUFSIZE {
-				nr = RBUFSIZE
+			if nr > bufs.RuneLen {
+				nr = bufs.RuneLen
 			}
 			warn.buf.Read(n, r[:nr])
 			textbsinsert(t, t.Len(), r[:nr], true, &nr)

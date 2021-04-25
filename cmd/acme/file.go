@@ -31,6 +31,7 @@ import (
 	"reflect"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -131,17 +132,17 @@ func fileundelete(f *File, delta *disk.Buffer, p0 int, p1 int) {
 	u.seq = f.seq
 	u.p0 = p0
 	u.n = p1 - p0
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	var n int
 	for i := p0; i < p1; i += n {
 		n = p1 - i
-		if n > RBUFSIZE {
-			n = RBUFSIZE
+		if n > bufs.RuneLen {
+			n = bufs.RuneLen
 		}
 		f.b.Read(i, buf[:n])
 		delta.Insert(delta.Len(), buf[:n])
 	}
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 	delta.Insert(delta.Len(), undorunes(&u))
 }
 
@@ -201,7 +202,7 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 		stop = 0 /* don't know yet */
 	}
 
-	buf := fbufalloc()
+	buf := bufs.AllocRunes()
 	for delta.Len() > 0 {
 		up := delta.Len() - Undosize
 		var u Undo
@@ -245,8 +246,8 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 			up -= u.n
 			for i = 0; i < u.n; i += n {
 				n = u.n - i
-				if n > RBUFSIZE {
-					n = RBUFSIZE
+				if n > bufs.RuneLen {
+					n = bufs.RuneLen
 				}
 				delta.Read(up+i, buf[:n])
 				f.b.Insert(u.p0+i, buf[:n])
@@ -275,7 +276,7 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 		f.seq = 0
 	}
 Return:
-	fbuffree(buf)
+	bufs.FreeRunes(buf)
 }
 
 func filereset(f *File) {

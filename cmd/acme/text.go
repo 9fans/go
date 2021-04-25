@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/complete"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -279,11 +280,11 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		t.file.info = info
 	}
 	f.Close()
-	rp = fbufalloc()
+	rp = bufs.AllocRunes()
 	for q := q0; q < q1; q += n {
 		n = q1 - q
-		if n > RBUFSIZE {
-			n = RBUFSIZE
+		if n > bufs.RuneLen {
+			n = bufs.RuneLen
 		}
 		t.file.b.Read(q, rp[:n])
 		if q < t.org {
@@ -295,7 +296,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 			break
 		}
 	}
-	fbuffree(rp)
+	bufs.FreeRunes(rp)
 	for i = 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
 		if u != t {
@@ -423,7 +424,7 @@ func textfill(t *Text) {
 	if len(t.cache) > 0 {
 		typecommit(t)
 	}
-	rp := fbufalloc()
+	rp := bufs.AllocRunes()
 	for {
 		n := t.Len() - (t.org + t.fr.NumChars)
 		if n == 0 {
@@ -455,7 +456,7 @@ func textfill(t *Text) {
 			break
 		}
 	}
-	fbuffree(rp)
+	bufs.FreeRunes(rp)
 }
 
 func textdelete(t *Text, q0 int, q1 int, tofile bool) {

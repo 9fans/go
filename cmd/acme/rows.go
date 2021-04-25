@@ -24,6 +24,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
 )
@@ -317,7 +318,7 @@ func rowdump(row *Row, file *string) {
 		return
 	}
 	b := bufio.NewWriter(f)
-	r := fbufalloc()
+	r := bufs.AllocRunes()
 	fmt.Fprintf(b, "%s\n", wdir)
 	fmt.Fprintf(b, "%s\n", fontnames[0])
 	fmt.Fprintf(b, "%s\n", fontnames[1])
@@ -337,7 +338,7 @@ func rowdump(row *Row, file *string) {
 			w.body.file.dumpid = 0
 		}
 	}
-	m := util.Min(RBUFSIZE, row.tag.Len())
+	m := util.Min(bufs.RuneLen, row.tag.Len())
 	row.tag.file.b.Read(0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
@@ -346,7 +347,7 @@ func rowdump(row *Row, file *string) {
 	fmt.Fprintf(b, "w %s\n", string(r[:n]))
 	for i = 0; i < len(row.col); i++ {
 		c = row.col[i]
-		m = util.Min(RBUFSIZE, c.tag.Len())
+		m = util.Min(bufs.RuneLen, c.tag.Len())
 		c.tag.file.b.Read(0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
@@ -402,7 +403,7 @@ func rowdump(row *Row, file *string) {
 				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.Len(), fontname)
 			}
 			b.WriteString(winctlprint(w, false))
-			m = util.Min(RBUFSIZE, w.tag.Len())
+			m = util.Min(bufs.RuneLen, w.tag.Len())
 			w.tag.file.b.Read(0, r[:m])
 			n = 0
 			for n < m {
@@ -422,8 +423,8 @@ func rowdump(row *Row, file *string) {
 				q1 := t.Len()
 				for q0 < q1 {
 					n = q1 - q0
-					if n > BUFSIZE/utf8.UTFMax {
-						n = BUFSIZE / utf8.UTFMax
+					if n > bufs.Len/utf8.UTFMax {
+						n = bufs.Len / utf8.UTFMax
 					}
 					t.file.b.Read(q0, r[:n])
 					fmt.Fprintf(b, "%s", string(r[:n]))
@@ -441,7 +442,7 @@ func rowdump(row *Row, file *string) {
 	}
 	b.Flush() // TODO(rsc): err check
 	f.Close() // TODO(rsc): err check
-	fbuffree(r)
+	bufs.FreeRunes(r)
 }
 
 func exists(file string) bool {

@@ -20,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -31,8 +32,8 @@ func bufloader(v interface{}, q0 int, r []rune) int {
 }
 
 func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune) int, arg interface{}, h io.Writer) int {
-	p := make([]byte, BUFSIZE+utf8.UTFMax+1)
-	r := make([]rune, BUFSIZE)
+	p := make([]byte, bufs.Len+utf8.UTFMax+1)
+	r := make([]rune, bufs.Len)
 	m := 0
 	n := 1
 	q1 := q0
@@ -42,7 +43,7 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune)
 	 */
 	for n > 0 {
 		var err error
-		n, err = fd.Read(p[m : m+BUFSIZE])
+		n, err = fd.Read(p[m : m+bufs.Len])
 		if err != nil && err != io.EOF {
 			alog.Printf("read error in Buffer.load: %v", err)
 			break

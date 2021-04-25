@@ -25,6 +25,7 @@ import (
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -242,7 +243,7 @@ func plumbgetc(a interface{}, n int) rune {
 }
 
 func plumblook(m *plumb.Message) {
-	if len(m.Data) >= BUFSIZE {
+	if len(m.Data) >= bufs.Len {
 		alog.Printf("insanely long file name (%d bytes) in plumb message (%.32s...)\n", len(m.Data), m.Data)
 		return
 	}
@@ -299,12 +300,12 @@ func search(ct *Text, r []rune) bool {
 	if len(r) == 0 || len(r) > ct.Len() {
 		return false
 	}
-	if 2*len(r) > RBUFSIZE {
+	if 2*len(r) > bufs.RuneLen {
 		alog.Printf("string too long\n") // TODO(rsc): why???????
 		return false
 	}
-	maxn := util.Max(2*len(r), RBUFSIZE)
-	s := fbufalloc()
+	maxn := util.Max(2*len(r), bufs.RuneLen)
+	s := bufs.AllocRunes()
 	b := s[:0]
 	around := 0
 	q := ct.q1
@@ -346,7 +347,7 @@ func search(ct *Text, r []rune) bool {
 				ct.q1 = q + len(r)
 			}
 			seltext = ct
-			fbuffree(s)
+			bufs.FreeRunes(s)
 			return true
 		}
 		b = b[1:]
@@ -355,7 +356,7 @@ func search(ct *Text, r []rune) bool {
 			break
 		}
 	}
-	fbuffree(s)
+	bufs.FreeRunes(s)
 	return false
 }
 
