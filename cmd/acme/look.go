@@ -23,6 +23,7 @@ import (
 	"path"
 	"time"
 
+	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -502,7 +503,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		}
 		for q0 > 0 {
 			c = t.RuneAt(q0 - 1)
-			if !runes.IsFilename(c) && !isaddrc(c) && !isregexc(c) {
+			if !runes.IsFilename(c) && !runes.IsAddr(c) && !runes.IsRegx(c) {
 				break
 			}
 			q0--
@@ -516,9 +517,9 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		 */
 		if colon >= 0 {
 			q1 = colon
-			if colon < t.Len()-1 && isaddrc(t.RuneAt(colon+1)) {
+			if colon < t.Len()-1 && runes.IsAddr(t.RuneAt(colon+1)) {
 				q1 = colon + 1
-				for q1 < t.Len() && isaddrc(t.RuneAt(q1)) {
+				for q1 < t.Len() && runes.IsAddr(t.RuneAt(q1)) {
 					q1++
 				}
 			}
@@ -565,7 +566,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	for i = 0; i < n; i++ {
 		c = r[i]
 		if c == ':' && nname < 0 {
-			if q0+i+1 < t.Len() && (i == n-1 || isaddrc(t.RuneAt(q0+i+1))) {
+			if q0+i+1 < t.Len() && (i == n-1 || runes.IsAddr(t.RuneAt(q0+i+1))) {
 				amin = q0 + i
 			} else {
 				return false
@@ -621,7 +622,7 @@ Isfile:
 	e.arg = t
 	e.a0 = amin + 1
 	eval := false
-	address(true, nil, runes.Rng(-1, -1), runes.Rng(0, 0), t, e.a0, amax, tgetc, &eval, (*int)(&e.a1))
+	addrpkg.Eval(true, nil, runes.Rng(-1, -1), runes.Rng(0, 0), t, e.a0, amax, tgetc, &eval, (*int)(&e.a1))
 	return true
 }
 
@@ -761,7 +762,7 @@ func openfile(t *Text, e *Expand) *Window {
 	} else {
 		eval = true
 		var dummy int
-		r = address(true, t, runes.Rng(-1, -1), runes.Rng(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
+		r = addrpkg.Eval(true, t, runes.Rng(-1, -1), runes.Rng(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
 		if r.Pos > r.End {
 			eval = false
 			alog.Printf("addresses out of order\n")

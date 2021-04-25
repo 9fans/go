@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -434,7 +435,7 @@ func xfidwrite(x *Xfid) {
 		wincommit(w, t)
 		eval := true
 		var nb int
-		a := address(false, t, w.limit, w.addr, r, 0, len(r), rgetc, &eval, &nb)
+		a := addrpkg.Eval(false, t, w.limit, w.addr, r, 0, len(r), rgetc, &eval, &nb)
 		if nb < len(r) {
 			respond(x, &fc, Ebadaddr)
 			break

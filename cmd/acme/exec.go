@@ -28,6 +28,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -510,10 +511,10 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 		if samename {
 			a := &addr[i]
 			// Printf("%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
-			q0 := nlcounttopos(u, 0, a.lq0, a.rq0)
-			q1 := nlcounttopos(u, q0, a.lq1, a.rq1)
+			q0 := addrpkg.Advance(u, 0, a.lq0, a.rq0)
+			q1 := addrpkg.Advance(u, q0, a.lq1, a.rq1)
 			textsetselect(u, q0, q1)
-			q0 = nlcounttopos(u, 0, a.lorigin, a.rorigin)
+			q0 = addrpkg.Advance(u, 0, a.lorigin, a.rorigin)
 			textsetorigin(u, q0, false)
 		}
 		textscrdraw(u)

@@ -170,3 +170,27 @@ func Rng(q0 int, q1 int) Range {
 const Infinity = 0x7FFFFFFF
 
 const RuneSize = 4
+
+func IsAddr(r rune) bool {
+	if r != 0 && strings.ContainsRune("0123456789+-/$.#,;?", r) {
+		return true
+	}
+	return false
+}
+
+/*
+ * quite hard: could be almost anything but white space, but we are a little conservative,
+ * aiming for regular expressions of alphanumerics and no white space
+ */
+func IsRegx(r rune) bool {
+	if r == 0 {
+		return false
+	}
+	if IsAlphaNum(r) {
+		return true
+	}
+	if strings.ContainsRune("^+-.*?#,;[]()$", r) {
+		return true
+	}
+	return false
+}

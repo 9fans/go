@@ -1,10 +1,9 @@
-package main
+package addr
 
 import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
-	"strings"
 )
 
 const (
@@ -18,36 +17,12 @@ const (
 	Line
 )
 
-func isaddrc(r rune) bool {
-	if r != 0 && strings.ContainsRune("0123456789+-/$.#,;?", r) {
-		return true
-	}
-	return false
-}
-
-/*
- * quite hard: could be almost anything but white space, but we are a little conservative,
- * aiming for regular expressions of alphanumerics and no white space
- */
-func isregexc(r rune) bool {
-	if r == 0 {
-		return false
-	}
-	if runes.IsAlphaNum(r) {
-		return true
-	}
-	if strings.ContainsRune("^+-.*?#,;[]()$", r) {
-		return true
-	}
-	return false
-}
-
-// nlcounttopos starts at q0 and advances nl lines,
+// Advance starts at q0 and advances nl lines,
 // being careful not to walk past the end of the text,
 // and then nr chars, being careful not to walk past
 // the end of the current line.
 // It returns the final position.
-func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
+func Advance(t runes.Text, q0 int, nl int, nr int) int {
 	for nl > 0 && q0 < t.Len() {
 		tmp1 := q0
 		q0++
@@ -65,7 +40,7 @@ func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
 	return q0
 }
 
-func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, evalp *bool) runes.Range {
+func number(showerr bool, t runes.Text, r runes.Range, line int, dir rune, size int, evalp *bool) runes.Range {
 	q0 := r.Pos
 	q1 := r.End
 	if size == Char {
@@ -151,7 +126,7 @@ Rescue:
 	return r
 }
 
-func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, dir rune, foundp *bool) runes.Range {
+func regexp(showerr bool, t runes.Text, lim runes.Range, r runes.Range, pat []rune, dir rune, foundp *bool) runes.Range {
 	if pat[0] == '\x00' && regx.Null() {
 		if showerr {
 			alog.Printf("no previous regular expression\n")
@@ -183,7 +158,7 @@ func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, d
 	return sel.R[0]
 }
 
-func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) runes.Range {
+func Eval(showerr bool, t runes.Text, lim runes.Range, ar runes.Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) runes.Range {
 	r := ar
 	q := q0
 	dir := None
@@ -209,10 +184,10 @@ func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface
 			if prevc == 0 { /* lhs defaults to 0 */
 				r.Pos = 0
 			}
-			if q >= q1 && t != nil && t.file != nil { /* rhs defaults to $ */
+			if q >= q1 && t != nil /* && t.file != nil */ { /* rhs defaults to $ */
 				r.End = t.Len()
 			} else {
-				nr = address(showerr, t, lim, ar, a, q, q1, getc, evalp, &q)
+				nr = Eval(showerr, t, lim, ar, a, q, q1, getc, evalp, &q)
 				r.End = nr.End
 			}
 			*qp = q
