@@ -107,19 +107,23 @@ func editthread() {
 }
 
 func allelogterm(w *Window, x interface{}) {
-	elogterm(w.body.file)
+	if ef := elogfind(w.body.file); ef != nil {
+		elogterm(ef)
+	}
 }
 
 func alleditinit(w *Window, x interface{}) {
 	textcommit(&w.tag, true)
 	textcommit(&w.body, true)
-	w.body.file.editclean = false
 }
 
 func allupdate(w *Window, x interface{}) {
 	t := &w.body
-	f := t.file
-	if f.curtext != t { /* do curtext only */
+	if t.file.curtext != t { /* do curtext only */
+		return
+	}
+	f := elogfind(t.file)
+	if f == nil {
 		return
 	}
 	if f.elog.typ == elogNull {

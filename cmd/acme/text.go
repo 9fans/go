@@ -27,7 +27,6 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/complete"
-	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -1703,25 +1702,17 @@ func fileload(f *File, p0 int, fd *os.File, nulls *bool, h io.Writer) int {
 
 type File struct {
 	*file.File
-	curtext   *Text
-	text      []*Text
-	info      os.FileInfo
-	sha1      [20]byte
-	unread    bool
-	elog      Elog
-	dumpid    int
-	editclean bool
-	elogbuf   *disk.Buffer
+	curtext *Text
+	text    []*Text
+	info    os.FileInfo
+	sha1    [20]byte
+	unread  bool
+	dumpid  int
 }
 
 func (f *File) SetName(r []rune) {
 	f.File.SetName(r)
 	f.unread = true
-}
-
-func (f *File) Close() {
-	elogclose(f)
-	f.File.Close()
 }
 
 type fileView File

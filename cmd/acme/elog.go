@@ -62,45 +62,48 @@ const (
 	Maxstring = bufs.RuneLen
 )
 
-func eloginit(f *File) {
-	if f.elog.typ != elogEmpty {
-		return
-	}
-	f.elog.typ = elogNull
-	if f.elogbuf == nil {
-		f.elogbuf = new(disk.Buffer)
-	}
-	if f.elog.r == nil {
-		f.elog.r = bufs.AllocRunes()
-	}
-	f.elogbuf.Reset()
+type elogFile struct {
+	*File
+	elogbuf   *disk.Buffer
+	elog      Elog
+	editclean bool
 }
 
-func elogclose(f *File) {
-	if f.elogbuf != nil {
-		f.elogbuf.Close()
-		f.elogbuf = nil
+var elogs = make(map[*File]*elogFile)
+
+func eloginit(f *File) *elogFile {
+	if ef := elogs[f]; ef != nil {
+		return ef
 	}
+	ef := &elogFile{File: f}
+	ef.elog.typ = elogNull
+	ef.elogbuf = new(disk.Buffer)
+	ef.elog.r = bufs.AllocRunes()
+	elogs[f] = ef
+	return ef
 }
 
-func elogreset(f *File) {
+func elogreset(f *elogFile) {
 	f.elog.typ = elogNull
 	f.elog.nd = 0
 	f.elog.r = f.elog.r[:0]
 }
 
-func elogterm(f *File) {
+func elogfind(f *File) *elogFile {
+	return elogs[f]
+}
+
+func elogterm(f *elogFile) {
 	elogreset(f)
-	if f.elogbuf != nil {
-		f.elogbuf.Reset()
-	}
+	f.elogbuf.Reset()
 	f.elog.typ = elogEmpty
 	bufs.FreeRunes(f.elog.r)
 	f.elog.r = nil
 	warned = false
+	delete(elogs, f.File)
 }
 
-func elogflush(f *File) {
+func elogflush(f *elogFile) {
 	var b Buflog
 	b.typ = f.elog.typ
 	b.q0 = f.elog.q0
@@ -133,11 +136,11 @@ func buflogrunes(b *Buflog) []rune {
 	return r
 }
 
-func elogreplace(f *File, q0 int, q1 int, r []rune) {
+func elogreplace(ff *File, q0 int, q1 int, r []rune) {
 	if q0 == q1 && len(r) == 0 {
 		return
 	}
-	eloginit(f)
+	f := eloginit(ff)
 	if f.elog.typ != elogNull && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
@@ -170,11 +173,11 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 	copy(f.elog.r, r)
 }
 
-func eloginsert(f *File, q0 int, r []rune) {
+func eloginsert(ff *File, q0 int, r []rune) {
 	if len(r) == 0 {
 		return
 	}
-	eloginit(f)
+	f := eloginit(ff)
 	if f.elog.typ != elogNull && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
@@ -200,11 +203,11 @@ func eloginsert(f *File, q0 int, r []rune) {
 	}
 }
 
-func elogdelete(f *File, q0 int, q1 int) {
+func elogdelete(ff *File, q0 int, q1 int) {
 	if q0 == q1 {
 		return
 	}
-	eloginit(f)
+	f := eloginit(ff)
 	if f.elog.typ != elogNull && q0 < f.elog.q0+f.elog.nd {
 		if !warned {
 			warned = true
@@ -223,7 +226,7 @@ func elogdelete(f *File, q0 int, q1 int) {
 	f.elog.nd = q1 - q0
 }
 
-func elogapply(f *File) {
+func elogapply(f *elogFile) {
 	const tracelog = false
 
 	elogflush(f)
@@ -362,11 +365,12 @@ func elogapply(f *File) {
 		t.w.owner = owner
 	}
 }
+
 const (
-	elogEmpty = 0
-	elogNull = '-'
-	elogDelete = 'd'
-	elogInsert = 'i'
-	elogReplace = 'r'
+	elogEmpty    = 0
+	elogNull     = '-'
+	elogDelete   = 'd'
+	elogInsert   = 'i'
+	elogReplace  = 'r'
 	elogFilename = 'f'
 )

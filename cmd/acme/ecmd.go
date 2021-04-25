@@ -285,7 +285,7 @@ func e_cmd(t *Text, cp *Cmd) bool {
 	if nulls {
 		alog.Printf("%s: NUL bytes elided\n", s)
 	} else if allreplaced && samename {
-		f.editclean = true
+		elogfind(f).editclean = true
 	}
 	return true
 }
