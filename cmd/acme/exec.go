@@ -28,6 +28,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
@@ -92,14 +93,14 @@ var exectab = [30]Exectab{
 }
 
 func lookup(r []rune) *Exectab {
-	r = skipbl(r)
+	r = runes.SkipBlank(r)
 	if len(r) == 0 {
 		return nil
 	}
-	r = r[:len(r)-len(findbl(r))]
+	r = r[:len(r)-len(runes.SkipNonBlank(r))]
 	for i := range exectab {
 		e := &exectab[i]
-		if runeeq(r, e.name) {
+		if runes.Equal(r, e.name) {
 			return e
 		}
 	}
@@ -107,7 +108,7 @@ func lookup(r []rune) *Exectab {
 }
 
 func isexecc(c rune) bool {
-	if isfilec(c) {
+	if runes.IsFilename(c) {
 		return true
 	}
 	return c == '<' || c == '|' || c == '>'
@@ -196,23 +197,23 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 				filemark(seltext.w.body.file)
 			}
 		}
-		s := skipbl(r[:q1-q0])
-		s = findbl(s)
-		s = skipbl(s)
+		s := runes.SkipBlank(r[:q1-q0])
+		s = runes.SkipNonBlank(s)
+		s = runes.SkipBlank(s)
 		e.fn(t, seltext, argt, e.flag1, e.flag2, s)
 		return
 	}
 
-	b := runetobyte(r)
+	b := string(r)
 	dir := dirname(t, nil)
-	if len(dir.r) == 1 && dir.r[0] == '.' { /* sigh */
-		dir.r = nil
+	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+		dir = nil
 	}
 	aa = getbytearg(argt, true, true, &a)
 	if t.w != nil {
 		incref(&t.w.ref)
 	}
-	run(t.w, b, dir.r, true, aa, a, false)
+	run(t.w, b, dir, true, aa, a, false)
 }
 
 func printarg(argt *Text, q0 int, q1 int) *string {
@@ -264,7 +265,7 @@ func getbytearg(argt *Text, doaddr, dofile bool, bp **string) *string {
 	if r == nil {
 		return nil
 	}
-	b := runetobyte(r)
+	b := string(r)
 	*bp = &b
 	return a
 }
@@ -383,20 +384,20 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 	}
 	if promote {
 		if len(arg) == 0 {
-			return runetobyte(t.file.name)
+			return string(t.file.name)
 		}
-		var dir Runestr
+		var dir []rune
 		/* prefix with directory name if necessary */
-		dir.r = nil
+		dir = nil
 		if len(arg) > 0 && arg[0] != '/' {
 			dir = dirname(t, nil)
-			if len(dir.r) == 1 && dir.r[0] == '.' { /* sigh */
-				dir.r = nil
+			if len(dir) == 1 && dir[0] == '.' { /* sigh */
+				dir = nil
 			}
 		}
-		if dir.r != nil {
-			r = make([]rune, len(dir.r)+1+len(arg))
-			r = append(r, dir.r...)
+		if dir != nil {
+			r = make([]rune, len(dir)+1+len(arg))
+			r = append(r, dir...)
 			if len(r) > 0 && r[len(r)-1] != '/' && len(arg) > 0 && arg[0] != '/' {
 				r = append(r, '/')
 			}
@@ -405,7 +406,7 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 			r = arg
 		}
 	}
-	return runetobyte(r)
+	return string(r)
 }
 
 func zeroxx(et, t, _ *Text, _, _ bool, _ []rune) {
@@ -478,14 +479,14 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 		a.lq0 = nlcount(u, 0, u.q0, &a.rq0)
 		a.lq1 = nlcount(u, u.q0, u.q1, &a.rq1)
 	}
-	r := bytetorune(name)
+	r := []rune(name)
 	for i := 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
 		/* second and subsequent calls with zero an already empty buffer, but OK */
 		textreset(u)
 		windirfree(u.w)
 	}
-	samename := runeeq(r, t.file.name)
+	samename := runes.Equal(r, t.file.name)
 	textload(t, 0, name, samename)
 	var dirty bool
 	if samename {
@@ -545,9 +546,9 @@ func sameInfo(fi1, fi2 os.FileInfo) bool {
 
 func putfile(f *File, q0 int, q1 int, namer []rune) {
 	w := f.curtext.w
-	name := runetobyte(namer)
+	name := string(namer)
 	info, err := os.Stat(name)
-	if err == nil && runeeq(namer, f.name) {
+	if err == nil && runes.Equal(namer, f.name) {
 		if !sameInfo(info, f.info) {
 			checksha1(name, f, info)
 		}
@@ -607,7 +608,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 		warning(nil, "can't write file %s: %v\n", name, err)
 		goto Rescue2 // flush or close failed
 	}
-	if runeeq(namer, f.name) {
+	if runes.Equal(namer, f.name) {
 		if q0 != 0 || q1 != f.b.nc {
 			f.mod = true
 			w.dirty = true
@@ -721,7 +722,7 @@ func put(et, _, argt *Text, _, _ bool, arg []rune) {
 	if w.autoindent {
 		trimspaces(et)
 	}
-	namer := bytetorune(name)
+	namer := []rune(name)
 	putfile(f, 0, f.b.nc, namer)
 	xfidlog(w, "put")
 }
@@ -729,7 +730,7 @@ func put(et, _, argt *Text, _, _ bool, arg []rune) {
 func dump(_, _, argt *Text, isdump, _ bool, arg []rune) {
 	var name *string
 	if len(arg) != 0 {
-		s := runetobyte(arg)
+		s := string(arg)
 		name = &s
 	} else {
 		getbytearg(argt, false, true, &name)
@@ -931,7 +932,7 @@ func putall(et, _, _ *Text, _, _ bool, _ []rune) {
 			if w.nopen[QWevent] > 0 {
 				continue
 			}
-			a := runetobyte(w.body.file.name)
+			a := string(w.body.file.name)
 			_, e := os.Stat(a)
 			if w.body.file.mod || len(w.body.cache) != 0 {
 				if e != nil {
@@ -955,10 +956,10 @@ func local(et, _, argt *Text, _, _ bool, arg []rune) {
 	var a *string
 	aa := getbytearg(argt, true, true, &a)
 	dir := dirname(et, nil)
-	if len(dir.r) == 1 && dir.r[0] == '.' { /* sigh */
-		dir.r = nil
+	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+		dir = nil
 	}
-	run(nil, runetobyte(arg), dir.r, false, aa, a, false)
+	run(nil, string(arg), dir, false, aa, a, false)
 }
 
 func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
@@ -969,12 +970,12 @@ func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
 	}
 	/* loop condition: *arg is not a blank */
 	for {
-		a := findbl(arg)
+		a := runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
 			break
 		}
-		ckill <- runestrdup(arg[:len(arg)-len(a)])
-		arg = skipbl(a)
+		ckill <- runes.Clone(arg[:len(arg)-len(a)])
+		arg = runes.SkipBlank(a)
 	}
 }
 
@@ -991,21 +992,21 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	/* loop condition: *arg is not a blank */
 	var r []rune
 	for {
-		a := findbl(arg)
+		a := runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
 			break
 		}
-		r = runestrdup(arg[:len(arg)-len(a)])
-		if runeeq(r, Lfix) || runeeq(r, Lvar) {
+		r = runes.Clone(arg[:len(arg)-len(a)])
+		if runes.Equal(r, Lfix) || runes.Equal(r, Lvar) {
 			flag = r
 		} else {
 			file = r
 		}
-		arg = skipbl(a)
+		arg = runes.SkipBlank(a)
 	}
 	getarg(argt, false, true, &r)
 	if r != nil {
-		if runeeq(r, Lfix) || runeeq(r, Lvar) {
+		if runes.Equal(r, Lfix) || runes.Equal(r, Lvar) {
 			flag = r
 		} else {
 			file = r
@@ -1014,7 +1015,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	fix := true
 	var newfont *Reffont
 	if flag != nil {
-		fix = runeeq(flag, Lfix)
+		fix = runes.Equal(flag, Lfix)
 	} else if file == nil {
 		newfont = rfget(false, false, false, "")
 		if newfont != nil {
@@ -1023,7 +1024,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	}
 	var aa string
 	if file != nil {
-		newfont = rfget(fix, flag != nil, false, runetobyte(file))
+		newfont = rfget(fix, flag != nil, false, string(file))
 	} else {
 		newfont = rfget(fix, false, false, "")
 	}
@@ -1037,7 +1038,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 			t.all.Min.X++ /* force recolumnation; disgusting! */
 			for i := 0; i < len(t.w.dlp); i++ {
 				dp := t.w.dlp[i]
-				aa = runetobyte(dp.r)
+				aa = string(dp.r)
 				dp.wid = newfont.f.StringWidth(aa)
 			}
 		}
@@ -1060,13 +1061,13 @@ func incl(et, _, argt *Text, _, _ bool, arg []rune) {
 	}
 	/* loop condition: len(arg) == 0 || arg[0] is not a blank */
 	for {
-		a := findbl(arg)
+		a := runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
 			break
 		}
-		r = runestrdup(arg[:len(arg)-len(a)])
+		r = runes.Clone(arg[:len(arg)-len(a)])
 		winaddincl(w, r)
-		arg = skipbl(a)
+		arg = runes.SkipBlank(a)
 	}
 	if n == 0 && len(w.incl) > 0 {
 		for n = len(w.incl); ; {
@@ -1095,17 +1096,17 @@ func indentval(s []rune) int {
 	if len(s) < 2 {
 		return IError
 	}
-	if runeeq(s, LON) {
+	if runes.Equal(s, LON) {
 		globalautoindent = true
 		warning(nil, "Indent ON\n")
 		return IGlobal
 	}
-	if runeeq(s, LOFF) {
+	if runes.Equal(s, LOFF) {
 		globalautoindent = false
 		warning(nil, "Indent OFF\n")
 		return IGlobal
 	}
-	if runeeq(s, Lon) {
+	if runes.Equal(s, Lon) {
 		return Ion
 	}
 	return Ioff
@@ -1126,7 +1127,7 @@ func indent(et, _, argt *Text, _, _ bool, arg []rune) {
 	if len(r) > 0 {
 		autoindent = indentval(r)
 	} else {
-		a := findbl(arg)
+		a := runes.SkipNonBlank(arg)
 		if len(a) != len(arg) {
 			autoindent = indentval(arg[:len(arg)-len(a)])
 		}
@@ -1147,14 +1148,14 @@ func tab(et, _, argt *Text, _, _ bool, arg []rune) {
 	getarg(argt, false, true, &r)
 	tab := 0
 	if len(r) > 0 {
-		p := runetobyte(r)
+		p := string(r)
 		if '0' <= p[0] && p[0] <= '9' {
 			tab, _ = strconv.Atoi(p)
 		}
 	} else {
-		a := findbl(arg)
+		a := runes.SkipNonBlank(arg)
 		if len(a) != len(arg) {
-			p := runetobyte(arg[:len(arg)-len(a)])
+			p := string(arg[:len(arg)-len(a)])
 			if '0' <= p[0] && p[0] <= '9' {
 				tab, _ = strconv.Atoi(p)
 			}
@@ -1180,7 +1181,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 		name = name[i+1:]
 	}
 	name += " " /* add blank here for ease in waittask */
-	c.name = bytetorune(name)
+	c.name = []rune(name)
 	pipechar := '\x00'
 	if len(t) > 0 && (t[0] == '<' || t[0] == '|' || t[0] == '>') {
 		pipechar = rune(t[0])
@@ -1199,7 +1200,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 			if len(win.incl) > 0 {
 				incl = make([][]rune, len(win.incl))
 				for i := range win.incl {
-					incl[i] = runestrdup(win.incl[i])
+					incl[i] = runes.Clone(win.incl[i])
 				}
 			}
 			winid = win.id
@@ -1308,7 +1309,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 
 		var dir string
 		if rdir != nil {
-			dir = runetobyte(rdir)
+			dir = string(rdir)
 		}
 		cmd := exec.Command(av[0], av[1:]...)
 		cmd.Stdin = sfd[0]
@@ -1333,7 +1334,7 @@ Hard:
 		}
 		var dir string
 		if rdir != nil {
-			dir = runetobyte(rdir)
+			dir = string(rdir)
 		}
 		shell := acmeshell
 		if shell == "" {

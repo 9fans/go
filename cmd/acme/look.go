@@ -23,6 +23,7 @@ import (
 	"path"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
@@ -165,15 +166,15 @@ func look3(t *Text, q0, q1 int, external bool) {
 		m := new(plumb.Message)
 		m.Src = "acme"
 		dir := dirname(t, nil)
-		if len(dir.r) == 1 && dir.r[0] == '.' { /* sigh */
-			dir.r = nil
+		if len(dir) == 1 && dir[0] == '.' { /* sigh */
+			dir = nil
 		}
-		if len(dir.r) == 0 {
-			m.Dir = estrdup(wdir)
+		if len(dir) == 0 {
+			m.Dir = wdir
 		} else {
-			m.Dir = runetobyte(dir.r)
+			m.Dir = string(dir)
 		}
-		m.Type = estrdup("text")
+		m.Type = "text"
 		if q1 == q0 {
 			if t.q1 > t.q0 && t.q0 <= q0 && q0 <= t.q1 {
 				q0 = t.q0
@@ -194,7 +195,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 		}
 		r = make([]rune, q1-q0)
 		bufread(&t.file.b, q0, r)
-		m.Data = []byte(runetobyte(r))
+		m.Data = []byte(string(r))
 		if len(m.Data) < messagesize-1024 && m.Send(plumbsendfid) == nil {
 			return
 		}
@@ -250,13 +251,13 @@ func plumblook(m *plumb.Message) {
 	}
 	e.arg = nil
 	e.bname = string(m.Data)
-	e.name = bytetorune(e.bname)
+	e.name = []rune(e.bname)
 	e.jump = true
 	e.a0 = 0
 	e.a1 = 0
 	addr := m.LookupAttr("addr")
 	if addr != "" {
-		r := bytetorune(addr)
+		r := []rune(addr)
 		e.a1 = len(r)
 		e.arg = r
 		e.agetc = plumbgetc
@@ -277,11 +278,11 @@ func plumbshow(m *plumb.Message) {
 		name = fmt.Sprintf("%s/%s", m.Dir, name)
 	}
 	var rb [256]rune
-	_, nr, _ := cvttorunes([]byte(name), rb[:], true)
-	rs := cleanrname(runestr(rb[:nr]))
-	winsetname(w, rs.r)
+	_, nr, _ := runes.Convert([]byte(name), rb[:], true)
+	rs := runes.CleanPath(rb[:nr])
+	winsetname(w, rs)
 	r := make([]rune, len(m.Data))
-	_, nr, _ = cvttorunes(m.Data, r, true)
+	_, nr, _ = runes.Convert(m.Data, r, true)
 	textinsert(&w.body, 0, r[:nr], true)
 	w.body.file.mod = false
 	w.dirty = false
@@ -311,7 +312,7 @@ func search(ct *Text, r []rune) bool {
 			b = b[:0]
 		}
 		if len(b) > 0 {
-			i := indexRune(b, r[0])
+			i := runes.IndexRune(b, r[0])
 			if i < 0 {
 				q += len(b)
 				b = b[:0]
@@ -333,7 +334,7 @@ func search(ct *Text, r []rune) bool {
 			b = s[:nb]
 		}
 		/* this runeeq is fishy but the null at b[nb] makes it safe */ // TODO(rsc): NUL done gone
-		if len(b) >= len(r) && runeeq(b[:len(r)], r) {
+		if len(b) >= len(r) && runes.Equal(b[:len(r)], r) {
 			if ct.w != nil {
 				textshow(ct, q, q+len(r), true)
 				winsettag(ct.w)
@@ -355,61 +356,16 @@ func search(ct *Text, r []rune) bool {
 	return false
 }
 
-var isfilec_Lx = []rune(".-+/:@")
-
-func isfilec(r rune) bool {
-	if isalnum(r) {
-		return true
-	}
-	if indexRune(isfilec_Lx, r) >= 0 {
-		return true
-	}
-	return false
-}
-
-func indexRune(rs []rune, c rune) int {
-	for i, r := range rs {
-		if r == c {
-			return i
-		}
-	}
-	return -1
-}
-
-func runesIndex(r, s []rune) int {
-	if len(s) == 0 {
-		return 0
-	}
-	c := s[0]
-	for i, ri := range r {
-		if len(r)-i < len(s) {
-			break
-		}
-		if ri == c && runeeq(r[i:i+len(s)], s) {
-			return i
-		}
-	}
-	return -1
-}
-
 /* Runestr wrapper for cleanname */
-func cleanrname(rs Runestr) Runestr {
-	s := runetobyte(rs.r)
-	s = path.Clean(s)
-	r := rs.r[:cap(rs.r)]
-	_, nr, _ := cvttorunes([]byte(s), r, true)
-	rs.r = r[:nr]
-	return rs
-}
 
 var includefile_Lslash = [2]rune{'/', 0}
 
-func includefile(dir []rune, file []rune) Runestr {
+func includefile(dir []rune, file []rune) []rune {
 	a := fmt.Sprintf("%s/%s", string(dir), string(file))
 	if _, err := os.Stat(a); err != nil {
-		return runestr(nil)
+		return nil
 	}
-	return Runestr{[]rune(path.Clean(a))}
+	return []rune(path.Clean(a))
 }
 
 var objdir []rune
@@ -421,48 +377,48 @@ var (
 	Lusrlocalplan9include = []rune("/usr/local/plan9/include")
 )
 
-func includename(t *Text, r []rune) Runestr {
+func includename(t *Text, r []rune) []rune {
 	var i int
 	if objdir == nil && objtype != "" {
 		buf := fmt.Sprintf("/%s/include", objtype)
-		objdir = bytetorune(buf)
+		objdir = []rune(buf)
 	}
 
 	w := t.w
 	if len(r) == 0 || r[0] == '/' || w == nil {
-		return runestr(r)
+		return r
 	}
 	if len(r) > 2 && r[0] == '.' && r[1] == '/' {
-		return runestr(r)
+		return r
 	}
-	var file Runestr
-	file.r = nil
-	for i = 0; i < len(w.incl) && file.r == nil; i++ {
+	var file []rune
+	file = nil
+	for i = 0; i < len(w.incl) && file == nil; i++ {
 		file = includefile(w.incl[i], r)
 	}
 
-	if file.r == nil {
+	if file == nil {
 		file = includefile(Lsysinclude, r)
 	}
-	if file.r == nil {
+	if file == nil {
 		file = includefile(Lusrlocalplan9include, r)
 	}
-	if file.r == nil {
+	if file == nil {
 		file = includefile(Lusrlocalinclude, r)
 	}
-	if file.r == nil {
+	if file == nil {
 		file = includefile(Lusrinclude, r)
 	}
-	if file.r == nil && objdir != nil {
+	if file == nil && objdir != nil {
 		file = includefile(objdir, r)
 	}
-	if file.r == nil {
-		return runestr(r)
+	if file == nil {
+		return r
 	}
 	return file
 }
 
-func dirname(t *Text, r []rune) Runestr {
+func dirname(t *Text, r []rune) []rune {
 	if t == nil || t.w == nil {
 		goto Rescue
 	}
@@ -486,13 +442,13 @@ func dirname(t *Text, r []rune) Runestr {
 			goto Rescue
 		}
 		b = append(b[:slash+1], r...)
-		return cleanrname(runestr(b))
+		return runes.CleanPath(b)
 	}
 
 Rescue:
-	tmp := runestr(r)
+	tmp := r
 	if len(r) >= 1 {
-		return cleanrname(tmp)
+		return runes.CleanPath(tmp)
 	}
 	return tmp
 }
@@ -533,7 +489,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		colon := -1
 		for q1 < t.file.b.nc {
 			c = textreadc(t, q1)
-			if !isfilec(c) {
+			if !runes.IsFilename(c) {
 				break
 			}
 			if c == ':' && !texthas(t, q1-4, Lhttpcss) && !texthas(t, q1-5, Lhttpscss) {
@@ -544,7 +500,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		}
 		for q0 > 0 {
 			c = textreadc(t, q0-1)
-			if !isfilec(c) && !isaddrc(c) && !isregexc(c) {
+			if !runes.IsFilename(c) && !isaddrc(c) && !isregexc(c) {
 				break
 			}
 			q0--
@@ -619,7 +575,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		nname = n
 	}
 	for i = 0; i < nname; i++ {
-		if !isfilec(r[i]) && r[i] != ' ' {
+		if !runes.IsFilename(r[i]) && r[i] != ' ' {
 			return false
 		}
 	}
@@ -631,16 +587,16 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	 */
 	if q0 > 0 && textreadc(t, q0-1) == '<' && q1 < t.file.b.nc && textreadc(t, q1) == '>' {
 		rs := includename(t, r[:nname])
-		r = rs.r
-		nname = len(rs.r)
+		r = rs
+		nname = len(rs)
 	} else if amin == q0 {
 		goto Isfile
 	} else {
 		rs := dirname(t, r[:nname])
-		r = rs.r
-		nname = len(rs.r)
+		r = rs
+		nname = len(rs)
 	}
-	e.bname = runetobyte(r[:nname])
+	e.bname = string(r[:nname])
 	/* if it's already a window name, it's a file */
 	{
 		w := lookfile(r[:nname])
@@ -663,7 +619,7 @@ Isfile:
 	e.arg = t
 	e.a0 = amin + 1
 	eval := false
-	address(true, nil, range_(-1, -1), range_(0, 0), t, e.a0, amax, tgetc, &eval, (*int)(&e.a1))
+	address(true, nil, runes.Rng(-1, -1), runes.Rng(0, 0), t, e.a0, amax, tgetc, &eval, (*int)(&e.a1))
 	return true
 }
 
@@ -685,10 +641,10 @@ func expand(t *Text, q0 int, q1 int, e *Expand) bool {
 	}
 
 	if q0 == q1 {
-		for q1 < t.file.b.nc && isalnum(textreadc(t, q1)) {
+		for q1 < t.file.b.nc && runes.IsAlphaNum(textreadc(t, q1)) {
 			q1++
 		}
-		for q0 > 0 && isalnum(textreadc(t, q0-1)) {
+		for q0 > 0 && runes.IsAlphaNum(textreadc(t, q0-1)) {
 			q0--
 		}
 	}
@@ -709,7 +665,7 @@ func lookfile(s []rune) *Window {
 			if k > 1 && t.file.name[k-1] == '/' {
 				k--
 			}
-			if runeeq(t.file.name[:k], s) {
+			if runes.Equal(t.file.name[:k], s) {
 				w = w.body.file.curtext.w
 				if w.col != nil { /* protect against race deleting w */
 					return w
@@ -735,9 +691,9 @@ func lookid(id int, dump bool) *Window {
 }
 
 func openfile(t *Text, e *Expand) *Window {
-	var r Range
-	r.q0 = 0
-	r.q1 = 0
+	var r runes.Range
+	r.Pos = 0
+	r.End = 0
 	var w *Window
 	if len(e.name) == 0 {
 		w = t.w
@@ -757,8 +713,8 @@ func openfile(t *Text, e *Expand) *Window {
 			 * Make the name a full path, just like we would if
 			 * opening via the plumber.
 			 */
-			rs := runestr([]rune(path.Join(string(wdir), string(e.name))))
-			e.name = rs.r
+			rs := []rune(path.Join(string(wdir), string(e.name)))
+			e.name = rs
 			w = lookfile(e.name)
 		}
 	}
@@ -788,7 +744,7 @@ func openfile(t *Text, e *Expand) *Window {
 				if i < 0 {
 					break
 				}
-				rp := runestrdup(ow.incl[i])
+				rp := runes.Clone(ow.incl[i])
 				winaddincl(w, rp)
 			}
 			w.autoindent = ow.autoindent
@@ -803,8 +759,8 @@ func openfile(t *Text, e *Expand) *Window {
 	} else {
 		eval = true
 		var dummy int
-		r = address(true, t, range_(-1, -1), range_(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
-		if r.q0 > r.q1 {
+		r = address(true, t, runes.Rng(-1, -1), runes.Rng(t.q0, t.q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
+		if r.Pos > r.End {
 			eval = false
 			warning(nil, "addresses out of order\n")
 		}
@@ -813,10 +769,10 @@ func openfile(t *Text, e *Expand) *Window {
 		}
 	}
 	if !eval {
-		r.q0 = t.q0
-		r.q1 = t.q1
+		r.Pos = t.q0
+		r.End = t.q1
 	}
-	textshow(t, r.q0, r.q1, true)
+	textshow(t, r.Pos, r.End, true)
 	winsettag(t.w)
 	seltext = t
 	if e.jump {
@@ -836,7 +792,7 @@ func new_(et, t, argt *Text, flag1, flag2 bool, arg []rune) {
 	}
 	/* loop condition: *arg is not a blank */
 	for ndone := 0; ; ndone++ {
-		a = findbl(arg)
+		a = runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
 			if ndone == 0 && et.col != nil {
 				w := coladd(et.col, nil, nil, -1)
@@ -846,13 +802,13 @@ func new_(et, t, argt *Text, flag1, flag2 bool, arg []rune) {
 			break
 		}
 		nf := len(arg) - len(a)
-		f := runestrdup(arg[:nf])
+		f := runes.Clone(arg[:nf])
 		rs := dirname(et, f)
 		var e Expand
-		e.name = rs.r
-		e.bname = runetobyte(rs.r)
+		e.name = rs
+		e.bname = string(rs)
 		e.jump = true
 		openfile(et, &e)
-		arg = skipbl(a)
+		arg = runes.SkipBlank(a)
 	}
 }

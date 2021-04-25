@@ -17,6 +17,7 @@ package main
 import (
 	"sort"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -248,24 +249,6 @@ func colresize(c *Column, r draw.Rectangle) {
 	c.r = r
 }
 
-func runesCmp(a, b []rune) int {
-	for i := 0; i < len(a) && i < len(b); i++ {
-		if a[i] != b[i] {
-			if a[i] < b[i] {
-				return -1
-			}
-			return +1
-		}
-	}
-	if len(a) < len(b) {
-		return -1
-	}
-	if len(a) > len(b) {
-		return +1
-	}
-	return 0
-}
-
 func colsort(c *Column) {
 	if len(c.w) == 0 {
 		return
@@ -275,7 +258,7 @@ func colsort(c *Column) {
 	wp := make([]*Window, len(c.w))
 	copy(wp, c.w)
 	sort.Slice(wp, func(i, j int) bool {
-		return runesCmp(wp[i].body.file.name, wp[j].body.file.name) < 0
+		return runes.Compare(wp[i].body.file.name, wp[j].body.file.name) < 0
 	})
 
 	for i := 0; i < len(c.w); i++ {

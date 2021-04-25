@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"9fans.net/go/cmd/acme/internal/runes"
+	"strings"
+)
 
 const (
 	None = '\x00'
@@ -28,7 +31,7 @@ func isregexc(r rune) bool {
 	if r == 0 {
 		return false
 	}
-	if isalnum(r) {
+	if runes.IsAlphaNum(r) {
 		return true
 	}
 	if strings.ContainsRune("^+-.*?#,;[]()$", r) {
@@ -60,23 +63,23 @@ func nlcounttopos(t *Text, q0 int, nl int, nr int) int {
 	return q0
 }
 
-func number(showerr bool, t *Text, r Range, line int, dir rune, size int, evalp *bool) Range {
-	q0 := r.q0
-	q1 := r.q1
+func number(showerr bool, t *Text, r runes.Range, line int, dir rune, size int, evalp *bool) runes.Range {
+	q0 := r.Pos
+	q1 := r.End
 	if size == Char {
 		if dir == Fore {
-			line = r.q1 + line
+			line = r.End + line
 		} else if dir == Back {
-			if r.q0 == 0 && line > 0 {
-				r.q0 = t.file.b.nc
+			if r.Pos == 0 && line > 0 {
+				r.Pos = t.file.b.nc
 			}
-			line = r.q0 - line
+			line = r.Pos - line
 		}
 		if line < 0 || line > t.file.b.nc {
 			goto Rescue
 		}
 		*evalp = true
-		return range_(line, line)
+		return runes.Rng(line, line)
 	}
 	switch dir {
 	case None:
@@ -117,7 +120,7 @@ func number(showerr bool, t *Text, r Range, line int, dir rune, size int, evalp 
 	}
 Return:
 	*evalp = true
-	return range_(q0, q1)
+	return runes.Rng(q0, q1)
 
 Forward:
 	for line > 0 && q1 < t.file.b.nc {
@@ -146,7 +149,7 @@ Rescue:
 	return r
 }
 
-func regexp(showerr bool, t *Text, lim Range, r Range, pat []rune, dir rune, foundp *bool) Range {
+func regexp(showerr bool, t *Text, lim runes.Range, r runes.Range, pat []rune, dir rune, foundp *bool) runes.Range {
 	if pat[0] == '\x00' && rxnull() {
 		if showerr {
 			warning(nil, "no previous regular expression\n")
@@ -161,15 +164,15 @@ func regexp(showerr bool, t *Text, lim Range, r Range, pat []rune, dir rune, fou
 	var found bool
 	var sel Rangeset
 	if dir == Back {
-		found = rxbexecute(t, r.q0, &sel)
+		found = rxbexecute(t, r.Pos, &sel)
 	} else {
 		var q int
-		if lim.q0 < 0 {
-			q = Infinity
+		if lim.Pos < 0 {
+			q = runes.Infinity
 		} else {
-			q = lim.q1
+			q = lim.End
 		}
-		found = rxexecute(t, nil, r.q1, q, &sel)
+		found = rxexecute(t, nil, r.End, q, &sel)
 	}
 	if !found && showerr {
 		warning(nil, "no match for regexp\n")
@@ -178,7 +181,7 @@ func regexp(showerr bool, t *Text, lim Range, r Range, pat []rune, dir rune, fou
 	return sel.r[0]
 }
 
-func address(showerr bool, t *Text, lim Range, ar Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) Range {
+func address(showerr bool, t *Text, lim runes.Range, ar runes.Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) runes.Range {
 	r := ar
 	q := q0
 	dir := None
@@ -188,7 +191,7 @@ func address(showerr bool, t *Text, lim Range, ar Range, a interface{}, q0 int, 
 		prevc := c
 		c = getc(a, q)
 		q++
-		var nr Range
+		var nr runes.Range
 		var pat []rune
 		var n int
 		var nc rune
@@ -202,13 +205,13 @@ func address(showerr bool, t *Text, lim Range, ar Range, a interface{}, q0 int, 
 		/* fall through */
 		case ',':
 			if prevc == 0 { /* lhs defaults to 0 */
-				r.q0 = 0
+				r.Pos = 0
 			}
 			if q >= q1 && t != nil && t.file != nil { /* rhs defaults to $ */
-				r.q1 = t.file.b.nc
+				r.End = t.file.b.nc
 			} else {
 				nr = address(showerr, t, lim, ar, a, q, q1, getc, evalp, &q)
-				r.q1 = nr.q1
+				r.End = nr.End
 			}
 			*qp = q
 			return r
@@ -230,7 +233,7 @@ func address(showerr bool, t *Text, lim Range, ar Range, a interface{}, q0 int, 
 				if c == '.' {
 					r = ar
 				} else {
-					r = range_(t.file.b.nc, t.file.b.nc)
+					r = runes.Rng(t.file.b.nc, t.file.b.nc)
 				}
 			}
 			if q < q1 {

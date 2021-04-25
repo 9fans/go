@@ -17,49 +17,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
-	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 )
 
 var prevmouse draw.Point
 var mousew *Window
-
-func range_(q0 int, q1 int) Range {
-	var r Range
-	r.q0 = q0
-	r.q1 = q1
-	return r
-}
-
-func runestr(r []rune) Runestr {
-	return Runestr{r}
-}
-
-// cvttorunes converts bytes in b to runes in r,
-// returning the number of bytes processed from b,
-// the number of runes written to r,
-// and whether any null bytes were elided.
-// If eof is true, then any partial runes at the end of b
-// should be processed, and nb == len(b) at return.
-// Otherwise, partial runes are left behind and
-// nb may be up to utf8.UTFMax-1 bytes short of len(b).
-func cvttorunes(b []byte, r []rune, eof bool) (nb, nr int, nulls bool) {
-	b0 := b
-	for len(b) > 0 && (eof || len(b) >= utf8.UTFMax || utf8.FullRune(b)) {
-		rr, w := utf8.DecodeRune(b)
-		if rr == 0 {
-			nulls = true
-		} else {
-			r[nr] = rr
-			nr++
-		}
-		b = b[w:]
-	}
-	nb = len(b0) - len(b)
-	return nb, nr, nulls
-}
 
 func error_(s string) {
 	log.Fatalf("acme: %s\n", s)
@@ -87,7 +51,7 @@ func errorwin1(dir []rune, incl [][]rune) *Window {
 		xfidlog(w, "new")
 	}
 	for i := len(incl) - 1; i >= 0; i-- {
-		winaddincl(w, runestrdup(incl[i]))
+		winaddincl(w, runes.Clone(incl[i]))
 	}
 	w.autoindent = globalautoindent
 	return w
@@ -120,17 +84,17 @@ func errorwin(md *Mntdir, owner rune) *Window {
 func errorwinforwin(w *Window) *Window {
 	t := &w.body
 	dir := dirname(t, nil)
-	if len(dir.r) == 1 && dir.r[0] == '.' { /* sigh */
-		dir.r = nil
+	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+		dir = nil
 	}
 	incl := make([][]rune, len(w.incl))
 	for i := range w.incl {
-		incl[i] = runestrdup(w.incl[i])
+		incl[i] = runes.Clone(w.incl[i])
 	}
 	owner := w.owner
 	winunlock(w)
 	for {
-		w = errorwin1(dir.r, incl)
+		w = errorwin1(dir, incl)
 		winlock(w, owner)
 		if w.col != nil {
 			break
@@ -219,18 +183,6 @@ func warning(md *Mntdir, format string, args ...interface{}) {
 	addwarningtext(md, []rune(fmt.Sprintf(format, args...)))
 }
 
-func runeeq(s1, s2 []rune) bool {
-	if len(s1) != len(s2) {
-		return false
-	}
-	for i := 0; i < len(s1); i++ {
-		if s1[i] != s2[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func min(a int, b int) int {
 	if a < b {
 		return a
@@ -243,34 +195,6 @@ func max(a int, b int) int {
 		return a
 	}
 	return b
-}
-
-func runetobyte(r []rune) string {
-	return string(r)
-}
-
-func bytetorune(s string) []rune {
-	r := make([]rune, utf8.RuneCountInString(s))
-	_, nr, _ := cvttorunes([]byte(s), r, true) // TODO avoid alloc
-	return r[:nr]
-}
-
-func isalnum(c rune) bool {
-	/*
-	 * Hard to get absolutely right.  Use what we know about ASCII
-	 * and assume anything above the Latin control characters is
-	 * potentially an alphanumeric.
-	 */
-	if c <= ' ' {
-		return false
-	}
-	if 0x7F <= c && c <= 0xA0 {
-		return false
-	}
-	if strings.ContainsRune("!\"#$%&'()*+,-./:;<=>?@[\\]^`{|}~", c) {
-		return false
-	}
-	return true
 }
 
 func rgetc(v interface{}, n int) rune {
@@ -287,20 +211,6 @@ func tgetc(a interface{}, n int) rune {
 		return 0
 	}
 	return textreadc(t, n)
-}
-
-func skipbl(r []rune) []rune {
-	for len(r) > 0 && (r[0] == ' ' || r[0] == '\t' || r[0] == '\n') {
-		r = r[1:]
-	}
-	return r
-}
-
-func findbl(r []rune) []rune {
-	for len(r) > 0 && r[0] != ' ' && r[0] != '\t' && r[0] != '\n' {
-		r = r[1:]
-	}
-	return r
 }
 
 func savemouse(w *Window) {
@@ -320,10 +230,6 @@ func restoremouse(w *Window) int {
 
 func clearmouse() {
 	mousew = nil
-}
-
-func estrdup(s string) string {
-	return s
 }
 
 /*

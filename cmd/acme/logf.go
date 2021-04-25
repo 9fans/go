@@ -162,7 +162,7 @@ func xfidlog(w *Window, op string) {
 	}
 
 	f := w.body.file
-	name := runetobyte(f.name)
+	name := string(f.name)
 	eventlog.ev = append(eventlog.ev, fmt.Sprintf("%d %s %s\n", w.id, op, name))
 	eventlog.r.Broadcast()
 	eventlog.lk.Unlock()

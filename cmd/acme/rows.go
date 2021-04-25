@@ -381,7 +381,7 @@ func rowdump(row *Row, file *string) {
 			}
 			var a string
 			if len(t.file.name) != 0 {
-				a = runetobyte(t.file.name)
+				a = string(t.file.name)
 			}
 			var dumped bool
 			if t.file.dumpid != 0 {
@@ -587,7 +587,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			case 'c':
 				l = l[:len(l)-1]
 				i = atoi(l[1:12])
-				r = bytetorune(l[1*12:])
+				r = []rune(l[1*12:])
 				ns = -1
 				for n = 0; n < len(r); n++ {
 					if r[n] == '/' {
@@ -602,7 +602,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 				continue
 			case 'w':
 				l = l[:len(l)-1]
-				r = bytetorune(l[2:])
+				r = []rune(l[2:])
 				ns = -1
 				for n = 0; n < len(r); n++ {
 					if r[n] == '/' {
@@ -637,12 +637,12 @@ func rowload(row *Row, file *string, initing bool) bool {
 			l = l[:len(l)-1]
 			if len(l) == 0 {
 				if home == "" {
-					r = bytetorune("./")
+					r = []rune("./")
 				} else {
-					r = bytetorune(home + "/")
+					r = []rune(home + "/")
 				}
 			} else {
-				r = bytetorune(l)
+				r = []rune(l)
 			}
 			l, err = rdline(b, &line) /* command */
 			if err != nil {
@@ -677,7 +677,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 		}
 		var fontr []rune
 		if fontname != "" {
-			fontr = bytetorune(fontname)
+			fontr = []rune(fontname)
 		}
 		i = atoi(l[1+0*12:])
 		j = atoi(l[1+1*12:])
@@ -718,7 +718,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			}
 		}
 		l = string(lb)
-		r = bytetorune(l[5*12:])
+		r = []rune(l[5*12:])
 		ns = -1
 		for n = 0; n < len(r); n++ {
 			if r[n] == '/' {

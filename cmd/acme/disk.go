@@ -22,6 +22,8 @@ import (
 	"os"
 	"reflect"
 	"unsafe"
+
+	"9fans.net/go/cmd/acme/internal/runes"
 )
 
 var blist *Block
@@ -53,7 +55,7 @@ func ntosize(n int, ip *int) int {
 	if ip != nil {
 		*ip = size / Blockincr
 	}
-	return size * RUNESIZE
+	return size * runes.RuneSize
 }
 
 func disknewblock(d *Disk, n int) *Block {
@@ -94,8 +96,8 @@ func runedata(r []rune) []byte {
 	var b []byte
 	h := (*reflect.SliceHeader)(unsafe.Pointer(&b))
 	h.Data = uintptr(unsafe.Pointer(&r[0]))
-	h.Len = RUNESIZE * len(r)
-	h.Cap = RUNESIZE * cap(r)
+	h.Len = runes.RuneSize * len(r)
+	h.Cap = runes.RuneSize * cap(r)
 	return b
 }
 
@@ -109,7 +111,7 @@ func diskwrite(d *Disk, bp **Block, r []rune) {
 		b = disknewblock(d, n)
 		*bp = b
 	}
-	if nw, err := d.fd.WriteAt(runedata(r), b.addr); nw != n*RUNESIZE || err != nil {
+	if nw, err := d.fd.WriteAt(runedata(r), b.addr); nw != n*runes.RuneSize || err != nil {
 		if err == nil {
 			err = io.ErrShortWrite
 		}
@@ -125,7 +127,7 @@ func diskread(d *Disk, b *Block, r []rune) {
 	}
 
 	ntosize(b.u.n, nil) /* called only for sanity check on Maxblock */
-	if nr, err := d.fd.ReadAt(runedata(r), b.addr); nr != n*RUNESIZE || err != nil {
+	if nr, err := d.fd.ReadAt(runedata(r), b.addr); nr != n*runes.RuneSize || err != nil {
 		error_("read error from temp file")
 	}
 }

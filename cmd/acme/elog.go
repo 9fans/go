@@ -20,6 +20,8 @@ import (
 	"os"
 	"reflect"
 	"unsafe"
+
+	"9fans.net/go/cmd/acme/internal/runes"
 )
 
 var Wsequence = "warning: changes out of sequence\n"
@@ -43,7 +45,7 @@ type Buflog struct {
 }
 
 const (
-	Buflogsize = int(unsafe.Sizeof(Buflog{})) / RUNESIZE
+	Buflogsize = int(unsafe.Sizeof(Buflog{})) / runes.RuneSize
 )
 
 /*

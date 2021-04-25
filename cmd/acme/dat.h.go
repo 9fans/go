@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
@@ -40,16 +41,6 @@ const (
 const Blockincr = 256
 const Maxblock = 8 * 1024
 const NRange = 10
-const Infinity = 0x7FFFFFFF
-
-type Runestr struct { // TODO(rsc): replace with []rune
-	r []rune
-}
-
-type Range struct {
-	q0 int
-	q1 int
-}
 
 type Block struct {
 	addr int64
@@ -144,11 +135,11 @@ type Window struct {
 	autoindent  bool
 	showdel     bool
 	id          int
-	addr        Range
-	limit       Range
+	addr        runes.Range
+	limit       runes.Range
 	nopen       [QMAX]uint8
 	nomark      bool
-	wrselrange  Range
+	wrselrange  runes.Range
 	rdselfd     *os.File
 	col         *Column
 	eventx      *Xfid
@@ -256,7 +247,7 @@ func decref(p *uint32) uint32 {
 }
 
 type Rangeset struct {
-	r [NRange]Range
+	r [NRange]runes.Range
 }
 
 type Dirlist struct {
@@ -280,7 +271,7 @@ type Expand struct {
 const (
 	BUFSIZE   = Maxblock
 	RUNESIZE  = int(unsafe.Sizeof(rune(0)))
-	RBUFSIZE  = BUFSIZE / RUNESIZE
+	RBUFSIZE  = BUFSIZE / runes.RuneSize
 	EVENTSIZE = 256
 )
 

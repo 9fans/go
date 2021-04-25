@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -205,8 +206,8 @@ func readfile(c *Column, s string) {
 	} else {
 		rb = []rune(s)
 	}
-	rs := cleanrname(runestr(rb))
-	winsetname(w, rs.r)
+	rs := runes.CleanPath(rb)
+	winsetname(w, rs)
 	textload(&w.body, 0, s, true)
 	w.body.file.mod = false
 	w.dirty = false
@@ -584,7 +585,7 @@ func waitthread() {
 			found := false
 			for c = command; c != nil; c = c.next {
 				/* -1 for blank */
-				if runeeq(c.name[:len(c.name)-1], cmd) {
+				if runes.Equal(c.name[:len(c.name)-1], cmd) {
 					/* TODO postnote
 					if postnote(PNGROUP, c.pid, "kill") < 0 {
 						warning(nil, "kill %S: %r\n", cmd)
@@ -979,7 +980,7 @@ func acmegetsnarf() {
 	buf = buf[:n]
 
 	r := make([]rune, utf8.RuneCount(buf))
-	_, nr, _ := cvttorunes(buf, r, true)
+	_, nr, _ := runes.Convert(buf, r, true)
 	bufreset(&snarfbuf)
 	bufinsert(&snarfbuf, 0, r[:nr])
 }

@@ -30,6 +30,8 @@ import (
 	"os"
 	"reflect"
 	"unsafe"
+
+	"9fans.net/go/cmd/acme/internal/runes"
 )
 
 type Undo struct {
@@ -40,7 +42,7 @@ type Undo struct {
 	n   int
 }
 
-const Undosize = int(unsafe.Sizeof(Undo{})) / RUNESIZE
+const Undosize = int(unsafe.Sizeof(Undo{})) / runes.RuneSize
 
 func fileaddtext(f *File, t *Text) *File {
 	if f == nil {
@@ -145,7 +147,7 @@ func filesetname(f *File, name []rune) {
 	if f.seq > 0 {
 		fileunsetname(f, &f.delta)
 	}
-	f.name = runestrdup(name)
+	f.name = runes.Clone(name)
 	f.unread = true
 }
 

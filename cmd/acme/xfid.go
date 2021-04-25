@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/plan9"
 )
 
@@ -38,17 +39,17 @@ var Ebadevent string = "bad event syntax"
 /* extern var Eperm [unknown]C.char */
 
 func clampaddr(w *Window) {
-	if w.addr.q0 < 0 {
-		w.addr.q0 = 0
+	if w.addr.Pos < 0 {
+		w.addr.Pos = 0
 	}
-	if w.addr.q1 < 0 {
-		w.addr.q1 = 0
+	if w.addr.End < 0 {
+		w.addr.End = 0
 	}
-	if w.addr.q0 > w.body.file.b.nc {
-		w.addr.q0 = w.body.file.b.nc
+	if w.addr.Pos > w.body.file.b.nc {
+		w.addr.Pos = w.body.file.b.nc
 	}
-	if w.addr.q1 > w.body.file.b.nc {
-		w.addr.q1 = w.body.file.b.nc
+	if w.addr.End > w.body.file.b.nc {
+		w.addr.End = w.body.file.b.nc
 	}
 }
 
@@ -102,8 +103,8 @@ func xfidopen(x *Xfid) {
 			tmp30 := w.nopen[q]
 			w.nopen[q]++
 			if tmp30 == 0 {
-				w.addr = range_(0, 0)
-				w.limit = range_(-1, -1)
+				w.addr = runes.Rng(0, 0)
+				w.limit = runes.Rng(-1, -1)
 			}
 		case QWdata,
 			QWxdata:
@@ -162,7 +163,7 @@ func xfidopen(x *Xfid) {
 			seq++
 			filemark(t.file)
 			cut(t, t, nil, false, true, nil)
-			w.wrselrange = range_(t.q1, t.q1)
+			w.wrselrange = runes.Rng(t.q1, t.q1)
 			w.nomark = true
 		case QWeditout:
 			if editing == Inactive {
@@ -175,7 +176,7 @@ func xfidopen(x *Xfid) {
 				respond(x, &fc, Einuse)
 				return
 			}
-			w.wrselrange = range_(t.q1, t.q1)
+			w.wrselrange = runes.Rng(t.q1, t.q1)
 		}
 		winunlock(w)
 	} else {
@@ -271,7 +272,7 @@ func xfidclose(x *Xfid) {
 			w.nomark = false
 			t = &w.body
 			/* before: only did this if !w->noscroll, but that didn't seem right in practice */
-			textshow(t, min(w.wrselrange.q0, t.file.b.nc), min(w.wrselrange.q1, t.file.b.nc), true)
+			textshow(t, min(w.wrselrange.Pos, t.file.b.nc), min(w.wrselrange.End, t.file.b.nc), true)
 			textscrdraw(t)
 		case QWeditout:
 			w.editoutlk.Unlock()
@@ -324,7 +325,7 @@ func xfidread(x *Xfid) {
 	case QWaddr:
 		textcommit(&w.body, true)
 		clampaddr(w)
-		buf = []byte(fmt.Sprintf("%11d %11d ", w.addr.q0, w.addr.q1))
+		buf = []byte(fmt.Sprintf("%11d %11d ", w.addr.Pos, w.addr.End))
 		goto Readbuf
 
 	case QWbody:
@@ -339,20 +340,20 @@ func xfidread(x *Xfid) {
 
 	case QWdata:
 		/* BUG: what should happen if q1 > q0? */
-		if w.addr.q0 > w.body.file.b.nc {
+		if w.addr.Pos > w.body.file.b.nc {
 			respond(x, &fc, Eaddr)
 			break
 		}
-		w.addr.q0 += xfidruneread(x, &w.body, w.addr.q0, w.body.file.b.nc)
-		w.addr.q1 = w.addr.q0
+		w.addr.Pos += xfidruneread(x, &w.body, w.addr.Pos, w.body.file.b.nc)
+		w.addr.End = w.addr.Pos
 
 	case QWxdata:
 		/* BUG: what should happen if q1 > q0? */
-		if w.addr.q0 > w.body.file.b.nc {
+		if w.addr.Pos > w.body.file.b.nc {
 			respond(x, &fc, Eaddr)
 			break
 		}
-		w.addr.q0 += xfidruneread(x, &w.body, w.addr.q0, w.addr.q1)
+		w.addr.Pos += xfidruneread(x, &w.body, w.addr.Pos, w.addr.End)
 
 	case QWtag:
 		xfidutfread(x, &w.tag, w.tag.file.b.nc, QWtag)
@@ -408,7 +409,7 @@ func fullrunewrite(x *Xfid) []rune {
 		x.f.rpart = x.f.rpart[:0]
 	}
 	r := make([]rune, cnt)
-	nb, nr, _ := cvttorunes(x.fcall.Data, r, false)
+	nb, nr, _ := runes.Convert(x.fcall.Data, r, false)
 	r = r[:nr]
 	/* approach end of buffer */
 	for utf8.FullRune(x.fcall.Data[nb:cnt]) {
@@ -449,7 +450,7 @@ func xfidwrite(x *Xfid) {
 		respond(x, &fc, "")
 
 	case QWaddr:
-		r := bytetorune(string(x.fcall.Data))
+		r := []rune(string(x.fcall.Data))
 		t := &w.body
 		wincommit(w, t)
 		eval := true
@@ -472,7 +473,7 @@ func xfidwrite(x *Xfid) {
 		r := fullrunewrite(x)
 		var err error
 		if w != nil {
-			err = edittext(w, w.wrselrange.q1, r)
+			err = edittext(w, w.wrselrange.End, r)
 		} else {
 			err = edittext(nil, 0, r)
 		}
@@ -490,21 +491,21 @@ func xfidwrite(x *Xfid) {
 		a := w.addr
 		t := &w.body
 		wincommit(w, t)
-		if a.q0 > t.file.b.nc || a.q1 > t.file.b.nc {
+		if a.Pos > t.file.b.nc || a.End > t.file.b.nc {
 			respond(x, &fc, Eaddr)
 			break
 		}
 		r := make([]rune, len(x.fcall.Data))
-		_, nr, _ := cvttorunes(x.fcall.Data, r, true)
+		_, nr, _ := runes.Convert(x.fcall.Data, r, true)
 		r = r[:nr]
 		if !w.nomark {
 			seq++
 			filemark(t.file)
 		}
-		q0 := a.q0
-		if a.q1 > q0 {
-			textdelete(t, q0, a.q1, true)
-			w.addr.q1 = q0
+		q0 := a.Pos
+		if a.End > q0 {
+			textdelete(t, q0, a.End, true)
+			w.addr.End = q0
 		}
 		tq0 := t.q0
 		tq1 := t.q1
@@ -521,8 +522,8 @@ func xfidwrite(x *Xfid) {
 		}
 		textscrdraw(t)
 		winsettag(w)
-		w.addr.q0 += nr
-		w.addr.q1 = w.addr.q0
+		w.addr.Pos += nr
+		w.addr.End = w.addr.Pos
 		fc.Count = uint32(len(x.fcall.Data))
 		respond(x, &fc, "")
 
@@ -553,7 +554,7 @@ func xfidwrite(x *Xfid) {
 			wincommit(w, t)
 			var q0 int
 			if qid == QWwrsel {
-				q0 = w.wrselrange.q1
+				q0 = w.wrselrange.End
 				if q0 > t.file.b.nc {
 					q0 = t.file.b.nc
 				}
@@ -577,7 +578,7 @@ func xfidwrite(x *Xfid) {
 			}
 			winsettag(w)
 			if qid == QWwrsel {
-				w.wrselrange.q1 += nr
+				w.wrselrange.End += nr
 			}
 		}
 		fc.Count = uint32(len(x.fcall.Data))
@@ -645,7 +646,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			pp = pp[:i]
 			p = p[i+1:]
 			r := make([]rune, len(pp))
-			_, nr, nulls := cvttorunes([]byte(pp), r, true)
+			_, nr, nulls := runes.Convert([]byte(pp), r, true)
 			if nulls {
 				err = "nulls in file name"
 				break
@@ -672,7 +673,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			pp = pp[:i]
 			p = p[i+1:]
 			r := make([]rune, len(pp))
-			_, nr, nulls := cvttorunes([]byte(pp), r, true)
+			_, nr, nulls := runes.Convert([]byte(pp), r, true)
 			if nulls {
 				err = "nulls in font string"
 				break
@@ -690,13 +691,13 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			pp = pp[:i]
 			p = p[i+1:]
 			r := make([]rune, len(pp))
-			_, nr, nulls := cvttorunes([]byte(pp), r, true)
+			_, nr, nulls := runes.Convert([]byte(pp), r, true)
 			if nulls {
 				err = "nulls in dump string"
 				break
 			}
 			r = r[:nr]
-			w.dumpstr = runetobyte(r)
+			w.dumpstr = string(r)
 		} else if strings.HasPrefix(p, "dumpdir ") { /* set dump directory */
 			pp := p[8:]
 			p = p[8:]
@@ -708,13 +709,13 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			pp = pp[:i]
 			p = p[i+1:]
 			r := make([]rune, len(pp))
-			_, nr, nulls := cvttorunes([]byte(pp), r, true)
+			_, nr, nulls := runes.Convert([]byte(pp), r, true)
 			if nulls {
 				err = "nulls in dump string"
 				break
 			}
 			r = r[:nr]
-			w.dumpdir = runetobyte(r)
+			w.dumpdir = string(r)
 		} else if strings.HasPrefix(p, "delete") { /* delete for sure */
 			colclose(w.col, w, true)
 			p = p[6:]
@@ -734,20 +735,20 @@ func xfidctlwrite(x *Xfid, w *Window) {
 		} else if strings.HasPrefix(p, "dot=addr") { /* set dot */
 			textcommit(&w.body, true)
 			clampaddr(w)
-			w.body.q0 = w.addr.q0
-			w.body.q1 = w.addr.q1
+			w.body.q0 = w.addr.Pos
+			w.body.q1 = w.addr.End
 			textsetselect(&w.body, w.body.q0, w.body.q1)
 			settag = true
 			p = p[8:]
 		} else if strings.HasPrefix(p, "addr=dot") { /* set addr */
-			w.addr.q0 = w.body.q0
-			w.addr.q1 = w.body.q1
+			w.addr.Pos = w.body.q0
+			w.addr.End = w.body.q1
 			p = p[8:]
 		} else if strings.HasPrefix(p, "limit=addr") { /* set limit */
 			textcommit(&w.body, true)
 			clampaddr(w)
-			w.limit.q0 = w.addr.q0
-			w.limit.q1 = w.addr.q1
+			w.limit.Pos = w.addr.Pos
+			w.limit.End = w.addr.End
 			p = p[10:]
 		} else if strings.HasPrefix(p, "nomark") { /* turn off automatic marking */
 			w.nomark = true

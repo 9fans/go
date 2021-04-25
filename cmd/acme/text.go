@@ -23,6 +23,7 @@ import (
 	"sort"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -243,7 +244,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 				if dir.IsDir() {
 					name += "/"
 				}
-				dl.r = bytetorune(name)
+				dl.r = []rune(name)
 				dl.wid = t.fr.Font.StringWidth(name)
 				dlp = append(dlp, dl)
 			}
@@ -252,7 +253,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 			}
 		}
 		sort.Slice(dlp, func(i, j int) bool {
-			return runesCmp(dlp[i].r, dlp[j].r) < 0
+			return runes.Compare(dlp[i].r, dlp[j].r) < 0
 		})
 		t.w.dlp = dlp
 		textcolumnate(t, dlp)
@@ -546,7 +547,7 @@ func textbswidth(t *Text, c rune) int {
 			break
 		}
 		if c == 0x17 {
-			eq := isalnum(r)
+			eq := runes.IsAlphaNum(r)
 			if eq && skipping { /* found one; stop skipping */
 				skipping = false
 			} else if !eq && !skipping {
@@ -594,27 +595,27 @@ func textcomplete(t *Text) []rune {
 		path_[i] = textreadc(t, q)
 		q++
 	}
-	var dir Runestr
+	var dir []rune
 	/* is path rooted? if not, we need to make it relative to window path */
 	if npath > 0 && path_[0] == '/' {
-		dir = runestr(path_)
+		dir = path_
 	} else {
 		dir = dirname(t, nil)
 		tmp := make([]rune, 200)
-		if len(dir.r)+1+npath > len(tmp) {
+		if len(dir)+1+npath > len(tmp) {
 			return nil
 		}
-		if len(dir.r) == 0 {
-			dir.r = runestrdup(Ldot)
+		if len(dir) == 0 {
+			dir = runes.Clone(Ldot)
 		}
-		copy(tmp, dir.r)
-		tmp[len(dir.r)] = '/'
-		copy(tmp[len(dir.r)+1:], path_)
-		dir.r = tmp
-		dir = cleanrname(dir)
+		copy(tmp, dir)
+		tmp[len(dir)] = '/'
+		copy(tmp[len(dir)+1:], path_)
+		dir = tmp
+		dir = runes.CleanPath(dir)
 	}
 
-	c, err := complete(string(dir.r), string(str))
+	c, err := complete(string(dir), string(str))
 	if err != nil {
 		warning(nil, "error attempting completion: %v\n", err)
 		return nil
@@ -623,14 +624,14 @@ func textcomplete(t *Text) []rune {
 
 	if !c.advance {
 		sep := ""
-		if len(dir.r) > 0 && dir.r[len(dir.r)-1] != '/' {
+		if len(dir) > 0 && dir[len(dir)-1] != '/' {
 			sep = "/"
 		}
 		more := ""
 		if c.nmatch == 0 {
 			more = ": no matches in:"
 		}
-		warning(nil, "%s%s%s*%s\n", string(dir.r), sep, string(str), more)
+		warning(nil, "%s%s%s*%s\n", string(dir), sep, string(str), more)
 		for i = 0; i < len(c.filename); i++ {
 			warning(nil, " %s\n", c.filename[i])
 		}
@@ -1390,7 +1391,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		} else {
 			c = textreadc(t, q-1)
 		}
-		pi := indexRune(l, c)
+		pi := runes.IndexRune(l, c)
 		if pi >= 0 {
 			if textclickmatch(t, c, r[pi], 1, &q) {
 				if c != '\n' {
@@ -1406,7 +1407,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		} else {
 			c = textreadc(t, q)
 		}
-		pi = indexRune(r, c)
+		pi = runes.IndexRune(r, c)
 		if pi >= 0 {
 			if textclickmatch(t, c, l[pi], -1, &q) {
 				*q1 = *q0
@@ -1423,11 +1424,11 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 	}
 
 	/* try filling out word to right */
-	for *q1 < t.file.b.nc && isalnum(textreadc(t, *q1)) {
+	for *q1 < t.file.b.nc && runes.IsAlphaNum(textreadc(t, *q1)) {
 		(*q1)++
 	}
 	/* try filling out word to left */
-	for *q0 > 0 && isalnum(textreadc(t, *q0-1)) {
+	for *q0 > 0 && runes.IsAlphaNum(textreadc(t, *q0-1)) {
 		(*q0)--
 	}
 }

@@ -2,6 +2,8 @@
 
 package main
 
+import "9fans.net/go/cmd/acme/internal/runes"
+
 type String struct {
 	r []rune
 }
@@ -17,7 +19,7 @@ type Addr struct {
 }
 
 type Address struct {
-	r Range
+	r runes.Range
 	f *File
 }
 

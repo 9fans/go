@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"runtime"
 	"unicode/utf8"
+
+	"9fans.net/go/cmd/acme/internal/runes"
 )
 
 // var sel Rangeset - in ecmd.go
@@ -495,7 +497,7 @@ func addinst(l []Ilist, inst *Inst, sep *Rangeset) int {
 	p := &l[i]
 	for p.inst != nil {
 		if p.inst == inst {
-			if sep.r[0].q0 < p.se.r[0].q1 {
+			if sep.r[0].Pos < p.se.r[0].End {
 				p.se = *sep /* this would be bug */
 			}
 			return 0 /* It's already there */
@@ -525,7 +527,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 	}
 	list[1][0].inst = nil
 	list[0][0].inst = list[1][0].inst
-	sel.r[0].q0 = -1
+	sel.r[0].Pos = -1
 	var nc int
 	if t != nil {
 		nc = t.file.b.nc
@@ -544,7 +546,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				2:
 				break
 			case 1: /* expired; wrap to beginning */
-				if sel.r[0].q0 >= 0 || eof != Infinity {
+				if sel.r[0].Pos >= 0 || eof != runes.Infinity {
 					goto Return
 				}
 				list[1][0].inst = nil
@@ -556,7 +558,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 			}
 			c = 0
 		} else {
-			if ((wrapped != 0 && p >= startp) || sel.r[0].q0 > 0) && nnl == 0 {
+			if ((wrapped != 0 && p >= startp) || sel.r[0].Pos > 0) && nnl == 0 {
 				break
 			}
 			if t != nil {
@@ -575,9 +577,9 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 		nl[0].inst = nil
 		ntl := nnl
 		nnl = 0
-		if sel.r[0].q0 < 0 && (wrapped == 0 || p < startp || startp == eof) {
+		if sel.r[0].Pos < 0 && (wrapped == 0 || p < startp || startp == eof) {
 			/* Add first instruction to this list */
-			sempty.r[0].q0 = p
+			sempty.r[0].Pos = p
 			if addinst(tl, startinst, &sempty) != 0 {
 				ntl++
 				if ntl >= NLIST {
@@ -599,13 +601,13 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				}
 			case LBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].q0 = p
+					tl[tlp].se.r[inst.subid].Pos = p
 				}
 				inst = inst.next
 				goto Switchstmt
 			case RBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].q1 = p
+					tl[tlp].se.r[inst.subid].End = p
 				}
 				inst = inst.next
 				goto Switchstmt
@@ -643,7 +645,7 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 				inst = inst.next
 				goto Switchstmt
 			case END: /* Match! */
-				tl[tlp].se.r[0].q1 = p
+				tl[tlp].se.r[0].End = p
 				newmatch(&tl[tlp].se)
 			}
 			continue
@@ -660,16 +662,16 @@ func rxexecute(t *Text, r []rune, startp int, eof int, rp *Rangeset) bool {
 	}
 Return:
 	*rp = sel
-	return sel.r[0].q0 >= 0
+	return sel.r[0].Pos >= 0
 
 Overflow:
 	warning(nil, "regexp list overflow\n")
-	sel.r[0].q0 = -1
+	sel.r[0].Pos = -1
 	goto Return
 }
 
 func newmatch(sp *Rangeset) {
-	if sel.r[0].q0 < 0 || sp.r[0].q0 < sel.r[0].q0 || (sp.r[0].q0 == sel.r[0].q0 && sp.r[0].q1 > sel.r[0].q1) {
+	if sel.r[0].Pos < 0 || sp.r[0].Pos < sel.r[0].Pos || (sp.r[0].Pos == sel.r[0].Pos && sp.r[0].End > sel.r[0].End) {
 		sel = *sp
 	}
 }
@@ -685,7 +687,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 	}
 	list[1][0].inst = nil
 	list[0][0].inst = list[1][0].inst
-	sel.r[0].q0 = -1
+	sel.r[0].Pos = -1
 	/* Execute machine once for each character, including terminal NUL */
 	for ; ; p-- {
 	doloop:
@@ -698,7 +700,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				2:
 				break
 			case 1: /* expired; wrap to end */
-				if sel.r[0].q0 >= 0 {
+				if sel.r[0].Pos >= 0 {
 					goto Return
 				}
 				list[1][0].inst = nil
@@ -712,7 +714,7 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 			}
 			c = 0
 		} else {
-			if ((wrapped != 0 && p <= startp) || sel.r[0].q0 > 0) && nnl == 0 {
+			if ((wrapped != 0 && p <= startp) || sel.r[0].Pos > 0) && nnl == 0 {
 				break
 			}
 			c = textreadc(t, p-1)
@@ -727,10 +729,10 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 		nl[0].inst = nil
 		ntl := nnl
 		nnl = 0
-		if sel.r[0].q0 < 0 && (wrapped == 0 || p > startp) {
+		if sel.r[0].Pos < 0 && (wrapped == 0 || p > startp) {
 			/* Add first instruction to this list */
 			/* the minus is so the optimizations in addinst work */
-			sempty.r[0].q0 = -p
+			sempty.r[0].Pos = -p
 			if addinst(tl, bstartinst, &sempty) != 0 {
 				ntl++
 				if ntl >= NLIST {
@@ -752,13 +754,13 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				}
 			case LBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].q0 = p
+					tl[tlp].se.r[inst.subid].Pos = p
 				}
 				inst = inst.next
 				goto Switchstmt
 			case RBRA:
 				if inst.subid >= 0 {
-					tl[tlp].se.r[inst.subid].q1 = p
+					tl[tlp].se.r[inst.subid].End = p
 				}
 				inst = inst.next
 				goto Switchstmt
@@ -796,8 +798,8 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 				inst = inst.next
 				goto Switchstmt
 			case END: /* Match! */
-				tl[tlp].se.r[0].q0 = -tl[tlp].se.r[0].q0 /* minus sign */
-				tl[tlp].se.r[0].q1 = p
+				tl[tlp].se.r[0].Pos = -tl[tlp].se.r[0].Pos /* minus sign */
+				tl[tlp].se.r[0].End = p
 				bnewmatch(&tl[tlp].se)
 			}
 			continue
@@ -814,19 +816,19 @@ func rxbexecute(t *Text, startp int, rp *Rangeset) bool {
 	}
 Return:
 	*rp = sel
-	return sel.r[0].q0 >= 0
+	return sel.r[0].Pos >= 0
 
 Overflow:
 	warning(nil, "regexp list overflow\n")
-	sel.r[0].q0 = -1
+	sel.r[0].Pos = -1
 	goto Return
 }
 
 func bnewmatch(sp *Rangeset) {
-	if sel.r[0].q0 < 0 || sp.r[0].q0 > sel.r[0].q1 || (sp.r[0].q0 == sel.r[0].q1 && sp.r[0].q1 < sel.r[0].q0) {
+	if sel.r[0].Pos < 0 || sp.r[0].Pos > sel.r[0].End || (sp.r[0].Pos == sel.r[0].End && sp.r[0].End < sel.r[0].Pos) {
 		for i := 0; i < NRange; i++ { /* note the reversal; q0<=q1 */
-			sel.r[i].q0 = sp.r[i].q1
-			sel.r[i].q1 = sp.r[i].q0
+			sel.r[i].Pos = sp.r[i].End
+			sel.r[i].End = sp.r[i].Pos
 		}
 	}
 }

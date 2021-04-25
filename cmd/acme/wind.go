@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 )
@@ -319,13 +320,13 @@ var Lslashguide = []rune("/guide")
 
 func winsetname(w *Window, name []rune) {
 	t := &w.body
-	if runeeq(t.file.name, name) {
+	if runes.Equal(t.file.name, name) {
 		return
 	}
 	w.isscratch = false
-	if len(name) >= 6 && runeeq(Lslashguide, name[len(name)-6:]) {
+	if len(name) >= 6 && runes.Equal(Lslashguide, name[len(name)-6:]) {
 		w.isscratch = true
-	} else if len(name) >= 7 && runeeq(Lpluserrors, name[len(name)-7:]) {
+	} else if len(name) >= 7 && runes.Equal(Lpluserrors, name[len(name)-7:]) {
 		w.isscratch = true
 	}
 	filesetname(t.file, name)
@@ -383,12 +384,12 @@ func parsetag(w *Window, extra int) ([]rune, int) {
 	 * If we find " Del Snarf" in the left half of the tag
 	 * (before the pipe), that ends the file name.
 	 */
-	pipe := runesIndex(r, Lspacepipe)
-	p := runesIndex(r, Ltabpipe)
+	pipe := runes.Index(r, Lspacepipe)
+	p := runes.Index(r, Ltabpipe)
 	if p >= 0 && (pipe < 0 || p < pipe) {
 		pipe = p
 	}
-	p = runesIndex(r, Ldelsnarf)
+	p = runes.Index(r, Ldelsnarf)
 	var i int
 	if p >= 0 && (pipe < 0 || p < pipe) {
 		i = p
@@ -416,7 +417,7 @@ func winsettag1(w *Window) {
 		wincommit(w, &w.tag) /* check file name; also guarantees we can modify tag contents */
 	}
 	old, ii := parsetag(w, 0)
-	if !runeeq(old[:ii], w.body.file.name) {
+	if !runes.Equal(old[:ii], w.body.file.name) {
 		textdelete(&w.tag, 0, ii, true)
 		textinsert(&w.tag, 0, w.body.file.name, true)
 		old = make([]rune, w.tag.file.b.nc)
@@ -443,7 +444,7 @@ func winsettag1(w *Window) {
 		new_ = append(new_, Lget...)
 	}
 	new_ = append(new_, Lpipe...)
-	r := indexRune(old, '|')
+	r := runes.IndexRune(old, '|')
 	var k int
 	if r >= 0 {
 		k = r + 1
@@ -457,7 +458,7 @@ func winsettag1(w *Window) {
 	/* replace tag if the new one is different */
 	resize := 0
 	var n int
-	if !runeeq(new_, old[:k]) {
+	if !runes.Equal(new_, old[:k]) {
 		resize = 1
 		n = k
 		if n > len(new_) {
@@ -474,11 +475,11 @@ func winsettag1(w *Window) {
 		textdelete(&w.tag, j, k, true)
 		textinsert(&w.tag, j, new_[j:], true)
 		/* try to preserve user selection */
-		r = indexRune(old, '|')
+		r = runes.IndexRune(old, '|')
 		if r >= 0 {
 			bar := r
 			if q0 > bar {
-				bar = indexRune(new_, '|') - bar
+				bar = runes.IndexRune(new_, '|') - bar
 				w.tag.q0 = q0 + bar
 				w.tag.q1 = q1 + bar
 			}
@@ -523,7 +524,7 @@ func wincommit(w *Window, t *Text) {
 		return
 	}
 	r, i := parsetag(w, 0)
-	if !runeeq(r[:i], w.body.file.name) {
+	if !runes.Equal(r[:i], w.body.file.name) {
 		seq++
 		filemark(w.body.file)
 		w.body.file.mod = true
@@ -534,13 +535,13 @@ func wincommit(w *Window, t *Text) {
 }
 
 func winaddincl(w *Window, r []rune) {
-	a := runetobyte(r)
+	a := string(r)
 	info, err := os.Stat(a)
 	if err != nil {
 		if !strings.HasPrefix(a, "/") {
 			rs := dirname(&w.body, r)
-			r = rs.r
-			a = runetobyte(r)
+			r = rs
+			a = string(r)
 			info, err = os.Stat(a)
 		}
 		if err != nil {
@@ -554,7 +555,7 @@ func winaddincl(w *Window, r []rune) {
 	}
 	w.incl = append(w.incl, nil)
 	copy(w.incl[1:], w.incl)
-	w.incl[0] = runestrdup(r)
+	w.incl[0] = runes.Clone(r)
 }
 
 func winclean(w *Window, conservative bool) bool {

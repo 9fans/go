@@ -18,6 +18,8 @@ import (
 	"io"
 	"os"
 	"unicode/utf8"
+
+	"9fans.net/go/cmd/acme/internal/runes"
 )
 
 func sizecache(b *Buffer, n int) {
@@ -237,7 +239,7 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune)
 			h.Write(p[m : m+n])
 		}
 		m += n
-		nb, nr, nulls1 := cvttorunes(p[:m], r, err == io.EOF)
+		nb, nr, nulls1 := runes.Convert(p[:m], r, err == io.EOF)
 		if nulls1 {
 			*nulls = true
 		}
