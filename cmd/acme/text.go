@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/complete"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -617,31 +618,30 @@ func textcomplete(t *Text) []rune {
 		dir = runes.CleanPath(dir)
 	}
 
-	c, err := complete(string(dir), string(str))
+	c, err := complete.Complete(string(dir), string(str))
 	if err != nil {
 		alog.Printf("error attempting completion: %v\n", err)
 		return nil
 	}
-	defer freecompletion(c)
 
-	if !c.advance {
+	if !c.Progress {
 		sep := ""
 		if len(dir) > 0 && dir[len(dir)-1] != '/' {
 			sep = "/"
 		}
 		more := ""
-		if c.nmatch == 0 {
+		if c.NumMatch == 0 {
 			more = ": no matches in:"
 		}
 		alog.Printf("%s%s%s*%s\n", string(dir), sep, string(str), more)
-		for i = 0; i < len(c.filename); i++ {
-			alog.Printf(" %s\n", c.filename[i])
+		for i = 0; i < len(c.Files); i++ {
+			alog.Printf(" %s\n", c.Files[i])
 		}
 	}
 
 	var rp []rune
-	if c.advance {
-		rp = []rune(c.string)
+	if c.Progress {
+		rp = []rune(c.Text)
 	}
 
 	return rp

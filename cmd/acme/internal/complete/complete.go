@@ -1,6 +1,6 @@
 // libcomplete/complete.c
 
-package main
+package complete
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 )
 
 type Completion struct {
-	advance  bool     /* whether forward progress has been made */
-	complete bool     /* whether the completion now represents a file or directory */
-	string   string   /* the string to advance, suffixed " " or "/" for file or directory */
-	nmatch   int      /* number of files that matched */
-	filename []string /* files returned */
+	Progress bool     /* whether forward progress has been made */
+	Done     bool     /* whether the completion now represents a file or directory */
+	Text     string   /* the string to advance, suffixed " " or "/" for file or directory */
+	NumMatch int      /* number of files that matched */
+	Files    []string /* files returned */
 }
 
-func complete(dir, s string) (*Completion, error) {
+func Complete(dir, s string) (*Completion, error) {
 	if strings.Contains(s, "/") {
 		return nil, fmt.Errorf("slash character in name argument to complete")
 	}
@@ -36,26 +36,26 @@ func complete(dir, s string) (*Completion, error) {
 			if info.IsDir() {
 				suffix = "/"
 			}
-			c.filename = append(c.filename, name+suffix)
+			c.Files = append(c.Files, name+suffix)
 		}
 	}
 
-	if len(c.filename) > 0 {
+	if len(c.Files) > 0 {
 		/* report interesting results */
 		/* trim length back to longest common initial string */
-		minlen := len(c.filename[0])
-		for i := 1; i < len(c.filename); i++ {
-			minlen = longestprefixlength(c.filename[0], c.filename[i], minlen)
+		minlen := len(c.Files[0])
+		for i := 1; i < len(c.Files); i++ {
+			minlen = longestprefixlength(c.Files[0], c.Files[i], minlen)
 		}
 
 		/* build the answer */
-		c.complete = len(c.filename) == 1
-		c.advance = c.complete || minlen > len(s)
-		c.string = c.filename[0][len(s):minlen]
-		if c.complete && !strings.HasSuffix(c.string, "/") {
-			c.string += " "
+		c.Done = len(c.Files) == 1
+		c.Progress = c.Done || minlen > len(s)
+		c.Text = c.Files[0][len(s):minlen]
+		if c.Done && !strings.HasSuffix(c.Text, "/") {
+			c.Text += " "
 		}
-		c.nmatch = len(c.filename)
+		c.NumMatch = len(c.Files)
 	} else {
 		/* no match, so return all possible strings */
 		for _, info := range dirs {
@@ -63,7 +63,7 @@ func complete(dir, s string) (*Completion, error) {
 			if info.IsDir() {
 				suffix = "/"
 			}
-			c.filename = append(c.filename, info.Name()+suffix)
+			c.Files = append(c.Files, info.Name()+suffix)
 		}
 	}
 	return c, nil
@@ -80,7 +80,4 @@ func longestprefixlength(a, b string, n int) int {
 		i += wa
 	}
 	return i
-}
-
-func freecompletion(c *Completion) {
 }
