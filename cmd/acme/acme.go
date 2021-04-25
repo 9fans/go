@@ -888,7 +888,7 @@ func iconinit() {
 	}
 
 	r := draw.Rect(0, 0, Scrollwid()+ButtonBorder(), font.Height+1)
-	if button != nil && r.Eq(button.R) {
+	if button != nil && r == button.R {
 		return
 	}
 

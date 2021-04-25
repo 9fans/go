@@ -186,14 +186,14 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	r1.Max.Y = min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 
 	/* If needed, recompute number of lines in tag. */
-	if !safe || !w.tagsafe || !w.tag.all.Eq(r1) {
+	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		w.taglines = wintaglines(w, r)
 		r1.Max.Y = min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 	}
 
 	/* If needed, resize & redraw tag. */
 	y := r1.Max.Y
-	if !safe || !w.tagsafe || !w.tag.all.Eq(r1) {
+	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		textresize(&w.tag, r1, true)
 		y = w.tag.fr.R.Max.Y
 		windrawbutton(w)
@@ -218,7 +218,7 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	/* If needed, resize & redraw body. */
 	r1 = r
 	r1.Min.Y = y
-	if !safe || !w.body.all.Eq(r1) {
+	if !safe || !(w.body.all == r1) {
 		oy := y
 		if y+1+w.body.fr.Font.Height <= r.Max.Y { /* room for one line */
 			r1.Min.Y = y

@@ -199,7 +199,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		s := skipbl(r[:q1-q0])
 		s = findbl(s)
 		s = skipbl(s)
-		e.fn(t, seltext, argt, e.flag1, e.flag2, s[:n])
+		e.fn(t, seltext, argt, e.flag1, e.flag2, s)
 		return
 	}
 
