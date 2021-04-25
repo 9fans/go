@@ -21,17 +21,11 @@ import (
 
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
-	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 )
 
-func bufloader(v interface{}, q0 int, r []rune) int {
-	v.(*disk.Buffer).Insert(q0, r)
-	return len(r)
-}
-
-func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune) int, arg interface{}, h io.Writer) int {
+func loadfile(fd *os.File, q0 int, nulls *bool, f func(int, []rune) int, h io.Writer) int {
 	p := make([]byte, bufs.Len+utf8.UTFMax+1)
 	r := make([]rune, bufs.Len)
 	m := 0
@@ -58,14 +52,21 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(interface{}, int, []rune)
 		}
 		copy(p, p[nb:m])
 		m -= nb
-		q1 += f(arg, q1, r[:nr])
+		q1 += f(q1, r[:nr])
 	}
 	return q1 - q0
 }
 
-func bufload(b *disk.Buffer, q0 int, fd *os.File, nulls *bool, h io.Writer) int {
-	if q0 > b.Len() {
-		util.Fatal("internal error: bufload")
+func fileloader(f *File) func(pos int, data []rune) int {
+	return func(pos int, data []rune) int {
+		f.Insert(pos, data)
+		return len(data)
 	}
-	return loadfile(fd, q0, nulls, bufloader, b, h)
+}
+
+func fileload1(f *File, pos int, fd *os.File, nulls *bool, h io.Writer) int {
+	if pos > f.Len() {
+		util.Fatal("internal error: fileload1")
+	}
+	return loadfile(fd, pos, nulls, fileloader(f), h)
 }

@@ -339,7 +339,7 @@ func rowdump(row *Row, file *string) {
 		}
 	}
 	m := util.Min(bufs.RuneLen, row.tag.Len())
-	row.tag.file.b.Read(0, r[:m])
+	row.tag.file.Read(0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
 		n++
@@ -348,7 +348,7 @@ func rowdump(row *Row, file *string) {
 	for i = 0; i < len(row.col); i++ {
 		c = row.col[i]
 		m = util.Min(bufs.RuneLen, c.tag.Len())
-		c.tag.file.b.Read(0, r[:m])
+		c.tag.file.Read(0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
 			n++
@@ -383,8 +383,8 @@ func rowdump(row *Row, file *string) {
 				fontname = t.reffont.f.Name
 			}
 			var a string
-			if len(t.file.name) != 0 {
-				a = string(t.file.name)
+			if len(t.file.Name()) != 0 {
+				a = string(t.file.Name())
 			}
 			var dumped bool
 			if t.file.dumpid != 0 {
@@ -404,7 +404,7 @@ func rowdump(row *Row, file *string) {
 			}
 			b.WriteString(winctlprint(w, false))
 			m = util.Min(bufs.RuneLen, w.tag.Len())
-			w.tag.file.b.Read(0, r[:m])
+			w.tag.file.Read(0, r[:m])
 			n = 0
 			for n < m {
 				start := n
@@ -426,7 +426,7 @@ func rowdump(row *Row, file *string) {
 					if n > bufs.Len/utf8.UTFMax {
 						n = bufs.Len / utf8.UTFMax
 					}
-					t.file.b.Read(q0, r[:n])
+					t.file.Read(q0, r[:n])
 					fmt.Fprintf(b, "%s", string(r[:n]))
 					q0 += n
 				}
@@ -766,7 +766,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			}
 			textload(&w.body, 0, tmp, true)
 			os.Remove(tmp)
-			w.body.file.mod = true
+			w.body.file.SetMod(true)
 			for n = 0; n < len(w.body.file.text); n++ {
 				w.body.file.text[n].w.dirty = true
 			}

@@ -259,7 +259,7 @@ func colsort(c *Column) {
 	wp := make([]*Window, len(c.w))
 	copy(wp, c.w)
 	sort.Slice(wp, func(i, j int) bool {
-		return runes.Compare(wp[i].body.file.name, wp[j].body.file.name) < 0
+		return runes.Compare(wp[i].body.file.Name(), wp[j].body.file.Name()) < 0
 	})
 
 	for i := 0; i < len(c.w); i++ {

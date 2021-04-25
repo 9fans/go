@@ -25,6 +25,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
+	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/plan9"
@@ -153,7 +154,7 @@ func xfidopen(x *Xfid) {
 				if n > bufs.Len/utf8.UTFMax {
 					n = bufs.Len / utf8.UTFMax
 				}
-				t.file.b.Read(q0, r[:n])
+				t.file.Read(q0, r[:n])
 				s := []byte(string(r[:n])) // TODO(rsc)
 				if _, err := w.rdselfd.Write(s); err != nil {
 					alog.Printf("can't write temp file for pipe command %v\n", err)
@@ -165,8 +166,8 @@ func xfidopen(x *Xfid) {
 			bufs.FreeRunes(r)
 		case QWwrsel:
 			w.nopen[q]++
-			seq++
-			filemark(t.file)
+			file.Seq++
+			t.file.Mark()
 			cut(t, t, nil, false, true, nil)
 			w.wrselrange = runes.Rng(t.q1, t.q1)
 			w.nomark = true
@@ -480,8 +481,8 @@ func xfidwrite(x *Xfid) {
 		_, nr, _ := runes.Convert(x.fcall.Data, r, true)
 		r = r[:nr]
 		if !w.nomark {
-			seq++
-			filemark(t.file)
+			file.Seq++
+			t.file.Mark()
 		}
 		q0 := a.Pos
 		if a.End > q0 {
@@ -547,8 +548,8 @@ func xfidwrite(x *Xfid) {
 				textinsert(t, q0, r, true)
 			} else {
 				if !w.nomark {
-					seq++
-					filemark(t.file)
+					file.Seq++
+					t.file.Mark()
 				}
 				q0 = textbsinsert(t, q0, r, true, &nr)
 				textsetselect(t, t.q0, t.q1) /* insert could leave it somewhere else */
@@ -600,15 +601,15 @@ func xfidctlwrite(x *Xfid, w *Window) {
 		} else if strings.HasPrefix(p, "clean") { /* mark window 'clean', seq=0 */
 			t := &w.body
 			t.eq0 = ^0
-			filereset(t.file)
-			t.file.mod = false
+			t.file.ResetLogs()
+			t.file.SetMod(false)
 			w.dirty = false
 			settag = true
 			p = p[5:]
 		} else if strings.HasPrefix(p, "dirty") { /* mark window 'dirty' */
 			t := &w.body
 			/* doesn't change sequence number, so "Put" won't appear.  it shouldn't. */
-			t.file.mod = true
+			t.file.SetMod(true)
 			w.dirty = true
 			settag = true
 			p = p[5:]
@@ -640,8 +641,8 @@ func xfidctlwrite(x *Xfid, w *Window) {
 				}
 			}
 		out:
-			seq++
-			filemark(w.body.file)
+			file.Seq++
+			w.body.file.Mark()
 			winsetname(w, r[:nr])
 		} else if strings.HasPrefix(p, "font ") { /* execute font command */
 			pp := p[5:]
@@ -735,8 +736,8 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			w.nomark = true
 			p = p[6:]
 		} else if strings.HasPrefix(p, "mark") { /* mark file */
-			seq++
-			filemark(w.body.file)
+			file.Seq++
+			w.body.file.Mark()
 			settag = true
 			p = p[4:]
 		} else if strings.HasPrefix(p, "nomenu") { /* turn off automatic menu */
@@ -907,7 +908,7 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 		if nr > bufs.Len/utf8.UTFMax {
 			nr = bufs.Len / utf8.UTFMax
 		}
-		t.file.b.Read(q, r[:nr])
+		t.file.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
 		if boff >= off {
 			m := len(b)
@@ -952,7 +953,7 @@ func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 		if nr > bufs.Len/utf8.UTFMax {
 			nr = bufs.Len / utf8.UTFMax
 		}
-		t.file.b.Read(q, r[:nr])
+		t.file.Read(q, r[:nr])
 		b := []byte(string(r[:nr]))
 		nb := len(b)
 		m := nb
@@ -1044,7 +1045,7 @@ func xfidindexread(x *Xfid) {
 			}
 			buf.WriteString(winctlprint(w, false))
 			m := util.Min(bufs.RuneLen, w.tag.Len())
-			w.tag.file.b.Read(0, r[:m])
+			w.tag.file.Read(0, r[:m])
 			for i := 0; i < m && r[i] != '\n'; i++ {
 				buf.WriteRune(r[i])
 			}

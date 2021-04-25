@@ -122,12 +122,12 @@ func allupdate(w *Window, x interface{}) {
 	if f.curtext != t { /* do curtext only */
 		return
 	}
-	if f.elog.typ == Null {
+	if f.elog.typ == elogNull {
 		elogterm(f)
-	} else if f.elog.typ != Empty {
+	} else if f.elog.typ != elogEmpty {
 		elogapply(f)
 		if f.editclean {
-			f.mod = false
+			f.SetMod(false)
 			for i := 0; i < len(f.text); i++ {
 				f.text[i].w.dirty = false
 			}

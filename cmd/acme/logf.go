@@ -162,7 +162,7 @@ func xfidlog(w *Window, op string) {
 	}
 
 	f := w.body.file
-	name := string(f.name)
+	name := string(f.Name())
 	eventlog.ev = append(eventlog.ev, fmt.Sprintf("%d %s %s\n", w.id, op, name))
 	eventlog.r.Broadcast()
 	eventlog.lk.Unlock()

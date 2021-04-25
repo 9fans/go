@@ -128,7 +128,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 		n = q1 - q0
 		if n <= EVENTSIZE {
 			r := make([]rune, n)
-			t.file.b.Read(q0, r)
+			t.file.Read(q0, r)
 			winevent(t.w, "%c%d %d %d %d %s\n", c, q0, q1, f, n, string(r))
 		} else {
 			winevent(t.w, "%c%d %d %d 0 \n", c, q0, q1, f)
@@ -146,12 +146,12 @@ func look3(t *Text, q0, q1 int, external bool) {
 			if e.a1 > e.a0 {
 				r[len(e.name)] = ':'
 				at := e.arg.(*Text)
-				at.file.b.Read(e.a0, r[len(e.name)+1:])
+				at.file.Read(e.a0, r[len(e.name)+1:])
 			}
 		} else {
 			n = e.q1 - e.q0
 			r = make([]rune, n)
-			t.file.b.Read(e.q0, r)
+			t.file.Read(e.q0, r)
 		}
 		f &^= 2
 		if n <= EVENTSIZE {
@@ -198,7 +198,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 			}
 		}
 		r = make([]rune, q1-q0)
-		t.file.b.Read(q0, r)
+		t.file.Read(q0, r)
 		m.Data = []byte(string(r))
 		if len(m.Data) < messagesize-1024 && m.Send(plumbsendfid) == nil {
 			return
@@ -224,7 +224,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 			textsetselect(ct, e.q1, e.q1)
 		}
 		r = make([]rune, e.q1-e.q0)
-		t.file.b.Read(e.q0, r)
+		t.file.Read(e.q0, r)
 		if search(ct, r) && e.jump {
 			display.MoveCursor(ct.fr.PointOf(ct.fr.P0).Add(draw.Pt(4, ct.fr.Font.Height-4)))
 		}
@@ -288,7 +288,7 @@ func plumbshow(m *plumb.Message) {
 	r := make([]rune, len(m.Data))
 	_, nr, _ = runes.Convert(m.Data, r, true)
 	textinsert(&w.body, 0, r[:nr], true)
-	w.body.file.mod = false
+	w.body.file.SetMod(false)
 	w.dirty = false
 	winsettag(w)
 	textscrdraw(&w.body)
@@ -334,7 +334,7 @@ func search(ct *Text, r []rune) bool {
 			if nb >= maxn {
 				nb = maxn - 1
 			}
-			ct.file.b.Read(q, s[:nb])
+			ct.file.Read(q, s[:nb])
 			b = s[:nb]
 		}
 		/* this runeeq is fishy but the null at b[nb] makes it safe */ // TODO(rsc): NUL done gone
@@ -547,7 +547,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	}
 	/* see if it's a file name */
 	r := make([]rune, n)
-	t.file.b.Read(q0, r)
+	t.file.Read(q0, r)
 	/* is it a URL? look for http:// and https:// prefix */
 	if hasPrefix(r, Lhttpcss) || hasPrefix(r, Lhttpscss) {
 		// Avoid capturing end-of-sentence punctuation.
@@ -665,11 +665,11 @@ func lookfile(s []rune) *Window {
 	for _, c := range row.col {
 		for _, w := range c.w {
 			t := &w.body
-			k := len(t.file.name)
-			if k > 1 && t.file.name[k-1] == '/' {
+			k := len(t.file.Name())
+			if k > 1 && t.file.Name()[k-1] == '/' {
 				k--
 			}
-			if runes.Equal(t.file.name[:k], s) {
+			if runes.Equal(t.file.Name()[:k], s) {
 				w = w.body.file.curtext.w
 				if w.col != nil { /* protect against race deleting w */
 					return w
@@ -738,7 +738,7 @@ func openfile(t *Text, e *Expand) *Window {
 		if textload(t, 0, e.bname, true) >= 0 {
 			t.file.unread = false
 		}
-		t.file.mod = false
+		t.file.SetMod(false)
 		t.w.dirty = false
 		winsettag(t.w)
 		textsetselect(&t.w.tag, t.w.tag.Len(), t.w.tag.Len())

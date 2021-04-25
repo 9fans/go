@@ -63,10 +63,10 @@ const (
 )
 
 func eloginit(f *File) {
-	if f.elog.typ != Empty {
+	if f.elog.typ != elogEmpty {
 		return
 	}
-	f.elog.typ = Null
+	f.elog.typ = elogNull
 	if f.elogbuf == nil {
 		f.elogbuf = new(disk.Buffer)
 	}
@@ -84,7 +84,7 @@ func elogclose(f *File) {
 }
 
 func elogreset(f *File) {
-	f.elog.typ = Null
+	f.elog.typ = elogNull
 	f.elog.nd = 0
 	f.elog.r = f.elog.r[:0]
 }
@@ -94,7 +94,7 @@ func elogterm(f *File) {
 	if f.elogbuf != nil {
 		f.elogbuf.Reset()
 	}
-	f.elog.typ = Empty
+	f.elog.typ = elogEmpty
 	bufs.FreeRunes(f.elog.r)
 	f.elog.r = nil
 	warned = false
@@ -109,16 +109,16 @@ func elogflush(f *File) {
 	switch f.elog.typ {
 	default:
 		alog.Printf("unknown elog type %#x\n", f.elog.typ)
-	case Null:
+	case elogNull:
 		break
-	case Insert,
-		Replace:
+	case elogInsert,
+		elogReplace:
 		if len(f.elog.r) > 0 {
 			f.elogbuf.Insert(f.elogbuf.Len(), f.elog.r)
 		}
 		fallthrough
 	/* fall through */
-	case Delete:
+	case elogDelete:
 		f.elogbuf.Insert(f.elogbuf.Len(), buflogrunes(&b))
 	}
 	elogreset(f)
@@ -138,7 +138,7 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 		return
 	}
 	eloginit(f)
-	if f.elog.typ != Null && q0 < f.elog.q0 {
+	if f.elog.typ != elogNull && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
 			alog.Printf(Wsequence)
@@ -147,11 +147,11 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 	}
 	/* try to merge with previous */
 	gap := q0 - (f.elog.q0 + f.elog.nd) /* gap between previous and this */
-	if f.elog.typ == Replace && len(f.elog.r)+gap+len(r) < Maxstring {
+	if f.elog.typ == elogReplace && len(f.elog.r)+gap+len(r) < Maxstring {
 		if gap < Minstring {
 			if gap > 0 {
 				n := len(f.elog.r)
-				f.b.Read(f.elog.q0+f.elog.nd, f.elog.r[n:n+gap])
+				f.Read(f.elog.q0+f.elog.nd, f.elog.r[n:n+gap])
 				f.elog.r = f.elog.r[:n+gap]
 			}
 			f.elog.nd += gap + q1 - q0
@@ -160,7 +160,7 @@ func elogreplace(f *File, q0 int, q1 int, r []rune) {
 		}
 	}
 	elogflush(f)
-	f.elog.typ = Replace
+	f.elog.typ = elogReplace
 	f.elog.q0 = q0
 	f.elog.nd = q1 - q0
 	if len(r) > bufs.RuneLen {
@@ -175,7 +175,7 @@ func eloginsert(f *File, q0 int, r []rune) {
 		return
 	}
 	eloginit(f)
-	if f.elog.typ != Null && q0 < f.elog.q0 {
+	if f.elog.typ != elogNull && q0 < f.elog.q0 {
 		if !warned {
 			warned = true
 			alog.Printf(Wsequence)
@@ -183,13 +183,13 @@ func eloginsert(f *File, q0 int, r []rune) {
 		elogflush(f)
 	}
 	/* try to merge with previous */
-	if f.elog.typ == Insert && q0 == f.elog.q0 && len(f.elog.r)+len(r) < Maxstring {
+	if f.elog.typ == elogInsert && q0 == f.elog.q0 && len(f.elog.r)+len(r) < Maxstring {
 		f.elog.r = append(f.elog.r, r...)
 		return
 	}
 	for len(r) > 0 {
 		elogflush(f)
-		f.elog.typ = Insert
+		f.elog.typ = elogInsert
 		f.elog.q0 = q0
 		n := len(r)
 		if n > bufs.RuneLen {
@@ -205,7 +205,7 @@ func elogdelete(f *File, q0 int, q1 int) {
 		return
 	}
 	eloginit(f)
-	if f.elog.typ != Null && q0 < f.elog.q0+f.elog.nd {
+	if f.elog.typ != elogNull && q0 < f.elog.q0+f.elog.nd {
 		if !warned {
 			warned = true
 			alog.Printf(Wsequence)
@@ -213,12 +213,12 @@ func elogdelete(f *File, q0 int, q1 int) {
 		elogflush(f)
 	}
 	/* try to merge with previous */
-	if f.elog.typ == Delete && f.elog.q0+f.elog.nd == q0 {
+	if f.elog.typ == elogDelete && f.elog.q0+f.elog.nd == q0 {
 		f.elog.nd += q1 - q0
 		return
 	}
 	elogflush(f)
-	f.elog.typ = Delete
+	f.elog.typ = elogDelete
 	f.elog.q0 = q0
 	f.elog.nd = q1 - q0
 }
@@ -270,13 +270,13 @@ func elogapply(f *File) {
 			fmt.Fprintf(os.Stderr, "elogapply: %#x\n", b.typ)
 			panic("elogapply")
 
-		case Replace:
+		case elogReplace:
 			if tracelog {
 				alog.Printf("elog replace %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
-				filemark(f)
+				f.Mark()
 			}
 			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
 			textdelete(t, tq0, tq1, true)
@@ -293,24 +293,24 @@ func elogapply(f *File) {
 				t.q1 += b.nr
 			}
 
-		case Delete:
+		case elogDelete:
 			if tracelog {
 				alog.Printf("elog delete %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
-				filemark(f)
+				f.Mark()
 			}
 			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
 			textdelete(t, tq0, tq1, true)
 
-		case Insert:
+		case elogInsert:
 			if tracelog {
 				alog.Printf("elog insert %d %d (%d %d)\n", b.q0, b.q0+b.nr, t.q0, t.q1)
 			}
 			if !mod {
 				mod = true
-				filemark(f)
+				f.Mark()
 			}
 			textconstrain(t, b.q0, b.q0, &tq0, &tq1)
 			up -= b.nr
@@ -350,11 +350,11 @@ func elogapply(f *File) {
 	 * Bad addresses will cause bufload to crash, so double check.
 	 * If changes were out of order, we expect problems so don't complain further.
 	 */
-	if t.q0 > f.b.Len() || t.q1 > f.b.Len() || t.q0 > t.q1 {
+	if t.q0 > f.Len() || t.q1 > f.Len() || t.q0 > t.q1 {
 		if !warned {
-			alog.Printf("elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.b.Len())
+			alog.Printf("elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.Len())
 		}
-		t.q1 = util.Min(t.q1, f.b.Len())
+		t.q1 = util.Min(t.q1, f.Len())
 		t.q0 = util.Min(t.q0, t.q1)
 	}
 
@@ -362,3 +362,11 @@ func elogapply(f *File) {
 		t.w.owner = owner
 	}
 }
+const (
+	elogEmpty = 0
+	elogNull = '-'
+	elogDelete = 'd'
+	elogInsert = 'i'
+	elogReplace = 'r'
+	elogFilename = 'f'
+)

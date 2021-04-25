@@ -19,6 +19,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"hash"
+	"io"
 	"os"
 	"sort"
 	"time"
@@ -26,6 +27,8 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/complete"
+	"9fans.net/go/cmd/acme/internal/disk"
+	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -169,19 +172,19 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 	for i = 0; i < nrow; i++ {
 		for j := i; j < len(dlp); j += nrow {
 			dl = dlp[j]
-			fileinsert(t.file, q1, dl.r)
+			t.file.Insert(q1, dl.r)
 			q1 += len(dl.r)
 			if j+nrow >= len(dlp) {
 				break
 			}
 			w = dl.wid
 			if maxt-w%maxt < mint {
-				fileinsert(t.file, q1, Ltab)
+				t.file.Insert(q1, Ltab)
 				q1++
 				w += mint
 			}
 			for {
-				fileinsert(t.file, q1, Ltab)
+				t.file.Insert(q1, Ltab)
 				q1++
 				w += maxt - (w % maxt)
 				if w >= colw {
@@ -189,7 +192,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 				}
 			}
 		}
-		fileinsert(t.file, q1, Lnl)
+		t.file.Insert(q1, Lnl)
 		q1++
 	}
 }
@@ -198,7 +201,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 	if len(t.cache) > 0 || t.Len() != 0 || t.w == nil || t != &t.w.body {
 		util.Fatal("text.load")
 	}
-	if t.w.isdir && len(t.file.name) == 0 {
+	if t.w.isdir && len(t.file.Name()) == 0 {
 		alog.Printf("empty directory name")
 		return -1
 	}
@@ -231,10 +234,10 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		}
 		t.w.isdir = true
 		t.w.filemenu = false
-		if len(t.file.name) > 0 && t.file.name[len(t.file.name)-1] != '/' {
-			rp := make([]rune, len(t.file.name)+1)
-			copy(rp, t.file.name)
-			rp[len(t.file.name)] = '/'
+		if len(t.file.Name()) > 0 && t.file.Name()[len(t.file.Name())-1] != '/' {
+			rp := make([]rune, len(t.file.Name())+1)
+			copy(rp, t.file.Name())
+			rp[len(t.file.Name())] = '/'
 			winsetname(t.w, rp)
 		}
 		var dlp []*Dirlist
@@ -286,7 +289,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 		if n > bufs.RuneLen {
 			n = bufs.RuneLen
 		}
-		t.file.b.Read(q, rp[:n])
+		t.file.Read(q, rp[:n])
 		if q < t.org {
 			t.org += n
 		} else if q <= t.org+t.fr.NumChars {
@@ -364,7 +367,7 @@ func textinsert(t *Text, q0 int, r []rune, tofile bool) {
 		return
 	}
 	if tofile {
-		fileinsert(t.file, q0, r)
+		t.file.Insert(q0, r)
 		if t.what == Body {
 			t.w.dirty = true
 			t.w.utflastqid = -1
@@ -433,7 +436,7 @@ func textfill(t *Text) {
 		if n > 2000 { /* educated guess at reasonable amount */
 			n = 2000
 		}
-		t.file.b.Read(t.org+t.fr.NumChars, rp[:n])
+		t.file.Read(t.org+t.fr.NumChars, rp[:n])
 		/*
 		 * it's expensive to frinsert more than we need, so
 		 * count newlines.
@@ -468,7 +471,7 @@ func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 		return
 	}
 	if tofile {
-		filedelete(t.file, q0, q1)
+		t.file.Delete(q0, q1)
 		if t.what == Body {
 			t.w.dirty = true
 			t.w.utflastqid = -1
@@ -530,7 +533,7 @@ func textreadc(t *Text, q int) rune {
 	if t.cq0 <= q && q < t.cq0+len(t.cache) {
 		r[0] = t.cache[q-t.cq0]
 	} else {
-		t.file.b.Read(q, r[:])
+		t.file.Read(q, r[:])
 	}
 	return r[0]
 }
@@ -769,16 +772,16 @@ func texttype(t *Text, r rune) {
 		return
 	}
 	if t.what == Body {
-		seq++
-		filemark(t.file)
+		file.Seq++
+		t.file.Mark()
 	}
 	/* cut/paste must be done after the seq++/filemark */
 	switch r {
 	case draw.KeyCmd + 'x': /* %X: cut */
 		typecommit(t)
 		if t.what == Body {
-			seq++
-			filemark(t.file)
+			file.Seq++
+			t.file.Mark()
 		}
 		cut(t, t, nil, true, true, nil)
 		textshow(t, t.q0, t.q0, true)
@@ -787,8 +790,8 @@ func texttype(t *Text, r rune) {
 	case draw.KeyCmd + 'v': /* %V: paste */
 		typecommit(t)
 		if t.what == Body {
-			seq++
-			filemark(t.file)
+			file.Seq++
+			t.file.Mark()
 		}
 		paste(t, t, nil, true, false, nil)
 		textshow(t, t.q0, t.q1, true)
@@ -936,7 +939,7 @@ func textcommit(t *Text, tofile bool) {
 		return
 	}
 	if tofile {
-		fileinsert(t.file, t.cq0, t.cache)
+		t.file.Insert(t.cq0, t.cache)
 	}
 	if t.what == Body {
 		t.w.dirty = true
@@ -1062,8 +1065,8 @@ func textselect(t *Text) {
 		b = mouse.Buttons
 		if b&1 != 0 && b&6 != 0 {
 			if state == None && t.what == Body {
-				seq++
-				filemark(t.w.body.file)
+				file.Seq++
+				t.w.body.file.Mark()
 			}
 			if b&2 != 0 {
 				if state == Paste && t.what == Body {
@@ -1630,7 +1633,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 	} else if a < 0 && -a < t.fr.NumChars {
 		n := t.org - org
 		r := make([]rune, n)
-		t.file.b.Read(org, r)
+		t.file.Read(org, r)
 		t.fr.Insert(r, 0)
 	} else {
 		t.fr.Delete(0, t.fr.NumChars)
@@ -1645,7 +1648,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 }
 
 func textreset(t *Text) {
-	t.file.seq = 0
+	t.file.SetSeq(0)
 	t.eq0 = ^0
 	/* do t->delete(0, t->nc, TRUE) without building backup stuff */
 	textsetselect(t, t.org, t.org)
@@ -1653,9 +1656,84 @@ func textreset(t *Text) {
 	t.org = 0
 	t.q0 = 0
 	t.q1 = 0
-	filereset(t.file)
-	t.file.b.Reset()
+	t.file.ResetLogs()
+	t.file.Truncate()
 }
 
 func (t *Text) RuneAt(pos int) rune { return textreadc(t, pos) }
-func (t *Text) Len() int            { return t.file.b.Len() }
+func (t *Text) Len() int            { return t.file.Len() }
+
+func fileaddtext(f *File, t *Text) *File {
+	if f == nil {
+		f = &File{File: new(file.File)}
+		f.unread = true
+	}
+	f.text = append(f.text, t)
+	f.curtext = t
+	return f
+}
+
+func filedeltext(f *File, t *Text) {
+	var i int
+	for i = 0; i < len(f.text); i++ {
+		if f.text[i] == t {
+			goto Found
+		}
+	}
+	util.Fatal("can't find text in filedeltext")
+
+Found:
+	copy(f.text[i:], f.text[i+1:])
+	f.text = f.text[:len(f.text)-1]
+	if len(f.text) == 0 {
+		f.Close()
+		return
+	}
+	if f.curtext == t {
+		f.curtext = f.text[0]
+	}
+}
+
+func fileload(f *File, p0 int, fd *os.File, nulls *bool, h io.Writer) int {
+	if f.Seq() > 0 {
+		util.Fatal("undo in file.load unimplemented")
+	}
+	return fileload1(f, p0, fd, nulls, h)
+}
+
+type File struct {
+	*file.File
+	curtext   *Text
+	text      []*Text
+	info      os.FileInfo
+	sha1      [20]byte
+	unread    bool
+	elog      Elog
+	dumpid    int
+	editclean bool
+	elogbuf   *disk.Buffer
+}
+
+func (f *File) SetName(r []rune) {
+	f.File.SetName(r)
+	f.unread = true
+}
+
+func (f *File) Close() {
+	elogclose(f)
+	f.File.Close()
+}
+
+type fileView File
+
+func (f *fileView) Insert(pos int, data []rune) {
+	for _, t := range f.text {
+		textinsert(t, pos, data, false)
+	}
+}
+
+func (f *fileView) Delete(pos, end int) {
+	for _, t := range f.text {
+		textdelete(t, pos, end, false)
+	}
+}

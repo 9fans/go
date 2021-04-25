@@ -215,7 +215,7 @@ func readfile(c *Column, s string) {
 	rs := runes.CleanPath(rb)
 	winsetname(w, rs)
 	textload(&w.body, 0, s, true)
-	w.body.file.mod = false
+	w.body.file.SetMod(false)
 	w.dirty = false
 	winsettag(w)
 	winresize(w, w.r, false, true)

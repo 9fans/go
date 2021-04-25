@@ -22,11 +22,10 @@
  *	same sequence number represent simultaneous changes.
  */
 
-package main
+package file
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"reflect"
 	"unsafe"
@@ -37,7 +36,31 @@ import (
 	"9fans.net/go/cmd/acme/internal/util"
 )
 
-type Undo struct {
+type File struct {
+	view    View
+	b       disk.Buffer
+	delta   disk.Buffer
+	epsilon disk.Buffer
+	name    []rune
+	seq     int
+	mod     bool
+}
+
+type View interface {
+	Insert(int, []rune)
+	Delete(int, int)
+}
+
+const (
+	typeEmpty    = 0
+	typeNull     = '-'
+	typeDelete   = 'd'
+	typeInsert   = 'i'
+	typeReplace  = 'r'
+	typeFilename = 'f'
+)
+
+type undo struct {
 	typ int
 	mod bool
 	seq int
@@ -45,45 +68,48 @@ type Undo struct {
 	n   int
 }
 
-const Undosize = int(unsafe.Sizeof(Undo{})) / runes.RuneSize
+const undoSize = int(unsafe.Sizeof(undo{})) / runes.RuneSize
 
-func fileaddtext(f *File, t *Text) *File {
-	if f == nil {
-		f = new(File)
-		f.unread = true
-	}
-	f.text = append(f.text, t)
-	f.curtext = t
-	return f
+func undorunes(u *undo) []rune {
+	var r []rune
+	h := (*reflect.SliceHeader)(unsafe.Pointer(&r))
+	h.Data = uintptr(unsafe.Pointer(u))
+	h.Len = undoSize
+	h.Cap = undoSize
+	return r
 }
 
-func filedeltext(f *File, t *Text) {
-	var i int
-	for i = 0; i < len(f.text); i++ {
-		if f.text[i] == t {
-			goto Found
-		}
-	}
-	util.Fatal("can't find text in filedeltext")
+func (f *File) Len() int { return f.b.Len() }
 
-Found:
-	copy(f.text[i:], f.text[i+1:])
-	f.text = f.text[:len(f.text)-1]
-	if len(f.text) == 0 {
-		fileclose(f)
-		return
+func (f *File) CanUndo() bool { return f.delta.Len() > 0 }
+
+func (f *File) CanRedo() bool { return f.epsilon.Len() > 0 }
+
+func (f *File) Mod() bool { return f.mod }
+
+func (f *File) SetMod(b bool) { f.mod = b }
+
+var Seq int
+
+func (f *File) Seq() int { return f.seq }
+
+func (f *File) SetSeq(seq int) { f.seq = seq }
+
+func (f *File) Mark() {
+	if f.epsilon.Len() != 0 {
+		f.epsilon.Delete(0, f.epsilon.Len())
 	}
-	if f.curtext == t {
-		f.curtext = f.text[0]
-	}
+	f.seq = Seq
 }
 
-func fileinsert(f *File, p0 int, s []rune) {
+func (f *File) Read(pos int, data []rune) { f.b.Read(pos, data) }
+
+func (f *File) Insert(p0 int, s []rune) {
 	if p0 > f.b.Len() {
 		util.Fatal("internal error: fileinsert")
 	}
 	if f.seq > 0 {
-		fileuninsert(f, &f.delta, p0, len(s))
+		f.uninsert(&f.delta, p0, len(s))
 	}
 	f.b.Insert(p0, s)
 	if len(s) != 0 {
@@ -91,19 +117,10 @@ func fileinsert(f *File, p0 int, s []rune) {
 	}
 }
 
-func undorunes(u *Undo) []rune {
-	var r []rune
-	h := (*reflect.SliceHeader)(unsafe.Pointer(&r))
-	h.Data = uintptr(unsafe.Pointer(u))
-	h.Len = Undosize
-	h.Cap = Undosize
-	return r
-}
-
-func fileuninsert(f *File, delta *disk.Buffer, p0 int, ns int) {
-	var u Undo
+func (f *File) uninsert(delta *disk.Buffer, p0, ns int) {
+	var u undo
 	/* undo an insertion by deleting */
-	u.typ = Delete
+	u.typ = typeDelete
 	u.mod = f.mod
 	u.seq = f.seq
 	u.p0 = p0
@@ -111,12 +128,12 @@ func fileuninsert(f *File, delta *disk.Buffer, p0 int, ns int) {
 	delta.Insert(delta.Len(), undorunes(&u))
 }
 
-func filedelete(f *File, p0 int, p1 int) {
+func (f *File) Delete(p0, p1 int) {
 	if !(p0 <= p1 && p0 <= f.b.Len()) || !(p1 <= f.b.Len()) {
 		util.Fatal("internal error: filedelete")
 	}
 	if f.seq > 0 {
-		fileundelete(f, &f.delta, p0, p1)
+		f.undelete(&f.delta, p0, p1)
 	}
 	f.b.Delete(p0, p1)
 	if p1 > p0 {
@@ -124,10 +141,10 @@ func filedelete(f *File, p0 int, p1 int) {
 	}
 }
 
-func fileundelete(f *File, delta *disk.Buffer, p0 int, p1 int) {
-	var u Undo
+func (f *File) undelete(delta *disk.Buffer, p0, p1 int) {
+	var u undo
 	/* undo a deletion by inserting */
-	u.typ = Insert
+	u.typ = typeInsert
 	u.mod = f.mod
 	u.seq = f.seq
 	u.p0 = p0
@@ -146,18 +163,19 @@ func fileundelete(f *File, delta *disk.Buffer, p0 int, p1 int) {
 	delta.Insert(delta.Len(), undorunes(&u))
 }
 
-func filesetname(f *File, name []rune) {
+func (f *File) Name() []rune { return f.name }
+
+func (f *File) SetName(name []rune) {
 	if f.seq > 0 {
-		fileunsetname(f, &f.delta)
+		f.unsetname(&f.delta)
 	}
 	f.name = runes.Clone(name)
-	f.unread = true
 }
 
-func fileunsetname(f *File, delta *disk.Buffer) {
-	var u Undo
+func (f *File) unsetname(delta *disk.Buffer) {
+	var u undo
 	/* undo a file name change by restoring old name */
-	u.typ = Filename
+	u.typ = typeFilename
 	u.mod = f.mod
 	u.seq = f.seq
 	u.p0 = 0 /* unused */
@@ -168,25 +186,18 @@ func fileunsetname(f *File, delta *disk.Buffer) {
 	delta.Insert(delta.Len(), undorunes(&u))
 }
 
-func fileload(f *File, p0 int, fd *os.File, nulls *bool, h io.Writer) int {
-	if f.seq > 0 {
-		util.Fatal("undo in file.load unimplemented")
-	}
-	return bufload(&f.b, p0, fd, nulls, h)
-}
-
 /* return sequence number of pending redo */
-func fileredoseq(f *File) int {
+func (f *File) RedoSeq() int {
 	delta := &f.epsilon
 	if delta.Len() == 0 {
 		return 0
 	}
-	var u Undo
-	delta.Read(delta.Len()-Undosize, undorunes(&u))
+	var u undo
+	delta.Read(delta.Len()-undoSize, undorunes(&u))
 	return u.seq
 }
 
-func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
+func (f *File) Undo(isundo bool, q0p, q1p *int) {
 	var stop int
 	var delta *disk.Buffer
 	var epsilon *disk.Buffer
@@ -204,8 +215,8 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 
 	buf := bufs.AllocRunes()
 	for delta.Len() > 0 {
-		up := delta.Len() - Undosize
-		var u Undo
+		up := delta.Len() - undoSize
+		var u undo
 		delta.Read(up, undorunes(&u))
 		if isundo {
 			if u.seq < stop {
@@ -221,27 +232,24 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 			}
 		}
 		var n int
-		var j int
 		var i int
 		switch u.typ {
 		default:
 			fmt.Fprintf(os.Stderr, "undo: %#x\n", u.typ)
 			panic("undo")
 
-		case Delete:
+		case typeDelete:
 			f.seq = u.seq
-			fileundelete(f, epsilon, u.p0, u.p0+u.n)
+			f.undelete(epsilon, u.p0, u.p0+u.n)
 			f.mod = u.mod
 			f.b.Delete(u.p0, u.p0+u.n)
-			for j = 0; j < len(f.text); j++ {
-				textdelete(f.text[j], u.p0, u.p0+u.n, false)
-			}
+			f.view.Delete(u.p0, u.p0+u.n)
 			*q0p = u.p0
 			*q1p = u.p0
 
-		case Insert:
+		case typeInsert:
 			f.seq = u.seq
-			fileuninsert(f, epsilon, u.p0, u.n)
+			f.uninsert(epsilon, u.p0, u.n)
 			f.mod = u.mod
 			up -= u.n
 			for i = 0; i < u.n; i += n {
@@ -251,16 +259,14 @@ func fileundo(f *File, isundo bool, q0p *int, q1p *int) {
 				}
 				delta.Read(up+i, buf[:n])
 				f.b.Insert(u.p0+i, buf[:n])
-				for j = 0; j < len(f.text); j++ {
-					textinsert(f.text[j], u.p0+i, buf[:n], false)
-				}
+				f.view.Insert(u.p0+i, buf[:n])
 			}
 			*q0p = u.p0
 			*q1p = u.p0 + u.n
 
-		case Filename:
+		case typeFilename:
 			f.seq = u.seq
-			fileunsetname(f, epsilon)
+			f.unsetname(epsilon)
 			f.mod = u.mod
 			up -= u.n
 			if u.n == 0 {
@@ -279,24 +285,18 @@ Return:
 	bufs.FreeRunes(buf)
 }
 
-func filereset(f *File) {
+func (f *File) ResetLogs() {
 	f.delta.Reset()
 	f.epsilon.Reset()
 	f.seq = 0
 }
 
-func fileclose(f *File) {
+func (f *File) Truncate() { f.b.Reset() }
+
+func (f *File) Close() {
 	f.name = nil
-	f.text = nil
+	f.view = nil
 	f.b.Close()
 	f.delta.Close()
 	f.epsilon.Close()
-	elogclose(f)
-}
-
-func filemark(f *File) {
-	if f.epsilon.Len() != 0 {
-		f.epsilon.Delete(0, f.epsilon.Len())
-	}
-	f.seq = seq
 }

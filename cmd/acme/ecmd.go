@@ -22,6 +22,7 @@ import (
 
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
+	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -243,11 +244,13 @@ func D_cmd(t *Text, cp *Cmd) bool {
 	return true
 }
 
-func readloader(v interface{}, q0 int, r []rune) int {
-	if len(r) > 0 {
-		eloginsert(v.(*File), q0, r)
+func readloader(f *File) func(pos int, data []rune) int {
+	return func(pos int, data []rune) int {
+		if len(data) > 0 {
+			eloginsert(f, pos, data)
+		}
+		return 0
 	}
-	return 0
 }
 
 func e_cmd(t *Text, cp *Cmd) bool {
@@ -259,14 +262,14 @@ func e_cmd(t *Text, cp *Cmd) bool {
 			editerror("") /* winclean generated message already */
 		}
 		q0 = 0
-		q1 = f.b.Len()
+		q1 = f.Len()
 	}
-	allreplaced := (q0 == 0 && q1 == f.b.Len())
+	allreplaced := (q0 == 0 && q1 == f.Len())
 	name := cmdname(f, cp.u.text, cp.cmdc == 'e')
 	if name == nil {
 		editerror(Enoname)
 	}
-	samename := runes.Equal(name, t.file.name)
+	samename := runes.Equal(name, t.file.Name())
 	s := string(name)
 	fd, err := os.Open(s)
 	if err != nil {
@@ -278,7 +281,7 @@ func e_cmd(t *Text, cp *Cmd) bool {
 	}
 	elogdelete(f, q0, q1)
 	nulls := false
-	loadfile(fd, q1, &nulls, readloader, f, nil)
+	loadfile(fd, q1, &nulls, readloader(f), nil)
 	if nulls {
 		alog.Printf("%s: NUL bytes elided\n", s)
 	} else if allreplaced && samename {
@@ -333,7 +336,7 @@ func fcopy(f *File, addr2 Address) {
 		if ni > bufs.RuneLen {
 			ni = bufs.RuneLen
 		}
-		f.b.Read(p, buf[:ni])
+		f.Read(p, buf[:ni])
 		eloginsert(addr2.f, addr2.r.End, buf[:ni])
 	}
 	bufs.FreeRunes(buf)
@@ -411,7 +414,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 						err = "replacement string too long"
 						goto Err
 					}
-					t.file.b.Read(regx.Sel.R[j].Pos, rbuf[:regx.Sel.R[j].End-regx.Sel.R[j].Pos])
+					t.file.Read(regx.Sel.R[j].Pos, rbuf[:regx.Sel.R[j].End-regx.Sel.R[j].Pos])
 					for k := 0; k < regx.Sel.R[j].End-regx.Sel.R[j].Pos; k++ {
 						Straddc(buf, rbuf[k])
 					}
@@ -425,7 +428,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 					err = "right hand side too long in substitution"
 					goto Err
 				}
-				t.file.b.Read(regx.Sel.R[0].Pos, rbuf[:regx.Sel.R[0].End-regx.Sel.R[0].Pos])
+				t.file.Read(regx.Sel.R[0].Pos, rbuf[:regx.Sel.R[0].End-regx.Sel.R[0].Pos])
 				for k := 0; k < regx.Sel.R[0].End-regx.Sel.R[0].Pos; k++ {
 					Straddc(buf, rbuf[k])
 				}
@@ -466,10 +469,10 @@ func u_cmd(t *Text, cp *Cmd) bool {
 	for {
 		tmp3 := n
 		n--
-		if !(tmp3 > 0) || !(t.file.seq != oseq) {
+		if !(tmp3 > 0) || !(t.file.Seq() != oseq) {
 			break
 		}
-		oseq = t.file.seq
+		oseq = t.file.Seq()
 		undo(t, nil, nil, flag, XXX, nil)
 	}
 	return true
@@ -477,7 +480,7 @@ func u_cmd(t *Text, cp *Cmd) bool {
 
 func w_cmd(t *Text, cp *Cmd) bool {
 	f := t.file
-	if f.seq == seq {
+	if f.Seq() == file.Seq {
 		editerror("can't write file with pending modifications")
 	}
 	r := cmdname(f, cp.u.text, false)
@@ -582,7 +585,7 @@ func nlcount(t *Text, q0 int, q1 int, pnr *int) int {
 			if nbuf > bufs.RuneLen {
 				nbuf = bufs.RuneLen
 			}
-			t.file.b.Read(q0, buf[:nbuf])
+			t.file.Read(q0, buf[:nbuf])
 			i = 0
 		}
 		if buf[i] == '\n' {
@@ -606,8 +609,8 @@ const (
 )
 
 func printposn(t *Text, mode int) {
-	if t != nil && t.file != nil && t.file.name != nil {
-		alog.Printf("%s:", string(t.file.name))
+	if t != nil && t.file != nil && t.file.Name() != nil {
+		alog.Printf("%s:", string(t.file.Name()))
 	}
 	var l1 int
 	var l2 int
@@ -705,8 +708,8 @@ func fappend(f *File, cp *Cmd, p int) bool {
 func pdisplay(f *File) bool {
 	p1 := addr.r.Pos
 	p2 := addr.r.End
-	if p2 > f.b.Len() {
-		p2 = f.b.Len()
+	if p2 > f.Len() {
+		p2 = f.Len()
 	}
 	buf := bufs.AllocRunes()
 	for p1 < p2 {
@@ -714,7 +717,7 @@ func pdisplay(f *File) bool {
 		if np > bufs.RuneLen-1 {
 			np = bufs.RuneLen - 1
 		}
-		f.b.Read(p1, buf[:np])
+		f.Read(p1, buf[:np])
 		alog.Printf("%s", string(buf[:np]))
 		p1 += np
 	}
@@ -727,14 +730,14 @@ func pdisplay(f *File) bool {
 func pfilename(f *File) {
 	w := f.curtext.w
 	/* same check for dirty as in settag, but we know ncache==0 */
-	dirty := !w.isdir && !w.isscratch && f.mod
+	dirty := !w.isdir && !w.isscratch && f.Mod()
 	ch := func(s string, b bool) byte {
 		if b {
 			return s[1]
 		}
 		return s[0]
 	}
-	alog.Printf("%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.name))
+	alog.Printf("%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.Name()))
 }
 
 func loopcmd(f *File, cp *Cmd, rp []runes.Range) {
@@ -845,7 +848,7 @@ func alllooper(w *Window, v interface{}) {
 	/*	if(w->nopen[QWevent] > 0) */
 	/*		return; */
 	/* no auto-execute on files without names */
-	if cp.re == nil && len(t.file.name) == 0 {
+	if cp.re == nil && len(t.file.Name()) == 0 {
 		return
 	}
 	if cp.re == nil || filematch(t.file, cp.re) == lp.XY {
@@ -927,7 +930,7 @@ func nextmatch(f *File, r *String, p int, sign int) {
 		}
 		if regx.Sel.R[0].Pos == regx.Sel.R[0].End && regx.Sel.R[0].Pos == p {
 			p++
-			if p > f.b.Len() {
+			if p > f.Len() {
 				p = 0
 			}
 			if !regx.Match(f.curtext, nil, p, 0x7FFFFFFF, &regx.Sel) {
@@ -941,7 +944,7 @@ func nextmatch(f *File, r *String, p int, sign int) {
 		if regx.Sel.R[0].Pos == regx.Sel.R[0].End && regx.Sel.R[0].End == p {
 			p--
 			if p < 0 {
-				p = f.b.Len()
+				p = f.Len()
 			}
 			if !regx.MatchBackward(f.curtext, p, &regx.Sel) {
 				editerror("address")
@@ -966,7 +969,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 			mkaddr(&a, f)
 
 		case '$':
-			a.r.End = f.b.Len()
+			a.r.End = f.Len()
 			a.r.Pos = a.r.End
 
 		case '\'':
@@ -994,7 +997,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 
 		case '*':
 			a.r.Pos = 0
-			a.r.End = f.b.Len()
+			a.r.End = f.Len()
 			return a
 
 		case ',',
@@ -1016,7 +1019,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 				a2 = cmdaddress(ap.next, a, 0)
 			} else {
 				a2.f = a.f
-				a2.r.End = f.b.Len()
+				a2.r.End = f.Len()
 				a2.r.Pos = a2.r.End
 			}
 			if a1.f != a2.f {
@@ -1071,7 +1074,7 @@ func alltofile(w *Window, v interface{}) {
 	}
 	/*	if(w->nopen[QWevent] > 0) */
 	/*		return; */
-	if runes.Equal(tp.r.r, t.file.name) {
+	if runes.Equal(tp.r.r, t.file.Name()) {
 		tp.f = t.file
 	}
 }
@@ -1128,14 +1131,14 @@ func filematch(f *File, r *String) bool {
 	}
 	w := f.curtext.w
 	/* same check for dirty as in settag, but we know ncache==0 */
-	dirty := !w.isdir && !w.isscratch && f.mod
+	dirty := !w.isdir && !w.isscratch && f.Mod()
 	ch := func(s string, b bool) byte {
 		if b {
 			return s[1]
 		}
 		return s[0]
 	}
-	rbuf := []rune(fmt.Sprintf("%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.name)))
+	rbuf := []rune(fmt.Sprintf("%c%c%c %s\n", ch(" '", dirty), '+', ch(" .", curtext != nil && curtext.file == f), string(f.Name())))
 	var s regx.Ranges
 	return regx.Match(nil, rbuf, 0, len(rbuf), &s)
 }
@@ -1151,7 +1154,7 @@ func charaddr(l int, addr Address, sign int) Address {
 		addr.r.End += l
 		addr.r.Pos = addr.r.End
 	}
-	if addr.r.Pos < 0 || addr.r.End > addr.f.b.Len() {
+	if addr.r.Pos < 0 || addr.r.End > addr.f.Len() {
 		editerror("address out of range")
 	}
 	return addr
@@ -1184,7 +1187,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 				p++
 			}
 			for n < l {
-				if p >= f.b.Len() {
+				if p >= f.Len() {
 					editerror("address out of range")
 				}
 				tmp9 := p
@@ -1195,7 +1198,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 			}
 			a.r.Pos = p
 		}
-		for p < f.b.Len() {
+		for p < f.Len() {
 		}
 		a.r.End = p
 	} else {
@@ -1240,7 +1243,7 @@ func allfilecheck(w *Window, v interface{}) {
 	if w.body.file == fp.f {
 		return
 	}
-	if runes.Equal(fp.r, f.name) {
+	if runes.Equal(fp.r, f.Name()) {
 		alog.Printf("warning: duplicate file name \"%s\"\n", string(fp.r))
 	}
 }
@@ -1249,10 +1252,10 @@ func cmdname(f *File, str *String, set bool) []rune {
 	s := str.r
 	if len(s) == 0 {
 		/* no name; use existing */
-		if len(f.name) == 0 {
+		if len(f.Name()) == 0 {
 			return nil
 		}
-		return runes.Clone(f.name)
+		return runes.Clone(f.Name())
 	}
 	s = runes.SkipBlank(s)
 	var r []rune
@@ -1267,14 +1270,14 @@ func cmdname(f *File, str *String, set bool) []rune {
 		fc.f = f
 		fc.r = r
 		allwindows(allfilecheck, &fc)
-		if len(f.name) == 0 {
+		if len(f.Name()) == 0 {
 			set = true
 		}
 	}
 
-	if set && !runes.Equal(r, f.name) {
-		filemark(f)
-		f.mod = true
+	if set && !runes.Equal(r, f.Name()) {
+		f.Mark()
+		f.SetMod(true)
 		f.curtext.w.dirty = true
 		winsetname(f.curtext.w, r)
 	}

@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"9fans.net/go/cmd/acme/internal/alog"
+	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -56,9 +57,9 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 		textdelete(&w.tag, 0, w.tag.Len(), true)
 		nc := clone.tag.Len()
 		rp := make([]rune, nc)
-		clone.tag.file.b.Read(0, rp)
+		clone.tag.file.Read(0, rp)
 		textinsert(&w.tag, 0, rp, true)
-		filereset(w.tag.file)
+		w.tag.file.ResetLogs()
 		textsetselect(&w.tag, nc, nc)
 	}
 	r1 = r
@@ -105,7 +106,7 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
  */
 func windrawbutton(w *Window) {
 	b := button
-	if !w.isdir && !w.isscratch && (w.body.file.mod || len(w.body.cache) != 0) {
+	if !w.isdir && !w.isscratch && (w.body.file.Mod() || len(w.body.cache) != 0) {
 		b = modbutton
 	}
 	var br draw.Rectangle
@@ -166,7 +167,7 @@ func wintaglines(w *Window, r draw.Rectangle) int {
 	n = w.tag.fr.NumLines
 	if w.tag.Len() > 0 {
 		var rune_ [1]rune
-		w.tag.file.b.Read(w.tag.Len()-1, rune_[:])
+		w.tag.file.Read(w.tag.Len()-1, rune_[:])
 		if rune_[0] == '\n' {
 			n++
 		}
@@ -304,12 +305,12 @@ func windelete(w *Window) {
 func winundo(w *Window, isundo bool) {
 	w.utflastqid = -1
 	body := &w.body
-	fileundo(body.file, isundo, &body.q0, &body.q1)
+	body.file.Undo(isundo, &body.q0, &body.q1)
 	textshow(body, body.q0, body.q1, true)
 	f := body.file
 	for i := 0; i < len(f.text); i++ {
 		v := f.text[i].w
-		v.dirty = (f.seq != v.putseq)
+		v.dirty = (f.Seq() != v.putseq)
 		if v != w {
 			v.body.q0 = v.body.fr.P0 + v.body.org
 			v.body.q1 = v.body.fr.P1 + v.body.org
@@ -322,7 +323,7 @@ var Lslashguide = []rune("/guide")
 
 func winsetname(w *Window, name []rune) {
 	t := &w.body
-	if runes.Equal(t.file.name, name) {
+	if runes.Equal(t.file.Name(), name) {
 		return
 	}
 	w.isscratch = false
@@ -331,7 +332,7 @@ func winsetname(w *Window, name []rune) {
 	} else if len(name) >= 7 && runes.Equal(Lpluserrors, name[len(name)-7:]) {
 		w.isscratch = true
 	}
-	filesetname(t.file, name)
+	t.file.SetName(name)
 	for i := 0; i < len(t.file.text); i++ {
 		v := t.file.text[i].w
 		winsettag(v)
@@ -363,7 +364,7 @@ func wincleartag(w *Window) {
 	}
 	i++
 	textdelete(&w.tag, i, n, true)
-	w.tag.file.mod = false
+	w.tag.file.SetMod(false)
 	if w.tag.q0 > i {
 		w.tag.q0 = i
 	}
@@ -379,7 +380,7 @@ var Ltabpipe = []rune("\t|")
 
 func parsetag(w *Window, extra int) ([]rune, int) {
 	r := make([]rune, w.tag.Len(), w.tag.Len()+extra+1)
-	w.tag.file.b.Read(0, r)
+	w.tag.file.Read(0, r)
 
 	/*
 	 * " |" or "\t|" ends left half of tag
@@ -415,29 +416,29 @@ var Lpipe = []rune(" |")
 func winsettag1(w *Window) {
 
 	/* there are races that get us here with stuff in the tag cache, so we take extra care to sync it */
-	if len(w.tag.cache) != 0 || w.tag.file.mod {
+	if len(w.tag.cache) != 0 || w.tag.file.Mod() {
 		wincommit(w, &w.tag) /* check file name; also guarantees we can modify tag contents */
 	}
 	old, ii := parsetag(w, 0)
-	if !runes.Equal(old[:ii], w.body.file.name) {
+	if !runes.Equal(old[:ii], w.body.file.Name()) {
 		textdelete(&w.tag, 0, ii, true)
-		textinsert(&w.tag, 0, w.body.file.name, true)
+		textinsert(&w.tag, 0, w.body.file.Name(), true)
 		old = make([]rune, w.tag.Len())
-		w.tag.file.b.Read(0, old)
+		w.tag.file.Read(0, old)
 	}
 
 	/* compute the text for the whole tag, replacing current only if it differs */
-	new_ := make([]rune, 0, len(w.body.file.name)+100)
-	new_ = append(new_, w.body.file.name...)
+	new_ := make([]rune, 0, len(w.body.file.Name())+100)
+	new_ = append(new_, w.body.file.Name()...)
 	new_ = append(new_, Ldelsnarf...)
 	if w.filemenu {
-		if w.body.needundo || w.body.file.delta.Len() > 0 || len(w.body.cache) != 0 {
+		if w.body.needundo || w.body.file.CanUndo() || len(w.body.cache) != 0 {
 			new_ = append(new_, Lundo...)
 		}
-		if w.body.file.epsilon.Len() > 0 {
+		if w.body.file.CanRedo() {
 			new_ = append(new_, Lredo...)
 		}
-		dirty := len(w.body.file.name) != 0 && (len(w.body.cache) != 0 || w.body.file.seq != w.putseq)
+		dirty := len(w.body.file.Name()) != 0 && (len(w.body.cache) != 0 || w.body.file.Seq() != w.putseq)
 		if !w.isdir && dirty {
 			new_ = append(new_, Lput...)
 		}
@@ -452,7 +453,7 @@ func winsettag1(w *Window) {
 		k = r + 1
 	} else {
 		k = len(old)
-		if w.body.file.seq == 0 {
+		if w.body.file.Seq() == 0 {
 			new_ = append(new_, Llook...)
 		}
 	}
@@ -487,7 +488,7 @@ func winsettag1(w *Window) {
 			}
 		}
 	}
-	w.tag.file.mod = false
+	w.tag.file.SetMod(false)
 	n = w.tag.Len() + len(w.tag.cache)
 	if w.tag.q0 > n {
 		w.tag.q0 = n
@@ -526,10 +527,10 @@ func wincommit(w *Window, t *Text) {
 		return
 	}
 	r, i := parsetag(w, 0)
-	if !runes.Equal(r[:i], w.body.file.name) {
-		seq++
-		filemark(w.body.file)
-		w.body.file.mod = true
+	if !runes.Equal(r[:i], w.body.file.Name()) {
+		file.Seq++
+		w.body.file.Mark()
+		w.body.file.SetMod(true)
 		w.dirty = true
 		winsetname(w, r[:i])
 		winsettag(w)
@@ -568,8 +569,8 @@ func winclean(w *Window, conservative bool) bool {
 		return true
 	}
 	if w.dirty {
-		if len(w.body.file.name) != 0 {
-			alog.Printf("%s modified\n", string(w.body.file.name))
+		if len(w.body.file.Name()) != 0 {
+			alog.Printf("%s modified\n", string(w.body.file.Name()))
 		} else {
 			if w.body.Len() < 100 { /* don't whine if it's too small */
 				return true

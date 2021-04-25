@@ -6,7 +6,6 @@ import (
 	"unsafe"
 
 	"9fans.net/go/cmd/acme/internal/bufs"
-	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
@@ -45,24 +44,6 @@ type Elog struct {
 	q0  int
 	nd  int
 	r   []rune
-}
-
-type File struct {
-	b         disk.Buffer
-	delta     disk.Buffer
-	epsilon   disk.Buffer
-	elogbuf   *disk.Buffer
-	elog      Elog
-	name      []rune
-	info      os.FileInfo
-	sha1      [20]uint8
-	unread    bool
-	editclean bool
-	seq       int
-	mod       bool
-	curtext   *Text
-	text      []*Text
-	dumpid    int
 }
 
 /* Text.what */
@@ -249,15 +230,6 @@ func ButtonBorder() int { return display.Scale(2) }
 
 const XXX = false
 
-const (
-	Empty    = 0
-	Null     = '-'
-	Delete   = 'd'
-	Insert   = 'i'
-	Replace  = 'r'
-	Filename = 'f'
-)
-
 /* editing */
 
 const (
@@ -267,7 +239,6 @@ const (
 )
 
 var globalincref int
-var seq int
 var maxtab int /* size of a tab, in units of the '0' character */
 
 var display *draw.Display
