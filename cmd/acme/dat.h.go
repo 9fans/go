@@ -97,7 +97,8 @@ type Window struct {
 	wrselrange  runes.Range
 	rdselfd     *os.File
 	col         *Column
-	eventx      *Xfid
+	eventtag    uint16
+	eventwait   chan bool
 	events      []byte
 	owner       rune
 	maxlines    int

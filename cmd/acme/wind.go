@@ -294,11 +294,11 @@ func winclose(w *Window) {
 }
 
 func windelete(w *Window) {
-	x := w.eventx
-	if x != nil {
+	c := w.eventwait
+	if c != nil {
 		w.events = nil
-		w.eventx = nil
-		x.c <- nil /* wake him up */
+		w.eventwait = nil
+		c <- true // wake him up
 	}
 }
 
@@ -609,9 +609,9 @@ func winevent(w *Window, format string, args ...interface{}) {
 	b := fmt.Sprintf(format, args...)
 	w.events = append(w.events, byte(w.owner))
 	w.events = append(w.events, b...)
-	x := w.eventx
-	if x != nil {
-		w.eventx = nil
-		x.c <- nil
+	c := w.eventwait
+	if c != nil {
+		w.eventwait = nil
+		c <- true
 	}
 }

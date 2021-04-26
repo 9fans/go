@@ -80,11 +80,10 @@ func xfidflush(x *Xfid) {
 		for i := 0; i < len(c.w); i++ {
 			w := c.w[i]
 			winlock(w, 'E')
-			wx := w.eventx
-			if wx != nil && wx.fcall.Tag == x.fcall.Oldtag {
-				w.eventx = nil
-				wx.flushed = true
-				wx.c <- nil
+			ch := w.eventwait
+			if ch != nil && w.eventtag == x.fcall.Oldtag {
+				w.eventwait = nil
+				ch <- false // flushed
 				winunlock(w)
 				goto out
 			}
@@ -992,23 +991,24 @@ func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 }
 
 func xfideventread(x *Xfid, w *Window) {
-	i := 0
 	x.flushed = false
 	var fc plan9.Fcall
-	for len(w.events) == 0 {
-		if i != 0 {
-			if !x.flushed {
-				respond(x, &fc, "window shut down")
-			}
-			return
-		}
-		w.eventx = x
+	if len(w.events) == 0 {
+		c := make(chan bool, 1)
+		w.eventtag = x.fcall.Tag
+		w.eventwait = c
 		winunlock(w)
 		bigUnlock()
-		<-x.c
+		ok := <-w.eventwait
 		bigLock()
 		winlock(w, 'F')
-		i++
+		if !ok {
+			return
+		}
+		if len(w.events) == 0 {
+			respond(x, &fc, "window shut down")
+			return
+		}
 	}
 
 	n := len(w.events)
