@@ -24,6 +24,7 @@ import (
 	"time"
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -226,7 +227,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 		r = make([]rune, e.q1-e.q0)
 		t.file.Read(e.q0, r)
 		if search(ct, r) && e.jump {
-			display.MoveCursor(ct.fr.PointOf(ct.fr.P0).Add(draw.Pt(4, ct.fr.Font.Height-4)))
+			adraw.Display.MoveCursor(ct.fr.PointOf(ct.fr.P0).Add(draw.Pt(4, ct.fr.Font.Height-4)))
 		}
 		if t.w != ct.w {
 			winunlock(ct.w)
@@ -266,12 +267,12 @@ func plumblook(m *plumb.Message) {
 		e.arg = r
 		e.agetc = plumbgetc
 	}
-	display.Top()
+	adraw.Display.Top()
 	openfile(nil, &e)
 }
 
 func plumbshow(m *plumb.Message) {
-	display.Top()
+	adraw.Display.Top()
 	w := makenewwindow(nil)
 	name := m.LookupAttr("filename")
 	if name == "" {
@@ -765,7 +766,7 @@ func openfile(t *Text, e *Expand) *Window {
 	winsettag(t.w)
 	seltext = t
 	if e.jump {
-		display.MoveCursor(t.fr.PointOf(t.fr.P0).Add(draw.Pt(4, font.Height-4)))
+		adraw.Display.MoveCursor(t.fr.PointOf(t.fr.P0).Add(draw.Pt(4, adraw.Font.Height-4)))
 	}
 	return w
 }

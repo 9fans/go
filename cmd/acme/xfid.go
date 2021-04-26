@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
@@ -64,7 +65,7 @@ func xfidctl(x *Xfid) {
 		f := <-x.c
 		bigLock()
 		f(x)
-		display.Flush()
+		adraw.Display.Flush()
 		bigUnlock()
 		cxfidfree <- x
 	}

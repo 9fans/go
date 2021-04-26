@@ -24,6 +24,7 @@ import (
 	"sort"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/complete"
@@ -34,32 +35,29 @@ import (
 	"9fans.net/go/draw/frame"
 )
 
-var tagcols [frame.NCOL]*draw.Image
-var textcols [frame.NCOL]*draw.Image
-
 const (
 	TABDIR = 3
 ) // width of tabs in directory windows
 
-func textinit(t *Text, f *File, r draw.Rectangle, rf *Reffont, cols []*draw.Image) {
+func textinit(t *Text, f *File, r draw.Rectangle, rf *adraw.RefFont, cols []*draw.Image) {
 	t.file = f
 	t.all = r
 	t.scrollr = r
-	t.scrollr.Max.X = r.Min.X + Scrollwid()
-	t.lastsr = nullrect
-	r.Min.X += Scrollwid() + Scrollgap()
+	t.scrollr.Max.X = r.Min.X + adraw.Scrollwid()
+	t.lastsr = draw.ZR
+	r.Min.X += adraw.Scrollwid() + adraw.Scrollgap()
 	t.eq0 = ^0
 	t.cache = t.cache[:0]
 	t.reffont = rf
 	t.tabstop = maxtab
 	copy(t.fr.Cols[:], cols)
-	textredraw(t, r, rf.f, display.ScreenImage, -1)
+	textredraw(t, r, rf.F, adraw.Display.ScreenImage, -1)
 }
 
 func textredraw(t *Text, r draw.Rectangle, f *draw.Font, b *draw.Image, odx int) {
 	t.fr.Init(r, f, b, t.fr.Cols[:])
 	rr := t.fr.R
-	rr.Min.X -= Scrollwid() + Scrollgap() // back fill to scroll bar
+	rr.Min.X -= adraw.Scrollwid() + adraw.Scrollgap() // back fill to scroll bar
 	if t.fr.NoRedraw == 0 {
 		t.fr.B.Draw(rr, t.fr.Cols[frame.BACK], nil, draw.ZP)
 	}
@@ -94,17 +92,17 @@ func textresize(t *Text, r draw.Rectangle, keepextra bool) int {
 	odx := t.all.Dx()
 	t.all = r
 	t.scrollr = r
-	t.scrollr.Max.X = r.Min.X + Scrollwid()
-	t.lastsr = nullrect
-	r.Min.X += Scrollwid() + Scrollgap()
+	t.scrollr.Max.X = r.Min.X + adraw.Scrollwid()
+	t.lastsr = draw.ZR
+	r.Min.X += adraw.Scrollwid() + adraw.Scrollgap()
 	t.fr.Clear(false)
 	textredraw(t, r, t.fr.Font, t.fr.B, odx)
 	if keepextra && t.fr.R.Max.Y < t.all.Max.Y && t.fr.NoRedraw == 0 {
 		// draw background in bottom fringe of window
-		r.Min.X -= Scrollgap()
+		r.Min.X -= adraw.Scrollgap()
 		r.Min.Y = t.fr.R.Max.Y
 		r.Max.Y = t.all.Max.Y
-		display.ScreenImage.Draw(r, t.fr.Cols[frame.BACK], nil, draw.ZP)
+		adraw.Display.ScreenImage.Draw(r, t.fr.Cols[frame.BACK], nil, draw.ZP)
 	}
 	return t.all.Max.Y
 }
@@ -113,7 +111,7 @@ func textclose(t *Text) {
 	t.fr.Clear(true)
 	filedeltext(t.file, t)
 	t.file = nil
-	rfclose(t.reffont)
+	adraw.CloseFont(t.reffont)
 	if argtext == t {
 		argtext = nil
 	}
@@ -1006,7 +1004,7 @@ func textselect(t *Text) {
 		if q0 == q1 && selectq == q0 {
 			textdoubleclick(t, &q0, &q1)
 			textsetselect(t, q0, q1)
-			display.Flush()
+			adraw.Display.Flush()
 			x := mouse.Point.X
 			y := mouse.Point.Y
 			// stay here until something interesting happens
@@ -1054,7 +1052,7 @@ func textselect(t *Text) {
 		clicktext = nil
 	}
 	textsetselect(t, q0, q1)
-	display.Flush()
+	adraw.Display.Flush()
 	state := None // what we've done; undo when possible
 	for mouse.Buttons != 0 {
 		mouse.Msec = 0
@@ -1086,7 +1084,7 @@ func textselect(t *Text) {
 			textscrdraw(t)
 			clearmouse()
 		}
-		display.Flush()
+		adraw.Display.Flush()
 		for mouse.Buttons == b {
 			mousectl.Read()
 		}
@@ -1284,13 +1282,13 @@ func xselect(f *frame.Frame, mc *draw.Mousectl, col *draw.Image, p1p *int) int {
 				pt1 = pt0
 				reg = region(q, p0)
 				if reg == 0 {
-					f.Drawsel0(pt0, p0, p1, col, display.White)
+					f.Drawsel0(pt0, p0, p1, col, adraw.Display.White)
 				}
 			}
 			qt := f.PointOf(q)
 			if reg > 0 {
 				if q > p1 {
-					f.Drawsel0(pt1, p1, q, col, display.White)
+					f.Drawsel0(pt1, p1, q, col, adraw.Display.White)
 				} else if q < p1 {
 					selrestore(f, qt, q, p1)
 				}
@@ -1298,7 +1296,7 @@ func xselect(f *frame.Frame, mc *draw.Mousectl, col *draw.Image, p1p *int) int {
 				if q > p1 {
 					selrestore(f, pt1, p1, q)
 				} else {
-					f.Drawsel0(qt, q, p1, col, display.White)
+					f.Drawsel0(qt, q, p1, col, adraw.Display.White)
 				}
 			}
 			p1 = q
@@ -1357,7 +1355,7 @@ func textselect23(t *Text, q0 *int, q1 *int, high *draw.Image, mask int) int {
 
 func textselect2(t *Text, q0 *int, q1 *int, tp **Text) int {
 	*tp = nil
-	buts := textselect23(t, q0, q1, but2col, 4)
+	buts := textselect23(t, q0, q1, adraw.Button2Color, 4)
 	if buts&4 != 0 {
 		return 0
 	}
@@ -1369,7 +1367,7 @@ func textselect2(t *Text, q0 *int, q1 *int, tp **Text) int {
 }
 
 func textselect3(t *Text, q0 *int, q1 *int) bool {
-	return textselect23(t, q0, q1, but3col, 1|2) == 0
+	return textselect23(t, q0, q1, adraw.Button3Color, 1|2) == 0
 }
 
 var (

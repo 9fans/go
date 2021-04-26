@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -30,20 +31,20 @@ import (
 )
 
 func rowinit(row *Row, r draw.Rectangle) {
-	display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
+	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 	row.r = r
 	row.col = nil
 	r1 := r
-	r1.Max.Y = r1.Min.Y + font.Height
+	r1.Max.Y = r1.Min.Y + adraw.Font.Height
 	t := &row.tag
-	textinit(t, fileaddtext(nil, t), r1, rfget(false, false, false, ""), tagcols[:])
+	textinit(t, fileaddtext(nil, t), r1, adraw.FindFont(false, false, false, ""), adraw.TagCols[:])
 	t.what = Rowtag
 	t.row = row
 	t.w = nil
 	t.col = nil
 	r1.Min.Y = r1.Max.Y
-	r1.Max.Y += Border()
-	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
+	r1.Max.Y += adraw.Border()
+	adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
 	textinsert(t, 0, []rune("Newcol Kill Putall Dump Exit "), true)
 	textsetselect(t, t.Len(), t.Len())
 }
@@ -51,7 +52,7 @@ func rowinit(row *Row, r draw.Rectangle) {
 func rowadd(row *Row, c *Column, x int) *Column {
 	var d *Column
 	r := row.r
-	r.Min.Y = row.tag.fr.R.Max.Y + Border()
+	r.Min.Y = row.tag.fr.R.Max.Y + adraw.Border()
 	if x < r.Min.X && len(row.col) > 0 { //steal 40% of last column by default
 		d = row.col[len(row.col)-1]
 		x = d.r.Min.X + 3*d.r.Dx()/5
@@ -72,22 +73,22 @@ func rowadd(row *Row, c *Column, x int) *Column {
 		if r.Dx() < 100 {
 			return nil
 		}
-		display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
+		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 		r1 := r
-		r1.Max.X = util.Min(x-Border(), r.Max.X-50)
+		r1.Max.X = util.Min(x-adraw.Border(), r.Max.X-50)
 		if r1.Dx() < 50 {
 			r1.Max.X = r1.Min.X + 50
 		}
 		colresize(d, r1)
 		r1.Min.X = r1.Max.X
-		r1.Max.X = r1.Min.X + Border()
-		display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
+		r1.Max.X = r1.Min.X + adraw.Border()
+		adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
 		r.Min.X = r1.Max.X
 	}
 	if c == nil {
 		c = new(Column)
 		colinit(c, r)
-		util.Incref(&reffont.ref)
+		util.Incref(&adraw.RefFont1.Ref)
 	} else {
 		colresize(c, r)
 	}
@@ -105,11 +106,11 @@ func rowresize(row *Row, r draw.Rectangle) {
 	deltax := r.Min.X - or.Min.X
 	row.r = r
 	r1 := r
-	r1.Max.Y = r1.Min.Y + font.Height
+	r1.Max.Y = r1.Min.Y + adraw.Font.Height
 	textresize(&row.tag, r1, true)
 	r1.Min.Y = r1.Max.Y
-	r1.Max.Y += Border()
-	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
+	r1.Max.Y += adraw.Border()
+	adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
 	r.Min.Y = r1.Max.Y
 	r1 = r
 	r1.Max.X = r1.Min.X
@@ -124,8 +125,8 @@ func rowresize(row *Row, r draw.Rectangle) {
 		}
 		if i > 0 {
 			r2 := r1
-			r2.Max.X = r2.Min.X + Border()
-			display.ScreenImage.Draw(r2, display.Black, nil, draw.ZP)
+			r2.Max.X = r2.Min.X + adraw.Border()
+			adraw.Display.ScreenImage.Draw(r2, adraw.Display.Black, nil, draw.ZP)
 			r1.Min.X = r2.Max.X
 		}
 		colresize(c, r1)
@@ -134,13 +135,13 @@ func rowresize(row *Row, r draw.Rectangle) {
 
 func rowdragcol(row *Row, c *Column, _0 int) {
 	clearmouse()
-	display.SwitchCursor2(&boxcursor, &boxcursor2)
+	adraw.Display.SwitchCursor2(&adraw.BoxCursor, &adraw.BoxCursor2)
 	b := mouse.Buttons
 	op := mouse.Point
 	for mouse.Buttons == b {
 		mousectl.Read()
 	}
-	display.SwitchCursor(nil)
+	adraw.Display.SwitchCursor(nil)
 	if mouse.Buttons != 0 {
 		for mouse.Buttons != 0 {
 			mousectl.Read()
@@ -180,22 +181,22 @@ Found:
 		return
 	}
 	d := row.col[i-1]
-	if p.X < d.r.Min.X+80+Scrollwid() {
-		p.X = d.r.Min.X + 80 + Scrollwid()
+	if p.X < d.r.Min.X+80+adraw.Scrollwid() {
+		p.X = d.r.Min.X + 80 + adraw.Scrollwid()
 	}
-	if p.X > c.r.Max.X-80-Scrollwid() {
-		p.X = c.r.Max.X - 80 - Scrollwid()
+	if p.X > c.r.Max.X-80-adraw.Scrollwid() {
+		p.X = c.r.Max.X - 80 - adraw.Scrollwid()
 	}
 	r := d.r
 	r.Max.X = c.r.Max.X
-	display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
+	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 	r.Max.X = p.X
 	colresize(d, r)
 	r = c.r
 	r.Min.X = p.X
 	r.Max.X = r.Min.X
-	r.Max.X += Border()
-	display.ScreenImage.Draw(r, display.Black, nil, draw.ZP)
+	r.Max.X += adraw.Border()
+	adraw.Display.ScreenImage.Draw(r, adraw.Display.Black, nil, draw.ZP)
 	r.Min.X = r.Max.X
 	r.Max.X = c.r.Max.X
 	colresize(c, r)
@@ -218,7 +219,7 @@ Found:
 	copy(row.col[i:], row.col[i+1:])
 	row.col = row.col[:len(row.col)-1]
 	if len(row.col) == 0 {
-		display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
+		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 		return
 	}
 	if i == len(row.col) { // extend last column right
@@ -229,7 +230,7 @@ Found:
 		c = row.col[i]
 		r.Max.X = c.r.Max.X
 	}
-	display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
+	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 	colresize(c, r)
 }
 
@@ -318,8 +319,8 @@ func rowdump(row *Row, file *string) {
 	b := bufio.NewWriter(f)
 	r := bufs.AllocRunes()
 	fmt.Fprintf(b, "%s\n", wdir)
-	fmt.Fprintf(b, "%s\n", fontnames[0])
-	fmt.Fprintf(b, "%s\n", fontnames[1])
+	fmt.Fprintf(b, "%s\n", adraw.FontNames[0])
+	fmt.Fprintf(b, "%s\n", adraw.FontNames[1])
 	var i int
 	var c *Column
 	for i = 0; i < len(row.col); i++ {
@@ -373,8 +374,8 @@ func rowdump(row *Row, file *string) {
 				}
 			}
 			fontname := ""
-			if t.reffont.f != font {
-				fontname = t.reffont.f.Name
+			if t.reffont.F != adraw.Font {
+				fontname = t.reffont.F.Name
 			}
 			var a string
 			if len(t.file.Name()) != 0 {
@@ -474,8 +475,8 @@ func rowloadfonts(file string) {
 			return
 		}
 		l = l[:len(l)-1]
-		if l != "" && l != fontnames[i] {
-			fontnames[i] = l
+		if l != "" && l != adraw.FontNames[i] {
+			adraw.FontNames[i] = l
 		}
 	}
 }
@@ -521,12 +522,12 @@ func rowload(row *Row, file *string, initing bool) bool {
 			return bad()
 		}
 		l = l[:len(l)-1]
-		if l != "" && l != fontnames[i] {
-			rfget(i != 0, true, i == 0 && initing, l)
+		if l != "" && l != adraw.FontNames[i] {
+			adraw.FindFont(i != 0, true, i == 0 && initing, l)
 		}
 	}
 	if initing && len(row.col) == 0 {
-		rowinit(row, display.ScreenImage.Clipr)
+		rowinit(row, adraw.Display.ScreenImage.Clipr)
 	}
 	l, err = rdline(b, &line)
 	if err != nil {
@@ -551,20 +552,20 @@ func rowload(row *Row, file *string, initing bool) bool {
 			c2 := row.col[i]
 			r1 := c1.r
 			r2 := c2.r
-			if x < Border() {
-				x = Border()
+			if x < adraw.Border() {
+				x = adraw.Border()
 			}
-			r1.Max.X = x - Border()
+			r1.Max.X = x - adraw.Border()
 			r2.Min.X = x
 			if r1.Dx() < 50 || r2.Dx() < 50 {
 				continue
 			}
-			display.ScreenImage.Draw(draw.Rpt(r1.Min, r2.Max), display.White, nil, draw.ZP)
+			adraw.Display.ScreenImage.Draw(draw.Rpt(r1.Min, r2.Max), adraw.Display.White, nil, draw.ZP)
 			colresize(c1, r1)
 			colresize(c2, r2)
-			r2.Min.X = x - Border()
+			r2.Min.X = x - adraw.Border()
 			r2.Max.X = x
-			display.ScreenImage.Draw(r2, display.Black, nil, draw.ZP)
+			adraw.Display.ScreenImage.Draw(r2, adraw.Display.Black, nil, draw.ZP)
 		}
 		if i >= len(row.col) {
 			rowadd(row, nil, x)

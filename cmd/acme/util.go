@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -203,7 +204,7 @@ func savemouse(w *Window) {
 func restoremouse(w *Window) int {
 	did := 0
 	if mousew != nil && mousew == w {
-		display.MoveCursor(prevmouse)
+		adraw.Display.MoveCursor(prevmouse)
 		did = 1
 	}
 	mousew = nil
@@ -255,7 +256,7 @@ func makenewwindow(t *Text) *Window {
 	var y int
 	// if empty space is big, use it
 	if el > 15 || (el > 3 && el > (bigw.body.fr.MaxLines-1)/2) {
-		y = emptyb.fr.R.Min.Y + emptyb.fr.NumLines*font.Height
+		y = emptyb.fr.R.Min.Y + emptyb.fr.NumLines*adraw.Font.Height
 	} else {
 		// if this window is in column and isn't much smaller, split it
 		if t.col == c && t.w.r.Dy() > 2*bigw.r.Dy()/3 {

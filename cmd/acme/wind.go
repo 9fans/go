@@ -19,6 +19,7 @@ import (
 	"os"
 	"strings"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -45,12 +46,12 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 	r1 := r
 
 	w.tagtop = r
-	w.tagtop.Max.Y = r.Min.Y + font.Height
-	r1.Max.Y = r1.Min.Y + w.taglines*font.Height
+	w.tagtop.Max.Y = r.Min.Y + adraw.Font.Height
+	r1.Max.Y = r1.Min.Y + w.taglines*adraw.Font.Height
 
-	util.Incref(&reffont.ref)
+	util.Incref(&adraw.RefFont1.Ref)
 	f := fileaddtext(nil, &w.tag)
-	textinit(&w.tag, f, r1, &reffont, tagcols[:])
+	textinit(&w.tag, f, r1, &adraw.RefFont1, adraw.TagCols[:])
 	w.tag.what = Tag
 	// tag is a copy of the contents, not a tracked image
 	if clone != nil {
@@ -63,33 +64,33 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 		textsetselect(&w.tag, nc, nc)
 	}
 	r1 = r
-	r1.Min.Y += w.taglines*font.Height + 1
+	r1.Min.Y += w.taglines*adraw.Font.Height + 1
 	if r1.Max.Y < r1.Min.Y {
 		r1.Max.Y = r1.Min.Y
 	}
 	f = nil
-	var rf *Reffont
+	var rf *adraw.RefFont
 	if clone != nil {
 		f = clone.body.file
 		w.body.org = clone.body.org
 		w.isscratch = clone.isscratch
-		rf = rfget(false, false, false, clone.body.reffont.f.Name)
+		rf = adraw.FindFont(false, false, false, clone.body.reffont.F.Name)
 	} else {
-		rf = rfget(false, false, false, "")
+		rf = adraw.FindFont(false, false, false, "")
 	}
 	f = fileaddtext(f, &w.body)
 	w.body.what = Body
-	textinit(&w.body, f, r1, rf, textcols[:])
+	textinit(&w.body, f, r1, rf, adraw.TextCols[:])
 	r1.Min.Y -= 1
 	r1.Max.Y = r1.Min.Y + 1
-	display.ScreenImage.Draw(r1, tagcols[frame.BORD], nil, draw.ZP)
+	adraw.Display.ScreenImage.Draw(r1, adraw.TagCols[frame.BORD], nil, draw.ZP)
 	textscrdraw(&w.body)
 	w.r = r
 	var br draw.Rectangle
 	br.Min = w.tag.scrollr.Min
-	br.Max.X = br.Min.X + button.R.Dx()
-	br.Max.Y = br.Min.Y + button.R.Dy()
-	display.ScreenImage.Draw(br, button, nil, button.R.Min)
+	br.Max.X = br.Min.X + adraw.Button.R.Dx()
+	br.Max.Y = br.Min.Y + adraw.Button.R.Dy()
+	adraw.Display.ScreenImage.Draw(br, adraw.Button, nil, adraw.Button.R.Min)
 	w.filemenu = true
 	w.maxlines = w.body.fr.MaxLines
 	w.autoindent = globalautoindent
@@ -105,15 +106,15 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
  * Draw the appropriate button.
  */
 func windrawbutton(w *Window) {
-	b := button
+	b := adraw.Button
 	if !w.isdir && !w.isscratch && (w.body.file.Mod() || len(w.body.cache) != 0) {
-		b = modbutton
+		b = adraw.ModButton
 	}
 	var br draw.Rectangle
 	br.Min = w.tag.scrollr.Min
 	br.Max.X = br.Min.X + b.R.Dx()
 	br.Max.Y = br.Min.Y + b.R.Dy()
-	display.ScreenImage.Draw(br, b, nil, b.R.Min)
+	adraw.Display.ScreenImage.Draw(br, b, nil, b.R.Min)
 }
 
 func delrunepos(w *Window) int {
@@ -130,7 +131,7 @@ func movetodel(w *Window) {
 	if n < 0 {
 		return
 	}
-	display.MoveCursor(w.tag.fr.PointOf(n).Add(draw.Pt(4, w.tag.fr.Font.Height-4)))
+	adraw.Display.MoveCursor(w.tag.fr.PointOf(n).Add(draw.Pt(4, w.tag.fr.Font.Height-4)))
 }
 
 /*
@@ -184,15 +185,15 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 
 	// tagtop is first line of tag
 	w.tagtop = r
-	w.tagtop.Max.Y = r.Min.Y + font.Height
+	w.tagtop.Max.Y = r.Min.Y + adraw.Font.Height
 
 	r1 := r
-	r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
+	r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*adraw.Font.Height)
 
 	// If needed, recompute number of lines in tag.
 	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		w.taglines = wintaglines(w, r)
-		r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
+		r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*adraw.Font.Height)
 	}
 
 	// If needed, resize & redraw tag.
@@ -208,14 +209,14 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		if mouseintag && !mouse.Point.In(w.tag.all) {
 			p = mouse.Point
 			p.Y = w.tag.all.Max.Y - 3
-			display.MoveCursor(p)
+			adraw.Display.MoveCursor(p)
 		}
 
 		// If mouse is in body, push down as tag expands.
 		if mouseinbody && mouse.Point.In(w.tag.all) {
 			p = mouse.Point
 			p.Y = w.tag.all.Max.Y + 3
-			display.MoveCursor(p)
+			adraw.Display.MoveCursor(p)
 		}
 	}
 
@@ -227,7 +228,7 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		if y+1+w.body.fr.Font.Height <= r.Max.Y { // room for one line
 			r1.Min.Y = y
 			r1.Max.Y = y + 1
-			display.ScreenImage.Draw(r1, tagcols[frame.BORD], nil, draw.ZP)
+			adraw.Display.ScreenImage.Draw(r1, adraw.TagCols[frame.BORD], nil, draw.ZP)
 			y++
 			r1.Min.Y = util.Min(y, r.Max.Y)
 			r1.Max.Y = r.Max.Y
@@ -274,7 +275,7 @@ func winunlock(w *Window) {
 }
 
 func winmousebut(w *Window) {
-	display.MoveCursor(w.tag.scrollr.Min.Add(draw.Pt(w.tag.scrollr.Dx(), font.Height).Div(2)))
+	adraw.Display.MoveCursor(w.tag.scrollr.Min.Add(draw.Pt(w.tag.scrollr.Dx(), adraw.Font.Height).Div(2)))
 }
 
 func windirfree(w *Window) {
@@ -581,7 +582,7 @@ func winctlprint(w *Window, fonts bool) string {
 	}
 	base := fmt.Sprintf("%11d %11d %11d %11d %11d ", w.id, w.tag.Len(), w.body.Len(), isdir, dirty)
 	if fonts {
-		base += fmt.Sprintf("%11d %q %11d ", w.body.fr.R.Dx(), w.body.reffont.f.Name, w.body.fr.MaxTab)
+		base += fmt.Sprintf("%11d %q %11d ", w.body.fr.R.Dx(), w.body.reffont.F.Name, w.body.fr.MaxTab)
 	}
 	return base
 }

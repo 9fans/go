@@ -5,6 +5,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -58,7 +59,7 @@ const (
 type Text struct {
 	file     *File
 	fr       frame.Frame
-	reffont  *Reffont
+	reffont  *adraw.RefFont
 	org      int
 	q0       int
 	q1       int
@@ -105,7 +106,7 @@ type Window struct {
 	dlp         []*Dirlist
 	putseq      int
 	incl        [][]rune
-	reffont     *Reffont
+	reffont     *adraw.RefFont
 	ctllock     sync.Mutex
 	ctlfid      int
 	dumpstr     string
@@ -192,12 +193,6 @@ type Xfid struct {
 	flushed bool
 }
 
-type Reffont struct {
-	lk  sync.Mutex
-	ref uint32
-	f   *draw.Font
-}
-
 type Dirlist struct {
 	r   []rune
 	wid int
@@ -223,12 +218,6 @@ const (
 	EVENTSIZE = 256
 )
 
-func Scrollwid() int    { return display.Scale(12) }
-func Scrollgap() int    { return display.Scale(4) }
-func Margin() int       { return display.Scale(4) }
-func Border() int       { return display.Scale(2) }
-func ButtonBorder() int { return display.Scale(2) }
-
 const XXX = false
 
 // editing
@@ -242,18 +231,10 @@ const (
 var globalincref int
 var maxtab int // size of a tab, in units of the '0' character
 
-var display *draw.Display
 var screen *draw.Image
-var font *draw.Font
 var mouse *draw.Mouse
 var mousectl *draw.Mousectl
 var keyboardctl *draw.Keyboardctl
-var reffont Reffont
-var modbutton *draw.Image
-var colbutton *draw.Image
-var button *draw.Image
-var but2col *draw.Image
-var but3col *draw.Image
 var row Row
 var timerpid int
 var seltext *Text
@@ -264,7 +245,6 @@ var barttext *Text  // shared between mousetask and keyboardthread
 var bartflag bool
 var activewin *Window
 var activecol *Column
-var nullrect draw.Rectangle
 var fsyspid int
 var cputype string
 var objtype string

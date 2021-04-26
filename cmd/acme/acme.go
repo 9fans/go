@@ -11,18 +11,16 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/draw"
-	"9fans.net/go/draw/frame"
 )
 
-var fontcache []*Reffont
 var wdir = "."
-var reffonts [2]*Reffont
 var snarffd = -1
 var mainpid int
 var swapscrollbuttons bool = false
@@ -35,11 +33,6 @@ const (
 )
 
 var snarfrune [NSnarf + 1]rune
-
-var fontnames = []string{
-	"/lib/font/bit/lucsans/euro.8.font",
-	"/lib/font/bit/lucm/unicode.9.font",
-}
 
 var command *Command
 
@@ -60,8 +53,8 @@ func main() {
 	flag.BoolVar(&globalautoindent, "a", globalautoindent, "autoindent")
 	flag.BoolVar(&bartflag, "b", bartflag, "bartflag")
 	flag.IntVar(&ncol, "c", ncol, "set number of `columns`")
-	flag.StringVar(&fontnames[0], "f", fontnames[0], "font")
-	flag.StringVar(&fontnames[1], "F", fontnames[1], "font")
+	flag.StringVar(&adraw.FontNames[0], "f", adraw.FontNames[0], "font")
+	flag.StringVar(&adraw.FontNames[1], "F", adraw.FontNames[1], "font")
 	flag.StringVar(&loadfile, "l", loadfile, "loadfile")
 	flag.StringVar(&mtpt, "m", mtpt, "mtpt")
 	flag.BoolVar(&swapscrollbuttons, "r", swapscrollbuttons, "swapscrollbuttons")
@@ -88,7 +81,7 @@ func main() {
 	if loadfile != "" {
 		rowloadfonts(loadfile)
 	}
-	os.Setenv("font", fontnames[0])
+	os.Setenv("font", adraw.FontNames[0])
 	/*
 		snarffd = syscall.Open("/dev/snarf", syscall.O_RDONLY|OCEXEC, 0)
 		if(cputype){
@@ -106,7 +99,7 @@ func main() {
 		}
 	*/
 	ch := make(chan error)
-	d, err := draw.Init(ch, fontnames[0], "acme", winsize)
+	d, err := draw.Init(ch, adraw.FontNames[0], "acme", winsize)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -118,27 +111,27 @@ func main() {
 		}
 	}()
 
-	display = d
-	font = d.Font
+	adraw.Display = d
+	adraw.Font = d.Font
 	//assert(font);
 
-	reffont.f = font
-	reffonts[0] = &reffont
-	util.Incref(&reffont.ref) // one to hold up 'font' variable
-	util.Incref(&reffont.ref) // one to hold up reffonts[0]
-	fontcache = make([]*Reffont, 1)
-	fontcache[0] = &reffont
+	adraw.RefFont1.F = adraw.Font
+	adraw.RefFonts[0] = &adraw.RefFont1
+	util.Incref(&adraw.RefFont1.Ref) // one to hold up 'font' variable
+	util.Incref(&adraw.RefFont1.Ref) // one to hold up reffonts[0]
+	adraw.FontCache = make([]*adraw.RefFont, 1)
+	adraw.FontCache[0] = &adraw.RefFont1
 
-	iconinit()
+	adraw.Init()
 	// TODO timerinit()
 	regx.Init()
 
-	mousectl = display.InitMouse()
+	mousectl = adraw.Display.InitMouse()
 	if mousectl == nil {
 		log.Fatal("can't initialize mouse")
 	}
 	mouse = &mousectl.Mouse
-	keyboardctl = display.InitKeyboard()
+	keyboardctl = adraw.Display.InitKeyboard()
 	if keyboardctl == nil {
 		log.Fatal("can't initialize keyboard")
 	}
@@ -150,7 +143,7 @@ func main() {
 	const WPERCOL = 8
 	disk.Init()
 	if loadfile == "" || !rowload(&row, &loadfile, true) {
-		rowinit(&row, display.ScreenImage.Clipr)
+		rowinit(&row, adraw.Display.ScreenImage.Clipr)
 		argc := flag.NArg()
 		argv := flag.Args()
 		if ncol < 0 {
@@ -188,7 +181,7 @@ func main() {
 			}
 		}
 	}
-	display.Flush()
+	adraw.Display.Flush()
 
 	acmeerrorinit()
 	go keyboardthread()
@@ -352,7 +345,7 @@ func keyboardthread() {
 				winlock(t.w, 'K')
 				wincommit(t.w, t)
 				winunlock(t.w)
-				display.Flush()
+				adraw.Display.Flush()
 			}
 
 		case r = <-keyboardctl.C:
@@ -383,7 +376,7 @@ func keyboardthread() {
 			case r = <-keyboardctl.C:
 				goto Loop
 			}
-			display.Flush()
+			adraw.Display.Flush()
 		}
 	}
 }
@@ -397,19 +390,19 @@ func mousethread() {
 		flushwarnings()
 		row.lk.Unlock()
 
-		display.Flush()
+		adraw.Display.Flush()
 
 		bigUnlock()
 		select {
 		case <-mousectl.Resize:
 			bigLock()
-			if err := display.Attach(draw.RefNone); err != nil {
+			if err := adraw.Display.Attach(draw.RefNone); err != nil {
 				util.Fatal("attach to window: " + err.Error())
 			}
-			display.ScreenImage.Draw(display.ScreenImage.R, display.White, nil, draw.ZP)
-			iconinit()
+			adraw.Display.ScreenImage.Draw(adraw.Display.ScreenImage.R, adraw.Display.White, nil, draw.ZP)
+			adraw.Init()
 			scrlresize()
-			rowresize(&row, display.ScreenImage.Clipr)
+			rowresize(&row, adraw.Display.ScreenImage.Clipr)
 
 		case pm := <-cplumb:
 			bigLock()
@@ -583,7 +576,7 @@ func waitthread() {
 			bigLock()
 			row.lk.Lock()
 			alog.Printf("%s", errb)
-			display.Flush()
+			adraw.Display.Flush()
 			row.lk.Unlock()
 
 		case cmd := <-ckill:
@@ -636,7 +629,7 @@ func waitthread() {
 				if w.msg[0] != 0 {
 					warning(c.md, "%s: exit %s\n", string(c.name[:len(c.name)-1]), w.msg)
 				}
-				display.Flush()
+				adraw.Display.Flush()
 			}
 			row.lk.Unlock()
 			goto Freecmd
@@ -666,7 +659,7 @@ func waitthread() {
 			textcommit(t, true)
 			textinsert(t, 0, c.name, true)
 			textsetselect(t, 0, 0)
-			display.Flush()
+			adraw.Display.Flush()
 			row.lk.Unlock()
 		}
 		continue
@@ -720,213 +713,6 @@ func newwindowthread() {
 	}
 }
 
-var nfix int
-
-func rfget(fix, save, setfont bool, name string) *Reffont {
-	var r *Reffont
-	fixi := 0
-	if fix {
-		fixi = 1
-		if nfix++; nfix > 1 {
-			panic("fixi")
-		}
-	}
-	if name == "" {
-		name = fontnames[fixi]
-		r = reffonts[fixi]
-	}
-	if r == nil {
-		for _, r = range fontcache {
-			if r.f.Name == name {
-				goto Found
-			}
-		}
-		f, err := display.OpenFont(name)
-		if err != nil {
-			alog.Printf("can't open font file %s: %v\n", name, err)
-			return nil
-		}
-		r = new(Reffont)
-		r.f = f
-		fontcache = append(fontcache, r)
-	}
-Found:
-	if save {
-		util.Incref(&r.ref)
-		if reffonts[fixi] != nil {
-			rfclose(reffonts[fixi])
-		}
-		reffonts[fixi] = r
-		if name != fontnames[fixi] {
-			fontnames[fixi] = name
-		}
-	}
-	if setfont {
-		reffont.f = r.f
-		util.Incref(&r.ref)
-		rfclose(reffonts[0])
-		font = r.f
-		reffonts[0] = r
-		util.Incref(&r.ref)
-		iconinit()
-	}
-	util.Incref(&r.ref)
-	return r
-}
-
-func rfclose(r *Reffont) {
-	if util.Decref(&r.ref) == 0 {
-		for i := range fontcache {
-			if fontcache[i] == r {
-				copy(fontcache[i:], fontcache[i+1:])
-				fontcache = fontcache[:len(fontcache)-1]
-				goto Found
-			}
-		}
-		alog.Printf("internal error: can't find font in cache\n")
-	Found:
-		r.f.Free()
-	}
-}
-
-var boxcursor = draw.Cursor{
-	Point: draw.Point{-7, -7},
-	White: [...]uint8{
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xF8, 0x1F, 0xF8, 0x1F, 0xF8, 0x1F,
-		0xF8, 0x1F, 0xF8, 0x1F, 0xF8, 0x1F, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	},
-	Black: [...]uint8{
-		0x00, 0x00, 0x7F, 0xFE, 0x7F, 0xFE, 0x7F, 0xFE,
-		0x70, 0x0E, 0x70, 0x0E, 0x70, 0x0E, 0x70, 0x0E,
-		0x70, 0x0E, 0x70, 0x0E, 0x70, 0x0E, 0x70, 0x0E,
-		0x7F, 0xFE, 0x7F, 0xFE, 0x7F, 0xFE, 0x00, 0x00,
-	},
-}
-
-var boxcursor2 = draw.Cursor2{
-	Point: draw.Point{-15, -15},
-	White: [...]uint8{
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xC0, 0x03, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF,
-	},
-	Black: [...]uint8{
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0x00, 0x00, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x3F, 0xFF, 0xFF, 0xFC,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-	},
-}
-
-func iconinit() {
-	if tagcols[frame.BACK] == nil {
-		// Blue
-		tagcols[frame.BACK] = display.AllocImageMix(draw.PaleBlueGreen, draw.White)
-		tagcols[frame.HIGH], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.PaleGreyGreen)
-		tagcols[frame.BORD], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.PurpleBlue)
-		tagcols[frame.TEXT] = display.Black
-		tagcols[frame.HTEXT] = display.Black
-
-		// Yellow
-		textcols[frame.BACK] = display.AllocImageMix(draw.PaleYellow, draw.White)
-		textcols[frame.HIGH], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.DarkYellow)
-		textcols[frame.BORD], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.YellowGreen)
-		textcols[frame.TEXT] = display.Black
-		textcols[frame.HTEXT] = display.Black
-	}
-
-	r := draw.Rect(0, 0, Scrollwid()+ButtonBorder(), font.Height+1)
-	if button != nil && r == button.R {
-		return
-	}
-
-	if button != nil {
-		button.Free()
-		modbutton.Free()
-		colbutton.Free()
-	}
-
-	button, _ = display.AllocImage(r, display.ScreenImage.Pix, false, draw.NoFill)
-	button.Draw(r, tagcols[frame.BACK], nil, r.Min)
-	r.Max.X -= ButtonBorder()
-	button.Border(r, ButtonBorder(), tagcols[frame.BORD], draw.ZP)
-
-	r = button.R
-	modbutton, _ = display.AllocImage(r, display.ScreenImage.Pix, false, draw.NoFill)
-	modbutton.Draw(r, tagcols[frame.BACK], nil, r.Min)
-	r.Max.X -= ButtonBorder()
-	modbutton.Border(r, ButtonBorder(), tagcols[frame.BORD], draw.ZP)
-	r = r.Inset(ButtonBorder())
-	tmp, _ := display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.MedBlue)
-	modbutton.Draw(r, tmp, nil, draw.ZP)
-	tmp.Free()
-
-	r = button.R
-	colbutton, _ = display.AllocImage(r, display.ScreenImage.Pix, false, draw.PurpleBlue)
-
-	but2col, _ = display.AllocImage(r, display.ScreenImage.Pix, true, 0xAA0000FF)
-	but3col, _ = display.AllocImage(r, display.ScreenImage.Pix, true, 0x006600FF)
-}
-
 /*
  * /dev/snarf updates when the file is closed, so we must open our own
  * fd here rather than use snarffd
@@ -969,17 +755,17 @@ func acmeputsnarf() {
 		}
 	}
 	if len(buf) > 0 {
-		display.WriteSnarf(buf)
+		adraw.Display.WriteSnarf(buf)
 	}
 }
 
 func acmegetsnarf() {
-	_, m, err := display.ReadSnarf(nil)
+	_, m, err := adraw.Display.ReadSnarf(nil)
 	if err != nil {
 		return
 	}
 	buf := make([]byte, m+100)
-	n, _, err := display.ReadSnarf(buf)
+	n, _, err := adraw.Display.ReadSnarf(buf)
 	if n == 0 || err != nil {
 		return
 	}

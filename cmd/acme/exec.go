@@ -29,6 +29,7 @@ import (
 	"unicode/utf8"
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
+	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
@@ -1014,33 +1015,33 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 		}
 	}
 	fix := true
-	var newfont *Reffont
+	var newfont *adraw.RefFont
 	if flag != nil {
 		fix = runes.Equal(flag, []rune("fix"))
 	} else if file == nil {
-		newfont = rfget(false, false, false, "")
+		newfont = adraw.FindFont(false, false, false, "")
 		if newfont != nil {
-			fix = newfont.f.Name == t.fr.Font.Name
+			fix = newfont.F.Name == t.fr.Font.Name
 		}
 	}
 	var aa string
 	if file != nil {
-		newfont = rfget(fix, flag != nil, false, string(file))
+		newfont = adraw.FindFont(fix, flag != nil, false, string(file))
 	} else {
-		newfont = rfget(fix, false, false, "")
+		newfont = adraw.FindFont(fix, false, false, "")
 	}
 	if newfont != nil {
-		display.ScreenImage.Draw(t.w.r, textcols[frame.BACK], nil, draw.ZP)
-		rfclose(t.reffont)
+		adraw.Display.ScreenImage.Draw(t.w.r, adraw.TextCols[frame.BACK], nil, draw.ZP)
+		adraw.CloseFont(t.reffont)
 		t.reffont = newfont
-		t.fr.Font = newfont.f
+		t.fr.Font = newfont.F
 		t.fr.InitTick()
 		if t.w.isdir {
 			t.all.Min.X++ // force recolumnation; disgusting!
 			for i := 0; i < len(t.w.dlp); i++ {
 				dp := t.w.dlp[i]
 				aa = string(dp.r)
-				dp.wid = newfont.f.StringWidth(aa)
+				dp.wid = newfont.F.StringWidth(aa)
 			}
 		}
 		// avoid shrinking of window due to quantization
