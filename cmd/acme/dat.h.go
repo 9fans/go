@@ -46,7 +46,7 @@ type Elog struct {
 	r   []rune
 }
 
-/* Text.what */
+// Text.what
 
 const (
 	Columntag = iota
@@ -215,7 +215,7 @@ type Expand struct {
 	a1    int
 }
 
-/* fbufalloc() guarantees room off end of BUFSIZE */
+// fbufalloc() guarantees room off end of BUFSIZE
 const (
 	BUFSIZE   = 8192
 	RUNESIZE  = int(unsafe.Sizeof(rune(0)))
@@ -231,7 +231,7 @@ func ButtonBorder() int { return display.Scale(2) }
 
 const XXX = false
 
-/* editing */
+// editing
 
 const (
 	Inactive = 0 + iota
@@ -240,7 +240,7 @@ const (
 )
 
 var globalincref int
-var maxtab int /* size of a tab, in units of the '0' character */
+var maxtab int // size of a tab, in units of the '0' character
 
 var display *draw.Display
 var screen *draw.Image
@@ -258,9 +258,9 @@ var row Row
 var timerpid int
 var seltext *Text
 var argtext *Text
-var mousetext *Text /* global because Text.close needs to clear it */
-var typetext *Text  /* global because Text.close needs to clear it */
-var barttext *Text  /* shared between mousetask and keyboardthread */
+var mousetext *Text // global because Text.close needs to clear it
+var typetext *Text  // global because Text.close needs to clear it
+var barttext *Text  // shared between mousetask and keyboardthread
 var bartflag bool
 var activewin *Window
 var activecol *Column
@@ -271,7 +271,7 @@ var objtype string
 var home string
 var acmeshell string
 
-/* extern var wdir [unknown]C.char */ /* must use extern because no dimension given */
+// extern var wdir [unknown]C.char /* must use extern because no dimension given */
 var globalautoindent bool
 var dodollarsigns bool
 

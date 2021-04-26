@@ -1,4 +1,4 @@
-/*#pragma	varargck	argpos	editerror	1*/
+//#pragma	varargck	argpos	editerror	1
 
 package main
 
@@ -37,9 +37,9 @@ type Cmd struct {
 	cmdc rune
 }
 
-/* extern var cmdtab [unknown]cmdtab */
+// extern var cmdtab [unknown]cmdtab
 
-// #define	INCR	25	/* delta when growing list */
+// #define	INCR	25	// delta when growing list
 
 type List struct {
 	nalloc int

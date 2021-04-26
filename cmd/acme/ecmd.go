@@ -35,7 +35,7 @@ var Enoname = "no file name given"
 var addr Address
 var menu *File
 
-/* extern var curtext *Text */
+// extern var curtext *Text
 var collection []rune
 
 func clearcollection() {
@@ -64,7 +64,7 @@ func cmdexec(t *Text, cp *Cmd) bool {
 	if w == nil && (cp.addr == nil || cp.addr.typ != '"') && !strings.ContainsRune("bBnqUXY!", cp.cmdc) && (!(cp.cmdc == 'D') || cp.u.text == nil) {
 		editerror("no current window")
 	}
-	i := cmdlookup(cp.cmdc) /* will be -1 for '{' */
+	i := cmdlookup(cp.cmdc) // will be -1 for '{'
 	var f *File
 	if t != nil && t.w != nil {
 		t = &t.w.body
@@ -88,12 +88,12 @@ func cmdexec(t *Text, cp *Cmd) bool {
 				ap.next.typ = '*'
 			}
 		}
-		if cp.addr != nil { /* may be false for '\n' (only) */
+		if cp.addr != nil { // may be false for '\n' (only)
 			none := Address{}
 			if f != nil {
 				mkaddr(&dot, f)
 				addr = cmdaddress(ap, dot, 0)
-			} else { /* a " */
+			} else { // a "
 				addr = cmdaddress(ap, none, 0)
 			}
 			f = addr.f
@@ -139,7 +139,7 @@ func edittext(w *Window, q int, r []rune) error {
 	}
 }
 
-/* string is known to be NUL-terminated */
+// string is known to be NUL-terminated
 func filelist(t *Text, r []rune) []rune {
 	if len(r) == 0 {
 		return nil
@@ -148,7 +148,7 @@ func filelist(t *Text, r []rune) []rune {
 	if len(r) == 0 || r[0] != '<' {
 		return runes.Clone(r)
 	}
-	/* use < command to collect text */
+	// use < command to collect text
 	clearcollection()
 	runpipe(t, '<', r[1:], Collecting)
 	return collection
@@ -220,7 +220,7 @@ func D_cmd(t *Text, cp *Cmd) bool {
 		s := runes.SkipNonBlank(r)
 		r = r[:len(r)-len(s)]
 		var rs []rune
-		/* first time through, could be empty string, meaning delete file empty name */
+		// first time through, could be empty string, meaning delete file empty name
 		if len(r) == 0 || r[0] == '/' || len(dir) == 0 {
 			rs = runes.Clone(r)
 		} else {
@@ -259,7 +259,7 @@ func e_cmd(t *Text, cp *Cmd) bool {
 	q1 := addr.r.End
 	if cp.cmdc == 'e' {
 		if !winclean(t.w, true) {
-			editerror("") /* winclean generated message already */
+			editerror("") // winclean generated message already
 		}
 		q0 = 0
 		q1 = f.Len()
@@ -349,7 +349,7 @@ func move(f *File, addr2 Address) {
 	} else if addr.r.Pos >= addr2.r.End {
 		fcopy(f, addr2)
 		elogdelete(f, addr.r.Pos, addr.r.End)
-	} else if addr.r.Pos == addr2.r.Pos && addr.r.End == addr2.r.End { /* move to self; no-op */
+	} else if addr.r.Pos == addr2.r.Pos && addr.r.End == addr2.r.End { // move to self; no-op
 	} else {
 		editerror("move overlaps itself")
 	}
@@ -381,7 +381,7 @@ func s_cmd(t *Text, cp *Cmd) bool {
 	delta := 0
 	didsub := false
 	for p1 := addr.r.Pos; p1 <= addr.r.End && regx.Match(t, nil, p1, addr.r.End, &regx.Sel); {
-		if regx.Sel.R[0].Pos == regx.Sel.R[0].End { /* empty match? */
+		if regx.Sel.R[0].Pos == regx.Sel.R[0].End { // empty match?
 			if regx.Sel.R[0].Pos == op {
 				p1++
 				continue
@@ -488,7 +488,7 @@ func w_cmd(t *Text, cp *Cmd) bool {
 		editerror("no name specified for 'w' command")
 	}
 	putfile(f, addr.r.Pos, addr.r.End, r)
-	/* r is freed by putfile */
+	// r is freed by putfile
 	return true
 }
 
@@ -529,12 +529,12 @@ func runpipe(t *Text, cmd rune, cr []rune, state int) {
 	if t != nil {
 		dir = dirname(t, nil)
 	}
-	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	editing = state
 	if t != nil && t.w != nil {
-		util.Incref(&t.w.ref) /* run will decref */
+		util.Incref(&t.w.ref) // run will decref
 	}
 	run(w, string(s), dir, true, nil, nil, true)
 	if t != nil && t.w != nil {
@@ -559,7 +559,7 @@ func runpipe(t *Text, cmd rune, cr []rune, state int) {
 	} else {
 		q = &editoutlk
 	}
-	q.Lock() /* wait for file to close */
+	q.Lock() // wait for file to close
 	q.Unlock()
 	row.lk.Lock()
 	editing = Inactive
@@ -630,7 +630,7 @@ func printposn(t *Text, mode int) {
 	case PosnLine:
 		l1 = 1 + nlcount(t, 0, addr.r.Pos, nil)
 		l2 = l1 + nlcount(t, addr.r.Pos, addr.r.End, nil)
-		/* check if addr ends with '\n' */
+		// check if addr ends with '\n'
 		if addr.r.End > 0 && addr.r.End > addr.r.Pos && t.RuneAt(addr.r.End-1) == '\n' {
 			l2--
 		}
@@ -682,7 +682,7 @@ func nl_cmd(t *Text, cp *Cmd) bool {
 	f := t.file
 	if cp.addr == nil {
 		var a Address
-		/* First put it on newline boundaries */
+		// First put it on newline boundaries
 		mkaddr(&a, f)
 		addr = lineaddr(0, a, -1)
 		a = lineaddr(0, a, 1)
@@ -729,7 +729,7 @@ func pdisplay(f *File) bool {
 
 func pfilename(f *File) {
 	w := f.curtext.w
-	/* same check for dirty as in settag, but we know ncache==0 */
+	// same check for dirty as in settag, but we know ncache==0
 	dirty := !w.isdir && !w.isscratch && f.Mod()
 	ch := func(s string, b bool) byte {
 		if b {
@@ -761,15 +761,15 @@ func looper(f *File, cp *Cmd, xy bool) {
 	var rp []runes.Range
 	for p := r.Pos; p <= r.End; {
 		var tr runes.Range
-		if !regx.Match(f.curtext, nil, p, r.End, &regx.Sel) { /* no match, but y should still run */
+		if !regx.Match(f.curtext, nil, p, r.End, &regx.Sel) { // no match, but y should still run
 			if xy || op > r.End {
 				break
 			}
 			tr.Pos = op
 			tr.End = r.End
-			p = r.End + 1 /* exit next loop */
+			p = r.End + 1 // exit next loop
 		} else {
-			if regx.Sel.R[0].Pos == regx.Sel.R[0].End { /* empty match? */
+			if regx.Sel.R[0].Pos == regx.Sel.R[0].End { // empty match?
 				if regx.Sel.R[0].Pos == op {
 					p++
 					continue
@@ -838,16 +838,16 @@ var loopstruct Looper // only one; X and Y can't nest
 func alllooper(w *Window, v interface{}) {
 	lp := v.(*Looper)
 	cp := lp.cp
-	/*	if(w->isscratch || w->isdir) */
-	/*		return; */
+	//	if(w->isscratch || w->isdir)
+	//		return;
 	t := &w.body
-	/* only use this window if it's the current window for the file */
+	// only use this window if it's the current window for the file
 	if t.file.curtext != t {
 		return
 	}
-	/*	if(w->nopen[QWevent] > 0) */
-	/*		return; */
-	/* no auto-execute on files without names */
+	//	if(w->nopen[QWevent] > 0)
+	//		return;
+	// no auto-execute on files without names
 	if cp.re == nil && len(t.file.Name()) == 0 {
 		return
 	}
@@ -974,7 +974,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 
 		case '\'':
 			editerror("can't handle '")
-			/*			a.r = f->mark; */
+			//			a.r = f->mark;
 
 		case '?':
 			sign = -sign
@@ -982,7 +982,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 				sign = -1
 			}
 			fallthrough
-		/* fall through */
+		// fall through
 		case '/':
 			start := a.r.End
 			if sign < 0 {
@@ -1047,7 +1047,7 @@ func cmdaddress(ap *Addr, a Address, sign int) Address {
 			return a
 		}
 		ap = ap.next
-		if ap == nil { /* assign = */
+		if ap == nil { // assign =
 			break
 		}
 	}
@@ -1068,12 +1068,12 @@ func alltofile(w *Window, v interface{}) {
 		return
 	}
 	t := &w.body
-	/* only use this window if it's the current window for the file */
+	// only use this window if it's the current window for the file
 	if t.file.curtext != t {
 		return
 	}
-	/*	if(w->nopen[QWevent] > 0) */
-	/*		return; */
+	//	if(w->nopen[QWevent] > 0)
+	//		return;
 	if runes.Equal(tp.r.r, t.file.Name()) {
 		tp.f = t.file
 	}
@@ -1098,12 +1098,12 @@ func allmatchfile(w *Window, v interface{}) {
 		return
 	}
 	t := &w.body
-	/* only use this window if it's the current window for the file */
+	// only use this window if it's the current window for the file
 	if t.file.curtext != t {
 		return
 	}
-	/*	if(w->nopen[QWevent] > 0) */
-	/*		return; */
+	//	if(w->nopen[QWevent] > 0)
+	//		return;
 	if filematch(w.body.file, tp.r) {
 		if tp.f != nil {
 			editerror("too many files match \"%s\"", string(tp.r.r))
@@ -1125,12 +1125,12 @@ func matchfile(r *String) *File {
 }
 
 func filematch(f *File, r *String) bool {
-	/* compile expr first so if we get an error, we haven't allocated anything */
+	// compile expr first so if we get an error, we haven't allocated anything
 	if !regx.Compile(r.r) {
 		editerror("bad regexp in file match")
 	}
 	w := f.curtext.w
-	/* same check for dirty as in settag, but we know ncache==0 */
+	// same check for dirty as in settag, but we know ncache==0
 	dirty := !w.isdir && !w.isscratch && f.Mod()
 	ch := func(s string, b bool) byte {
 		if b {
@@ -1206,7 +1206,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 		if l == 0 {
 			a.r.End = addr.r.Pos
 		} else {
-			for n := 0; n < l; { /* always runs once */
+			for n := 0; n < l; { // always runs once
 				if p == 0 {
 					n++
 					if n != l {
@@ -1224,7 +1224,7 @@ func lineaddr(l int, addr Address, sign int) Address {
 				p--
 			}
 		}
-		for p > 0 && f.curtext.RuneAt(p-1) != '\n' { /* lines start after a newline */
+		for p > 0 && f.curtext.RuneAt(p-1) != '\n' { // lines start after a newline
 			p--
 		}
 		a.r.Pos = p
@@ -1251,7 +1251,7 @@ func allfilecheck(w *Window, v interface{}) {
 func cmdname(f *File, str *String, set bool) []rune {
 	s := str.r
 	if len(s) == 0 {
-		/* no name; use existing */
+		// no name; use existing
 		if len(f.Name()) == 0 {
 			return nil
 		}

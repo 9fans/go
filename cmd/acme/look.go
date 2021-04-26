@@ -107,19 +107,19 @@ func look3(t *Text, q0, q1 int, external bool) {
 	var c rune
 	var r []rune
 	if !external && t.w != nil && t.w.external {
-		/* send alphanumeric expansion to external client */
+		// send alphanumeric expansion to external client
 		if !expanded {
 			return
 		}
 		f := 0
 		if (e.arg != nil && t.w != nil) || (len(e.name) > 0 && lookfile(e.name) != nil) {
-			f = 1 /* acme can do it without loading a file */
+			f = 1 // acme can do it without loading a file
 		}
 		if q0 != e.q0 || q1 != e.q1 {
-			f |= 2 /* second (post-expand) message follows */
+			f |= 2 // second (post-expand) message follows
 		}
 		if len(e.name) != 0 {
-			f |= 4 /* it's a file name */
+			f |= 4 // it's a file name
 		}
 		c = 'l'
 		if t.what == Body {
@@ -166,11 +166,11 @@ func look3(t *Text, q0, q1 int, external bool) {
 		return
 	}
 	if plumbsendfid != nil {
-		/* send whitespace-delimited word to plumber */
+		// send whitespace-delimited word to plumber
 		m := new(plumb.Message)
 		m.Src = "acme"
 		dir := dirname(t, nil)
-		if len(dir) == 1 && dir[0] == '.' { /* sigh */
+		if len(dir) == 1 && dir[0] == '.' { // sigh
 			dir = nil
 		}
 		if len(dir) == 0 {
@@ -203,10 +203,10 @@ func look3(t *Text, q0, q1 int, external bool) {
 		if len(m.Data) < messagesize-1024 && m.Send(plumbsendfid) == nil {
 			return
 		}
-		/* plumber failed to match; fall through */
+		// plumber failed to match; fall through
 	}
 
-	/* interpret alphanumeric string ourselves */
+	// interpret alphanumeric string ourselves
 	if !expanded {
 		return
 	}
@@ -328,7 +328,7 @@ func search(ct *Text, r []rune) bool {
 			q += i
 			b = b[i:]
 		}
-		/* reload if buffer covers neither string nor rest of file */
+		// reload if buffer covers neither string nor rest of file
 		if len(b) < len(r) && len(b) != ct.Len()-q {
 			nb := ct.Len() - q
 			if nb >= maxn {
@@ -337,7 +337,7 @@ func search(ct *Text, r []rune) bool {
 			ct.file.Read(q, s[:nb])
 			b = s[:nb]
 		}
-		/* this runeeq is fishy but the null at b[nb] makes it safe */ // TODO(rsc): NUL done gone
+		// this runeeq is fishy but the null at b[nb] makes it safe // TODO(rsc): NUL done gone
 		if len(b) >= len(r) && runes.Equal(b[:len(r)], r) {
 			if ct.w != nil {
 				textshow(ct, q, q+len(r), true)
@@ -360,7 +360,7 @@ func search(ct *Text, r []rune) bool {
 	return false
 }
 
-/* Runestr wrapper for cleanname */
+// Runestr wrapper for cleanname
 
 var includefile_Lslash = [2]rune{'/', 0}
 
@@ -526,7 +526,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 			}
 		}
 		if q1 > q0 {
-			if colon >= 0 { /* stop at white space */
+			if colon >= 0 { // stop at white space
 				for amax = colon + 1; amax < t.Len(); amax++ {
 					c = t.RuneAt(amax)
 					if c == ' ' || c == '\t' || c == '\n' {
@@ -545,10 +545,10 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	if n == 0 {
 		return false
 	}
-	/* see if it's a file name */
+	// see if it's a file name
 	r := make([]rune, n)
 	t.file.Read(q0, r)
-	/* is it a URL? look for http:// and https:// prefix */
+	// is it a URL? look for http:// and https:// prefix
 	if hasPrefix(r, Lhttpcss) || hasPrefix(r, Lhttpscss) {
 		// Avoid capturing end-of-sentence punctuation.
 		if r[n-1] == '.' {
@@ -561,7 +561,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		e.a1 = e.q1
 		return true
 	}
-	/* first, does it have bad chars? */
+	// first, does it have bad chars?
 	nname := -1
 	var i int
 	for i = 0; i < n; i++ {
@@ -601,13 +601,13 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 		nname = len(rs)
 	}
 	e.bname = string(r[:nname])
-	/* if it's already a window name, it's a file */
+	// if it's already a window name, it's a file
 	{
 		w := lookfile(r[:nname])
 		if w != nil {
 			goto Isfile
 		}
-		/* if it's the name of a file, it's a file */
+		// if it's the name of a file, it's a file
 		if ismtpt(e.bname) {
 			e.bname = ""
 			return false
@@ -630,7 +630,7 @@ Isfile:
 func expand(t *Text, q0 int, q1 int, e *Expand) bool {
 	*e = Expand{}
 	e.agetc = tgetc
-	/* if in selection, choose selection */
+	// if in selection, choose selection
 	e.jump = true
 	if q1 == q0 && t.q1 > t.q0 && t.q0 <= q0 && q0 <= t.q1 {
 		q0 = t.q0
@@ -658,7 +658,7 @@ func expand(t *Text, q0 int, q1 int, e *Expand) bool {
 }
 
 func lookfile(s []rune) *Window {
-	/* avoid terminal slash on directories */
+	// avoid terminal slash on directories
 	if len(s) > 0 && s[len(s)-1] == '/' {
 		s = s[:len(s)-1]
 	}
@@ -671,7 +671,7 @@ func lookfile(s []rune) *Window {
 			}
 			if runes.Equal(t.file.Name()[:k], s) {
 				w = w.body.file.curtext.w
-				if w.col != nil { /* protect against race deleting w */
+				if w.col != nil { // protect against race deleting w
 					return w
 				}
 			}
@@ -721,7 +721,7 @@ func openfile(t *Text, e *Expand) *Window {
 	}
 	if w != nil {
 		t = &w.body
-		if !t.col.safe && t.fr.MaxLines == 0 { /* window is obscured by full-column window */
+		if !t.col.safe && t.fr.MaxLines == 0 { // window is obscured by full-column window
 			colgrow(t.col, t.col.w[0], 1)
 		}
 	} else {
@@ -766,7 +766,7 @@ func openfile(t *Text, e *Expand) *Window {
 			alog.Printf("addresses out of order\n")
 		}
 		if !eval {
-			e.jump = false /* don't jump if invalid address */
+			e.jump = false // don't jump if invalid address
 		}
 	}
 	if !eval {
@@ -791,7 +791,7 @@ func new_(et, t, argt *Text, flag1, flag2 bool, arg []rune) {
 			return
 		}
 	}
-	/* loop condition: *arg is not a blank */
+	// loop condition: *arg is not a blank
 	for ndone := 0; ; ndone++ {
 		a = runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {

@@ -67,7 +67,7 @@ var dirtab = [11]Dirtab{
 	Dirtab{"acme", plan9.QTDIR, Qacme, 0500 | plan9.DMDIR},
 	Dirtab{"cons", plan9.QTFILE, Qcons, 0600},
 	Dirtab{"consctl", plan9.QTFILE, Qconsctl, 0000},
-	Dirtab{"draw", plan9.QTDIR, Qdraw, 0000 | plan9.DMDIR}, /* to suppress graphics progs started in acme */
+	Dirtab{"draw", plan9.QTDIR, Qdraw, 0000 | plan9.DMDIR}, // to suppress graphics progs started in acme
 	Dirtab{"editout", plan9.QTFILE, Qeditout, 0200},
 	Dirtab{"index", plan9.QTFILE, Qindex, 0400},
 	Dirtab{"label", plan9.QTFILE, Qlabel, 0600},
@@ -100,7 +100,7 @@ var mnt Mnt
 
 var user string = "Wile E. Coyote"
 var closing bool
-var messagesize int = 8192 + plan9.IOHDRSZ /* good start */
+var messagesize int = 8192 + plan9.IOHDRSZ // good start
 
 func fsysinit() {
 	initfcall()
@@ -173,7 +173,7 @@ func fsysaddid(dir []rune, incl [][]rune) *Mntdir {
 	m := new(Mntdir)
 	m.id = id
 	m.dir = dir
-	m.ref = 1 /* one for Command, one will be incremented in attach */
+	m.ref = 1 // one for Command, one will be incremented in attach
 	m.next = mnt.md
 	m.incl = incl
 	mnt.md = m
@@ -326,11 +326,11 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 		nf.dir = f.dir
 		nf.qid = f.qid
 		nf.w = f.w
-		nf.rpart = nf.rpart[:0] /* not open, so must be zero */
+		nf.rpart = nf.rpart[:0] // not open, so must be zero
 		if nf.w != nil {
 			util.Incref(&nf.w.ref)
 		}
-		f = nf /* walk f */
+		f = nf // walk f
 	}
 
 	t.Wqid = nil
@@ -359,15 +359,15 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				goto Accept
 			}
 
-			/* is it a numeric name? */
+			// is it a numeric name?
 			for j := 0; j < len(x.fcall.Wname[i]); j++ {
 				c := x.fcall.Wname[i][j]
 				if c < '0' || '9' < c {
 					goto Regular
 				}
 			}
-			/* yes: it's a directory */
-			if w != nil { /* name has form 27/23; get out before losing w */
+			// yes: it's a directory
+			if w != nil { // name has form 27/23; get out before losing w
 				break
 			}
 			id, _ = strconv.Atoi(x.fcall.Wname[i])
@@ -377,7 +377,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				row.lk.Unlock()
 				break
 			}
-			util.Incref(&w.ref) /* we'll drop reference at end if there's an error */
+			util.Incref(&w.ref) // we'll drop reference at end if there's an error
 			path_ = Qdir
 			typ = plan9.QTDIR
 			row.lk.Unlock()
@@ -389,8 +389,8 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				if w != nil {
 					util.Fatal("w set in walk to new")
 				}
-				cnewwindow <- nil /* signal newwindowthread */
-				w = <-cnewwindow  /* receive new window */
+				cnewwindow <- nil // signal newwindowthread
+				w = <-cnewwindow  // receive new window
 				util.Incref(&w.ref)
 				typ = plan9.QTDIR
 				path_ = Qdir
@@ -406,7 +406,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				} else {
 					d = dirtabw[:]
 				}
-				d = d[1:] /* skip '.' */
+				d = d[1:] // skip '.'
 				for ; len(d) > 0; d = d[1:] {
 					if x.fcall.Wname[i] == d[0].name {
 						path_ = int(d[0].qid) // TODO(rsc)
@@ -416,7 +416,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 					}
 				}
 
-				break /* file not found */
+				break // file not found
 			}
 
 		Accept:
@@ -444,7 +444,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 	} else if len(t.Wqid) == len(x.fcall.Wname) {
 		if w != nil {
 			f.w = w
-			w = nil /* don't drop the reference */
+			w = nil // don't drop the reference
 		}
 		if dir != nil {
 			f.dir = dir
@@ -460,9 +460,9 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 }
 
 func fsysopen(x *Xfid, f *Fid) *Xfid {
-	/* can't truncate anything, so just disregard */
+	// can't truncate anything, so just disregard
 	x.fcall.Mode &^= plan9.OTRUNC | plan9.OCEXEC
-	/* can't execute or remove anything */
+	// can't execute or remove anything
 	if x.fcall.Mode == plan9.OEXEC || x.fcall.Mode&plan9.ORCLOSE != 0 {
 		goto Deny
 	}
@@ -499,7 +499,7 @@ func fsyscreate(x *Xfid, f *Fid) *Xfid {
 func fsysread(x *Xfid, f *Fid) *Xfid {
 	if f.qid.Type&plan9.QTDIR != 0 {
 		var t plan9.Fcall
-		if FILE(f.qid) == Qacme { /* empty dir */
+		if FILE(f.qid) == Qacme { // empty dir
 			t.Data = nil
 			t.Count = 0
 			respond(x, &t, "")
@@ -517,7 +517,7 @@ func fsysread(x *Xfid, f *Fid) *Xfid {
 		} else {
 			d = dirtab[:]
 		}
-		d = d[1:] /* first entry is '.' */
+		d = d[1:] // first entry is '.'
 		var w int
 		var i int
 		for i = 0; len(d) > 0 && int64(i) < e; i += w {
@@ -648,7 +648,7 @@ func dostat(id int, dir *Dirtab, clock int) ([]byte, error) {
 	d.Qid.Vers = 0
 	d.Qid.Type = dir.typ
 	d.Mode = plan9.Perm(dir.perm)
-	d.Length = 0 /* would be nice to do better */
+	d.Length = 0 // would be nice to do better
 	d.Name = dir.name
 	d.Uid = user
 	d.Gid = user

@@ -55,7 +55,7 @@ func errorwin1(dir []rune, incl [][]rune) *Window {
 	return w
 }
 
-/* make new window, if necessary; return with it locked */
+// make new window, if necessary; return with it locked
 func errorwin(md *Mntdir, owner rune) *Window {
 	var w *Window
 	for {
@@ -68,7 +68,7 @@ func errorwin(md *Mntdir, owner rune) *Window {
 		if w.col != nil {
 			break
 		}
-		/* window was deleted too fast */
+		// window was deleted too fast
 		winunlock(w)
 	}
 	return w
@@ -82,7 +82,7 @@ func errorwin(md *Mntdir, owner rune) *Window {
 func errorwinforwin(w *Window) *Window {
 	t := &w.body
 	dir := dirname(t, nil)
-	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	incl := make([][]rune, len(w.incl))
@@ -97,7 +97,7 @@ func errorwinforwin(w *Window) *Window {
 		if w.col != nil {
 			break
 		}
-		/* window deleted too fast */
+		// window deleted too fast
 		winunlock(w)
 	}
 	return w
@@ -132,7 +132,7 @@ func addwarningtext(md *Mntdir, r []rune) {
 	}
 }
 
-/* called while row is locked */
+// called while row is locked
 func flushwarnings() {
 	var next *Warning
 	for warn := warnings; warn != nil; warn = next {
@@ -238,13 +238,13 @@ func makenewwindow(t *Text) *Window {
 		return coladd(c, nil, nil, -1)
 	}
 
-	/* find biggest window and biggest blank spot */
+	// find biggest window and biggest blank spot
 	emptyw := c.w[0]
 	bigw := emptyw
 	var w *Window
 	for i := 1; i < len(c.w); i++ {
 		w = c.w[i]
-		/* use >= to choose one near bottom of screen */
+		// use >= to choose one near bottom of screen
 		if w.body.fr.MaxLines >= bigw.body.fr.MaxLines {
 			bigw = w
 		}
@@ -255,11 +255,11 @@ func makenewwindow(t *Text) *Window {
 	emptyb := &emptyw.body
 	el := emptyb.fr.MaxLines - emptyb.fr.NumLines
 	var y int
-	/* if empty space is big, use it */
+	// if empty space is big, use it
 	if el > 15 || (el > 3 && el > (bigw.body.fr.MaxLines-1)/2) {
 		y = emptyb.fr.R.Min.Y + emptyb.fr.NumLines*font.Height
 	} else {
-		/* if this window is in column and isn't much smaller, split it */
+		// if this window is in column and isn't much smaller, split it
 		if t.col == c && t.w.r.Dy() > 2*bigw.r.Dy()/3 {
 			bigw = t.w
 		}

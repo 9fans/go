@@ -21,7 +21,7 @@ func post9pservice(rfd, wfd *os.File, name, mtpt string) error {
 
 	if name != "" {
 		var addr string
-		if strings.Contains(addr, "!") { /* assume is already network address */
+		if strings.Contains(addr, "!") { // assume is already network address
 			addr = name
 		} else {
 			addr = "unix!" + client.Namespace() + "/" + name
@@ -35,7 +35,7 @@ func post9pservice(rfd, wfd *os.File, name, mtpt string) error {
 			return err
 		}
 		if mtpt != "" {
-			/* reopen */
+			// reopen
 			log.Fatalf("post9pservice mount not implemented")
 		}
 	}

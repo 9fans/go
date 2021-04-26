@@ -120,7 +120,7 @@ func elogflush(f *elogFile) {
 			f.elogbuf.Insert(f.elogbuf.Len(), f.elog.r)
 		}
 		fallthrough
-	/* fall through */
+	// fall through
 	case elogDelete:
 		f.elogbuf.Insert(f.elogbuf.Len(), buflogrunes(&b))
 	}
@@ -148,8 +148,8 @@ func elogreplace(ff *File, q0 int, q1 int, r []rune) {
 		}
 		elogflush(f)
 	}
-	/* try to merge with previous */
-	gap := q0 - (f.elog.q0 + f.elog.nd) /* gap between previous and this */
+	// try to merge with previous
+	gap := q0 - (f.elog.q0 + f.elog.nd) // gap between previous and this
 	if f.elog.typ == elogReplace && len(f.elog.r)+gap+len(r) < Maxstring {
 		if gap < Minstring {
 			if gap > 0 {
@@ -185,7 +185,7 @@ func eloginsert(ff *File, q0 int, r []rune) {
 		}
 		elogflush(f)
 	}
-	/* try to merge with previous */
+	// try to merge with previous
 	if f.elog.typ == elogInsert && q0 == f.elog.q0 && len(f.elog.r)+len(r) < Maxstring {
 		f.elog.r = append(f.elog.r, r...)
 		return
@@ -215,7 +215,7 @@ func elogdelete(ff *File, q0 int, q1 int) {
 		}
 		elogflush(f)
 	}
-	/* try to merge with previous */
+	// try to merge with previous
 	if f.elog.typ == elogDelete && f.elog.q0+f.elog.nd == q0 {
 		f.elog.nd += q1 - q0
 		return

@@ -120,12 +120,12 @@ func main() {
 
 	display = d
 	font = d.Font
-	/*assert(font); */
+	//assert(font);
 
 	reffont.f = font
 	reffonts[0] = &reffont
-	util.Incref(&reffont.ref) /* one to hold up 'font' variable */
-	util.Incref(&reffont.ref) /* one to hold up reffonts[0] */
+	util.Incref(&reffont.ref) // one to hold up 'font' variable
+	util.Incref(&reffont.ref) // one to hold up reffonts[0]
 	fontcache = make([]*Reffont, 1)
 	fontcache[0] = &reffont
 
@@ -196,7 +196,7 @@ func main() {
 	go waitthread()
 	go xfidallocthread()
 	go newwindowthread()
-	/* threadnotify(shutdown, 1) */
+	// threadnotify(shutdown, 1)
 	bigUnlock()
 	<-cexit
 	bigLock()
@@ -279,8 +279,8 @@ shutdownthread(void *v)
 
 func killprocs() {
 	fsysclose()
-	/*	if(display) */
-	/*		flushimage(display, 1); */
+	//	if(display)
+	//		flushimage(display, 1);
 
 	for c := command; c != nil; c = c.next {
 		// TODO postnote(PNGROUP, c.pid, "hangup")
@@ -360,7 +360,7 @@ func keyboardthread() {
 		Loop:
 			typetext = rowtype(&row, r, mouse.Point)
 			t = typetext
-			if t != nil && t.col != nil && (!(r == draw.KeyDown || r == draw.KeyLeft) && !(r == draw.KeyRight)) { /* scrolling doesn't change activecol */
+			if t != nil && t.col != nil && (!(r == draw.KeyDown || r == draw.KeyLeft) && !(r == draw.KeyRight)) { // scrolling doesn't change activecol
 				activecol = t.col
 			}
 			if t != nil && t.w != nil {
@@ -482,7 +482,7 @@ func mousethread() {
 				}
 				goto Continue
 			}
-			/* scroll buttons, wheels, etc. */
+			// scroll buttons, wheels, etc.
 			if w != nil && m.Buttons&(8|16) != 0 {
 				var ch rune
 				if m.Buttons&8 != 0 {
@@ -530,7 +530,7 @@ func mousethread() {
 					argtext = t
 					seltext = t
 					if t.col != nil {
-						activecol = t.col /* button 1 only */
+						activecol = t.col // button 1 only
 					}
 					if t.w != nil && t == &t.w.body {
 						activewin = t.w
@@ -590,7 +590,7 @@ func waitthread() {
 			bigLock()
 			found := false
 			for c = command; c != nil; c = c.next {
-				/* -1 for blank */
+				// -1 for blank
 				if runes.Equal(c.name[:len(c.name)-1], cmd) {
 					/* TODO postnote
 					if postnote(PNGROUP, c.pid, "kill") < 0 {
@@ -643,7 +643,7 @@ func waitthread() {
 
 		case c = <-ccommand:
 			bigLock()
-			/* has this command already exited? */
+			// has this command already exited?
 			var lastp *Pid
 			for p := pids; p != nil; p = p.next {
 				if p.pid == c.pid {
@@ -705,10 +705,10 @@ func xfidallocthread() {
 	}
 }
 
-/* this thread, in the main proc, allows fsysproc to get a window made without doing graphics */
+// this thread, in the main proc, allows fsysproc to get a window made without doing graphics
 func newwindowthread() {
 	for {
-		/* only fsysproc is talking to us, so synchronization is trivial */
+		// only fsysproc is talking to us, so synchronization is trivial
 		// TODO(rsc): split cnewwindow into two channels
 		<-cnewwindow
 		bigLock()
@@ -879,14 +879,14 @@ var boxcursor2 = draw.Cursor2{
 
 func iconinit() {
 	if tagcols[frame.BACK] == nil {
-		/* Blue */
+		// Blue
 		tagcols[frame.BACK] = display.AllocImageMix(draw.PaleBlueGreen, draw.White)
 		tagcols[frame.HIGH], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.PaleGreyGreen)
 		tagcols[frame.BORD], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.PurpleBlue)
 		tagcols[frame.TEXT] = display.Black
 		tagcols[frame.HTEXT] = display.Black
 
-		/* Yellow */
+		// Yellow
 		textcols[frame.BACK] = display.AllocImageMix(draw.PaleYellow, draw.White)
 		textcols[frame.HIGH], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.DarkYellow)
 		textcols[frame.BORD], _ = display.AllocImage(draw.Rect(0, 0, 1, 1), display.ScreenImage.Pix, true, draw.YellowGreen)
@@ -996,7 +996,7 @@ func ismtpt(file string) bool {
 		return false
 	}
 
-	/* This is not foolproof, but it will stop a lot of them. */
+	// This is not foolproof, but it will stop a lot of them.
 	return strings.HasPrefix(file, mtpt) && (len(file) == len(mtpt) || file[len(mtpt)] == '/')
 }
 

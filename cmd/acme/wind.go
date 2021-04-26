@@ -52,7 +52,7 @@ func wininit(w *Window, clone *Window, r draw.Rectangle) {
 	f := fileaddtext(nil, &w.tag)
 	textinit(&w.tag, f, r1, &reffont, tagcols[:])
 	w.tag.what = Tag
-	/* tag is a copy of the contents, not a tracked image */
+	// tag is a copy of the contents, not a tracked image
 	if clone != nil {
 		textdelete(&w.tag, 0, w.tag.Len(), true)
 		nc := clone.tag.Len()
@@ -149,7 +149,7 @@ func wintaglines(w *Window, r draw.Rectangle) int {
 	var n int
 
 	if !w.tagexpand {
-		/* use just as many lines as needed to show the Del */
+		// use just as many lines as needed to show the Del
 		n = delrunepos(w)
 		if n < 0 {
 			return 1
@@ -158,12 +158,12 @@ func wintaglines(w *Window, r draw.Rectangle) int {
 		return 1 + p.Y/w.tag.fr.Font.Height
 	}
 
-	/* can't use more than we have */
+	// can't use more than we have
 	if w.tag.fr.NumLines >= w.tag.fr.MaxLines {
 		return w.tag.fr.MaxLines
 	}
 
-	/* if tag ends with \n, include empty line at end for typing */
+	// if tag ends with \n, include empty line at end for typing
 	n = w.tag.fr.NumLines
 	if w.tag.Len() > 0 {
 		var rune_ [1]rune
@@ -182,20 +182,20 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	mouseintag := mouse.Point.In(w.tag.all)
 	mouseinbody := mouse.Point.In(w.body.all)
 
-	/* tagtop is first line of tag */
+	// tagtop is first line of tag
 	w.tagtop = r
 	w.tagtop.Max.Y = r.Min.Y + font.Height
 
 	r1 := r
 	r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 
-	/* If needed, recompute number of lines in tag. */
+	// If needed, recompute number of lines in tag.
 	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		w.taglines = wintaglines(w, r)
 		r1.Max.Y = util.Min(r.Max.Y, r1.Min.Y+w.taglines*font.Height)
 	}
 
-	/* If needed, resize & redraw tag. */
+	// If needed, resize & redraw tag.
 	y := r1.Max.Y
 	if !safe || !w.tagsafe || !(w.tag.all == r1) {
 		textresize(&w.tag, r1, true)
@@ -204,14 +204,14 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		w.tagsafe = true
 		var p draw.Point
 
-		/* If mouse is in tag, pull up as tag closes. */
+		// If mouse is in tag, pull up as tag closes.
 		if mouseintag && !mouse.Point.In(w.tag.all) {
 			p = mouse.Point
 			p.Y = w.tag.all.Max.Y - 3
 			display.MoveCursor(p)
 		}
 
-		/* If mouse is in body, push down as tag expands. */
+		// If mouse is in body, push down as tag expands.
 		if mouseinbody && mouse.Point.In(w.tag.all) {
 			p = mouse.Point
 			p.Y = w.tag.all.Max.Y + 3
@@ -219,12 +219,12 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		}
 	}
 
-	/* If needed, resize & redraw body. */
+	// If needed, resize & redraw body.
 	r1 = r
 	r1.Min.Y = y
 	if !safe || !(w.body.all == r1) {
 		oy := y
-		if y+1+w.body.fr.Font.Height <= r.Max.Y { /* room for one line */
+		if y+1+w.body.fr.Font.Height <= r.Max.Y { // room for one line
 			r1.Min.Y = y
 			r1.Max.Y = y + 1
 			display.ScreenImage.Draw(r1, tagcols[frame.BORD], nil, draw.ZP)
@@ -351,7 +351,7 @@ func wintype(w *Window, t *Text, r rune) {
 }
 
 func wincleartag(w *Window) {
-	/* w must be committed */
+	// w must be committed
 	n := w.tag.Len()
 	r, i := parsetag(w, 0)
 	for ; i < n; i++ {
@@ -415,9 +415,9 @@ var Lpipe = []rune(" |")
 
 func winsettag1(w *Window) {
 
-	/* there are races that get us here with stuff in the tag cache, so we take extra care to sync it */
+	// there are races that get us here with stuff in the tag cache, so we take extra care to sync it
 	if len(w.tag.cache) != 0 || w.tag.file.Mod() {
-		wincommit(w, &w.tag) /* check file name; also guarantees we can modify tag contents */
+		wincommit(w, &w.tag) // check file name; also guarantees we can modify tag contents
 	}
 	old, ii := parsetag(w, 0)
 	if !runes.Equal(old[:ii], w.body.file.Name()) {
@@ -427,7 +427,7 @@ func winsettag1(w *Window) {
 		w.tag.file.Read(0, old)
 	}
 
-	/* compute the text for the whole tag, replacing current only if it differs */
+	// compute the text for the whole tag, replacing current only if it differs
 	new_ := make([]rune, 0, len(w.body.file.Name())+100)
 	new_ = append(new_, w.body.file.Name()...)
 	new_ = append(new_, Ldelsnarf...)
@@ -458,7 +458,7 @@ func winsettag1(w *Window) {
 		}
 	}
 
-	/* replace tag if the new one is different */
+	// replace tag if the new one is different
 	resize := 0
 	var n int
 	if !runes.Equal(new_, old[:k]) {
@@ -477,7 +477,7 @@ func winsettag1(w *Window) {
 		q1 := w.tag.q1
 		textdelete(&w.tag, j, k, true)
 		textinsert(&w.tag, j, new_[j:], true)
-		/* try to preserve user selection */
+		// try to preserve user selection
 		r = runes.IndexRune(old, '|')
 		if r >= 0 {
 			bar := r
@@ -520,7 +520,7 @@ func wincommit(w *Window, t *Text) {
 	var i int
 	if len(f.text) > 1 {
 		for i = 0; i < len(f.text); i++ {
-			textcommit(f.text[i], false) /* no-op for t */
+			textcommit(f.text[i], false) // no-op for t
 		}
 	}
 	if t.what == Body {
@@ -562,7 +562,7 @@ func winaddincl(w *Window, r []rune) {
 }
 
 func winclean(w *Window, conservative bool) bool {
-	if w.isscratch || w.isdir { /* don't whine if it's a guide file, error window, etc. */
+	if w.isscratch || w.isdir { // don't whine if it's a guide file, error window, etc.
 		return true
 	}
 	if !conservative && w.external {
@@ -572,7 +572,7 @@ func winclean(w *Window, conservative bool) bool {
 		if len(w.body.file.Name()) != 0 {
 			alog.Printf("%s modified\n", string(w.body.file.Name()))
 		} else {
-			if w.body.Len() < 100 { /* don't whine if it's too small */
+			if w.body.Len() < 100 { // don't whine if it's too small
 				return true
 			}
 			alog.Printf("unnamed file modified\n")

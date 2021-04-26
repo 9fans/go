@@ -54,12 +54,12 @@ func rowadd(row *Row, c *Column, x int) *Column {
 	var d *Column
 	r := row.r
 	r.Min.Y = row.tag.fr.R.Max.Y + Border()
-	if x < r.Min.X && len(row.col) > 0 { /*steal 40% of last column by default */
+	if x < r.Min.X && len(row.col) > 0 { //steal 40% of last column by default
 		d = row.col[len(row.col)-1]
 		x = d.r.Min.X + 3*d.r.Dx()/5
 	}
 	var i int
-	/* look for column we'll land on */
+	// look for column we'll land on
 	for i = 0; i < len(row.col); i++ {
 		d = row.col[i]
 		if x < d.r.Max.X {
@@ -68,7 +68,7 @@ func rowadd(row *Row, c *Column, x int) *Column {
 	}
 	if len(row.col) > 0 {
 		if i < len(row.col) {
-			i++ /* new column will go after d */
+			i++ // new column will go after d
 		}
 		r = d.r
 		if r.Dx() < 100 {
@@ -118,7 +118,7 @@ func rowresize(row *Row, r draw.Rectangle) {
 	for i := 0; i < len(row.col); i++ {
 		c := row.col[i]
 		r1.Min.X = r1.Max.X
-		/* the test should not be necessary, but guarantee we don't lose a pixel */
+		// the test should not be necessary, but guarantee we don't lose a pixel
 		if i == len(row.col)-1 {
 			r1.Max.X = r.Max.X
 		} else {
@@ -164,12 +164,12 @@ Found:
 		return
 	}
 	if (i > 0 && p.X < row.col[i-1].r.Min.X) || (i < len(row.col)-1 && p.X > c.r.Max.X) {
-		/* shuffle */
+		// shuffle
 		x := c.r.Min.X
 		rowclose(row, c, false)
-		if rowadd(row, c, p.X) == nil { /* whoops! */
-			if rowadd(row, c, x) == nil { /* WHOOPS! */
-				if rowadd(row, c, -1) == nil { /* shit! */
+		if rowadd(row, c, p.X) == nil { // whoops!
+			if rowadd(row, c, x) == nil { // WHOOPS!
+				if rowadd(row, c, -1) == nil { // shit!
 					rowclose(row, c, true)
 					return
 				}
@@ -223,11 +223,11 @@ Found:
 		display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
 		return
 	}
-	if i == len(row.col) { /* extend last column right */
+	if i == len(row.col) { // extend last column right
 		c = row.col[i-1]
 		r.Min.X = c.r.Min.X
 		r.Max.X = row.r.Max.X
-	} else { /* extend next window left */
+	} else { // extend next window left
 		c = row.col[i]
 		r.Max.X = c.r.Max.X
 	}
@@ -276,7 +276,7 @@ func rowtype(row *Row, r rune, p draw.Point) *Text {
 		} else {
 			winlock(w, 'K')
 			wintype(w, t, r)
-			/* Expand tag if necessary */
+			// Expand tag if necessary
 			if t.what == Tag {
 				t.w.tagsafe = false
 				if r == '\n' {
@@ -356,13 +356,13 @@ func rowdump(row *Row, file *string) {
 		for j, w := range c.w {
 			wincommit(w, &w.tag)
 			t := &w.body
-			/* windows owned by others get special treatment */
+			// windows owned by others get special treatment
 			if w.external {
 				if w.dumpstr == "" {
 					continue
 				}
 			}
-			/* zeroxes of external windows are tossed */
+			// zeroxes of external windows are tossed
 			if len(t.file.text) > 1 {
 				for n = 0; n < len(t.file.text); n++ {
 					w1 := t.file.text[n].w
@@ -464,12 +464,12 @@ func rowloadfonts(file string) {
 	}
 	defer f.Close()
 	b := bufio.NewReader(f)
-	/* current directory */
+	// current directory
 	_, err = b.ReadString('\n')
 	if err != nil {
 		return
 	}
-	/* global fonts */
+	// global fonts
 	for i := 0; i < 2; i++ {
 		l, err := b.ReadString('\n')
 		if err != nil {
@@ -499,7 +499,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 	defer f.Close()
 	b := bufio.NewReader(f)
 
-	/* current directory */
+	// current directory
 	line := 0
 	bad := func() bool {
 		alog.Printf("bad load file %s:%d\n", *file, line)
@@ -515,7 +515,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 		return bad()
 	}
 
-	/* global fonts */
+	// global fonts
 	var i int
 	for i = 0; i < 2; i++ {
 		l, err := rdline(b, &line)
@@ -626,11 +626,11 @@ func rowload(row *Row, file *string, initing bool) bool {
 			if len(l) < 1+5*12+1 {
 				return bad()
 			}
-			l, err = rdline(b, &line) /* ctl line; ignored */
+			l, err = rdline(b, &line) // ctl line; ignored
 			if err != nil {
 				return bad()
 			}
-			l, err = rdline(b, &line) /* directory */
+			l, err = rdline(b, &line) // directory
 			if err != nil {
 				return bad()
 			}
@@ -644,7 +644,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			} else {
 				r = []rune(l)
 			}
-			l, err = rdline(b, &line) /* command */
+			l, err = rdline(b, &line) // command
 			if err != nil {
 				return bad()
 			}
@@ -710,7 +710,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 			return bad()
 		}
 		l = l[:len(l)-1]
-		/* convert 0xff in multiline tag back to \n */
+		// convert 0xff in multiline tag back to \n
 		lb := []byte(l)
 		for i = 0; i < len(lb); i++ {
 			if lb[i] == 0xff {
@@ -739,7 +739,7 @@ func rowload(row *Row, file *string, initing bool) bool {
 		wincleartag(w)
 		textinsert(&w.tag, w.tag.Len(), r[n+1:], true)
 		if ndumped >= 0 {
-			/* simplest thing is to put it in a file and load that */
+			// simplest thing is to put it in a file and load that
 			f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
 			if err != nil {
 				alog.Printf("can't create temp file: %v\n", err)

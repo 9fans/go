@@ -43,7 +43,7 @@ type Cmdtab struct {
 
 func init() { cmdtab = cmdtab1 } // break init cycle
 var cmdtab1 = []Cmdtab{
-	/*	cmdc	text	regexp	addr	defcmd	defaddr	count	token	 fn	*/
+	//	cmdc	text	regexp	addr	defcmd	defaddr	count	token	 fn
 	Cmdtab{'\n', false, false, false, 0, aDot, 0, "", nl_cmd},
 	Cmdtab{'a', true, false, false, 0, aDot, 0, "", a_cmd},
 	Cmdtab{'b', false, false, false, 0, aNo, 0, linex, b_cmd},
@@ -119,7 +119,7 @@ func alleditinit(w *Window, x interface{}) {
 
 func allupdate(w *Window, x interface{}) {
 	t := &w.body
-	if t.file.curtext != t { /* do curtext only */
+	if t.file.curtext != t { // do curtext only
 		return
 	}
 	f := elogfind(t.file)
@@ -145,7 +145,7 @@ func allupdate(w *Window, x interface{}) {
 func editerror(format string, args ...interface{}) {
 	s := fmt.Sprintf(format, args...)
 	freecmd()
-	allwindows(allelogterm, nil) /* truncate the edit logs */
+	allwindows(allelogterm, nil) // truncate the edit logs
 	editerrc <- s
 	runtime.Goexit() // TODO(rsc)
 }
@@ -183,7 +183,7 @@ func editcmd(ct *Text, r []rune) {
 		alog.Printf("Edit: %s\n", err)
 	}
 
-	/* update everyone whose edit log has data */
+	// update everyone whose edit log has data
 	allwindows(allupdate, nil)
 }
 
@@ -218,7 +218,7 @@ func getnum(signok int) int {
 		getch()
 	}
 	c := nextc()
-	if c < '0' || '9' < c { /* no number defaults to 1 */
+	if c < '0' || '9' < c { // no number defaults to 1
 		return sign
 	}
 	for {
@@ -314,13 +314,13 @@ func getrhs(s *String, delim, cmd rune) {
 				c = '\\'
 			} else if c == 'n' {
 				c = '\n'
-			} else if c != delim && (cmd == 's' || c != '\\') { /* s does its own */
+			} else if c != delim && (cmd == 's' || c != '\\') { // s does its own
 				Straddc(s, '\\')
 			}
 		}
 		Straddc(s, c)
 	}
-	ungetch() /* let client read whether delimiter, '\n' or whatever */
+	ungetch() // let client read whether delimiter, '\n' or whatever
 }
 
 func collecttoken(end string) *String {
@@ -331,7 +331,7 @@ func collecttoken(end string) *String {
 		if !(c == ' ') && !(c == '\t') {
 			break
 		}
-		Straddc(s, getch()) /* blanks significant for getname() */
+		Straddc(s, getch()) // blanks significant for getname()
 	}
 	for {
 		c = getch()
@@ -410,15 +410,15 @@ func parsecmd(nest int) *Cmd {
 		return nil
 	}
 	cmd.cmdc = c
-	if cmd.cmdc == 'c' && nextc() == 'd' { /* sleazy two-character case */
-		getch() /* the 'd' */
+	if cmd.cmdc == 'c' && nextc() == 'd' { // sleazy two-character case
+		getch() // the 'd'
 		cmd.cmdc = 'c' | 0x100
 	}
 	i := cmdlookup(cmd.cmdc)
 	var cp *Cmd
 	if i >= 0 {
 		if cmd.cmdc == '\n' {
-			goto Return /* let nl_cmd work it all out */
+			goto Return // let nl_cmd work it all out
 		}
 		ct := &cmdtab[i]
 		if ct.defaddr == aNo && cmd.addr != nil {
@@ -428,8 +428,8 @@ func parsecmd(nest int) *Cmd {
 			cmd.num = getnum(int(ct.count))
 		}
 		if ct.regexp {
-			/* x without pattern -> .*\n, indicated by cmd.re==0 */
-			/* X without pattern is all files */
+			// x without pattern -> .*\n, indicated by cmd.re==0
+			// X without pattern is all files
 			if (ct.cmdc != 'x' && ct.cmdc != 'X') || func() bool { c = nextc(); return c != ' ' && c != '\t' && c != '\n' }() {
 				cmdskipbl()
 				c = getch()
@@ -587,7 +587,7 @@ func simpleaddr() *Addr {
 				break
 			}
 			fallthrough
-		/* fall through */
+		// fall through
 		case '"':
 			editerror("bad address syntax")
 		case 'l',
@@ -596,11 +596,11 @@ func simpleaddr() *Addr {
 				break
 			}
 			fallthrough
-		/* fall through */
+		// fall through
 		case '/',
 			'?':
 			if addr.typ != '+' && addr.typ != '-' {
-				/* insert the missing '+' */
+				// insert the missing '+'
 				nap = newaddr()
 				nap.typ = '+'
 				nap.next = addr.next

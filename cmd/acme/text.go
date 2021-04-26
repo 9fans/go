@@ -40,7 +40,7 @@ var Ldot = []rune(".")
 
 const (
 	TABDIR = 3
-) /* width of tabs in directory windows */
+) // width of tabs in directory windows
 
 func textinit(t *Text, f *File, r draw.Rectangle, rf *Reffont, cols []*draw.Image) {
 	t.file = f
@@ -60,11 +60,11 @@ func textinit(t *Text, f *File, r draw.Rectangle, rf *Reffont, cols []*draw.Imag
 func textredraw(t *Text, r draw.Rectangle, f *draw.Font, b *draw.Image, odx int) {
 	t.fr.Init(r, f, b, t.fr.Cols[:])
 	rr := t.fr.R
-	rr.Min.X -= Scrollwid() + Scrollgap() /* back fill to scroll bar */
+	rr.Min.X -= Scrollwid() + Scrollgap() // back fill to scroll bar
 	if t.fr.NoRedraw == 0 {
 		t.fr.B.Draw(rr, t.fr.Cols[frame.BACK], nil, draw.ZP)
 	}
-	/* use no wider than 3-space tabs in a directory */
+	// use no wider than 3-space tabs in a directory
 	maxt := maxtab
 	if t.what == Body {
 		if t.w.isdir {
@@ -101,7 +101,7 @@ func textresize(t *Text, r draw.Rectangle, keepextra bool) int {
 	t.fr.Clear(false)
 	textredraw(t, r, t.fr.Font, t.fr.B, odx)
 	if keepextra && t.fr.R.Max.Y < t.all.Max.Y && t.fr.NoRedraw == 0 {
-		/* draw background in bottom fringe of window */
+		// draw background in bottom fringe of window
 		r.Min.X -= Scrollgap()
 		r.Min.Y = t.fr.R.Max.Y
 		r.Max.Y = t.all.Max.Y
@@ -139,7 +139,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 		return
 	}
 	mint := t.fr.Font.StringWidth("0")
-	/* go for narrower tabs if set more than 3 wide */
+	// go for narrower tabs if set more than 3 wide
 	t.fr.MaxTab = util.Min(maxtab, TABDIR) * mint
 	maxt := t.fr.MaxTab
 	colw := 0
@@ -226,7 +226,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 	var n int
 	var q1 int
 	if info.IsDir() {
-		/* this is checked in get() but it's possible the file changed underfoot */
+		// this is checked in get() but it's possible the file changed underfoot
 		if len(t.file.text) > 1 {
 			alog.Printf("%s is a directory; can't read with multiple windows on it\n", file)
 			return -1
@@ -302,11 +302,11 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 	for i = 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
 		if u != t {
-			if u.org > u.Len() { /* will be 0 because of reset(), but safety first */
+			if u.org > u.Len() { // will be 0 because of reset(), but safety first
 				u.org = 0
 			}
 			textresize(u, u.all, true)
-			textbacknl(u, u.org, 0) /* go to beginning of line */
+			textbacknl(u, u.org, 0) // go to beginning of line
 		}
 		textsetselect(u, q0, q0)
 	}
@@ -317,7 +317,7 @@ func textload(t *Text, q0 int, file string, setqid bool) int {
 }
 
 func textbsinsert(t *Text, q0 int, r []rune, tofile bool, nrp *int) int {
-	if t.what == Tag { /* can't happen but safety first: mustn't backspace over file name */
+	if t.what == Tag { // can't happen but safety first: mustn't backspace over file name
 		goto Err
 	}
 
@@ -375,7 +375,7 @@ func textinsert(t *Text, q0 int, r []rune, tofile bool) {
 			for i := 0; i < len(t.file.text); i++ {
 				u := t.file.text[i]
 				if u != t {
-					u.w.dirty = true /* always a body */
+					u.w.dirty = true // always a body
 					textinsert(u, q0, r, false)
 					textsetselect(u, u.q0, u.q1)
 					textscrdraw(u)
@@ -432,7 +432,7 @@ func textfill(t *Text) {
 		if n == 0 {
 			break
 		}
-		if n > 2000 { /* educated guess at reasonable amount */
+		if n > 2000 { // educated guess at reasonable amount
 			n = 2000
 		}
 		t.file.Read(t.org+t.fr.NumChars, rp[:n])
@@ -479,7 +479,7 @@ func textdelete(t *Text, q0 int, q1 int, tofile bool) {
 			for i := 0; i < len(t.file.text); i++ {
 				u := t.file.text[i]
 				if u != t {
-					u.w.dirty = true /* always a body */
+					u.w.dirty = true // always a body
 					textdelete(u, q0, q1, false)
 					textsetselect(u, u.q0, u.q1)
 					textscrdraw(u)
@@ -538,23 +538,23 @@ func textreadc(t *Text, q int) rune {
 }
 
 func textbswidth(t *Text, c rune) int {
-	/* there is known to be at least one character to erase */
-	if c == 0x08 { /* ^H: erase character */
+	// there is known to be at least one character to erase
+	if c == 0x08 { // ^H: erase character
 		return 1
 	}
 	q := t.q0
 	skipping := true
 	for q > 0 {
 		r := t.RuneAt(q - 1)
-		if r == '\n' { /* eat at most one more character */
-			if q == t.q0 { /* eat the newline */
+		if r == '\n' { // eat at most one more character
+			if q == t.q0 { // eat the newline
 				q--
 			}
 			break
 		}
 		if c == 0x17 {
 			eq := runes.IsAlphaNum(r)
-			if eq && skipping { /* found one; stop skipping */
+			if eq && skipping { // found one; stop skipping
 				skipping = false
 			} else if !eq && !skipping {
 				break
@@ -581,8 +581,8 @@ func textfilewidth(t *Text, q0 int, oneelement bool) int {
 }
 
 func textcomplete(t *Text) []rune {
-	/* control-f: filename completion; works back to white space or / */
-	if t.q0 < t.Len() && t.RuneAt(t.q0) > ' ' { /* must be at end of word */
+	// control-f: filename completion; works back to white space or /
+	if t.q0 < t.Len() && t.RuneAt(t.q0) > ' ' { // must be at end of word
 		return nil
 	}
 	nstr := textfilewidth(t, t.q0, true)
@@ -602,7 +602,7 @@ func textcomplete(t *Text) []rune {
 		q++
 	}
 	var dir []rune
-	/* is path rooted? if not, we need to make it relative to window path */
+	// is path rooted? if not, we need to make it relative to window path
 	if npath > 0 && path_[0] == '/' {
 		dir = path_
 	} else {
@@ -676,7 +676,7 @@ func texttype(t *Text, r rune) {
 		return
 	case draw.KeyDown, draw.KeyPageDown, Kscrollonedown:
 		if t.what == Tag {
-			/* expand tag to show all text */
+			// expand tag to show all text
 			if !t.w.tagexpand {
 				t.w.tagexpand = true
 				winresize(t.w, t.w.r, false, true)
@@ -699,7 +699,7 @@ func texttype(t *Text, r rune) {
 		return
 	case draw.KeyUp, draw.KeyPageUp, Kscrolloneup:
 		if t.what == Tag {
-			/* shrink tag to single line */
+			// shrink tag to single line
 			if t.w.tagexpand {
 				t.w.tagexpand = false
 				t.w.taglines = 1
@@ -740,16 +740,16 @@ func texttype(t *Text, r rune) {
 			textshow(t, t.Len(), t.Len(), false)
 		}
 		return
-	case 0x01: /* ^A: beginning of line */
+	case 0x01: // ^A: beginning of line
 		typecommit(t)
-		/* go to where ^U would erase, if not already at BOL */
+		// go to where ^U would erase, if not already at BOL
 		nnb = 0
 		if t.q0 > 0 && t.RuneAt(t.q0-1) != '\n' {
 			nnb = textbswidth(t, 0x15)
 		}
 		textshow(t, t.q0-nnb, t.q0-nnb, true)
 		return
-	case 0x05: /* ^E: end of line */
+	case 0x05: // ^E: end of line
 		typecommit(t)
 		q0 = t.q0
 		for q0 < t.Len() && t.RuneAt(q0) != '\n' {
@@ -757,15 +757,15 @@ func texttype(t *Text, r rune) {
 		}
 		textshow(t, q0, q0, true)
 		return
-	case draw.KeyCmd + 'c': /* %C: copy */
+	case draw.KeyCmd + 'c': // %C: copy
 		typecommit(t)
 		cut(t, t, nil, true, false, nil)
 		return
-	case draw.KeyCmd + 'z': /* %Z: undo */
+	case draw.KeyCmd + 'z': // %Z: undo
 		typecommit(t)
 		undo(t, nil, nil, true, false, nil)
 		return
-	case draw.KeyCmd + 'Z': /* %-shift-Z: redo */
+	case draw.KeyCmd + 'Z': // %-shift-Z: redo
 		typecommit(t)
 		undo(t, nil, nil, false, false, nil)
 		return
@@ -774,9 +774,9 @@ func texttype(t *Text, r rune) {
 		file.Seq++
 		t.file.Mark()
 	}
-	/* cut/paste must be done after the seq++/filemark */
+	// cut/paste must be done after the seq++/filemark
 	switch r {
-	case draw.KeyCmd + 'x': /* %X: cut */
+	case draw.KeyCmd + 'x': // %X: cut
 		typecommit(t)
 		if t.what == Body {
 			file.Seq++
@@ -786,7 +786,7 @@ func texttype(t *Text, r rune) {
 		textshow(t, t.q0, t.q0, true)
 		t.iq1 = t.q0
 		return
-	case draw.KeyCmd + 'v': /* %V: paste */
+	case draw.KeyCmd + 'v': // %V: paste
 		typecommit(t)
 		if t.what == Body {
 			file.Seq++
@@ -811,14 +811,14 @@ func texttype(t *Text, r rune) {
 	var u *Text
 	rp := []rune{r}
 	switch r {
-	case 0x06, /* ^F: complete */
+	case 0x06, // ^F: complete
 		draw.KeyInsert:
 		typecommit(t)
 		rp = textcomplete(t)
 		if rp == nil {
 			return
 		}
-		/* break to normal insertion case */
+		// break to normal insertion case
 	case 0x1B:
 		if t.eq0 != ^0 {
 			if t.eq0 <= t.q0 {
@@ -832,16 +832,16 @@ func texttype(t *Text, r rune) {
 		}
 		t.iq1 = t.q0
 		return
-	case 0x08, /* ^H: erase character */
-		0x15, /* ^U: erase line */
-		0x17: /* ^W: erase word */
-		if t.q0 == 0 { /* nothing to erase */
+	case 0x08, // ^H: erase character
+		0x15, // ^U: erase line
+		0x17: // ^W: erase word
+		if t.q0 == 0 { // nothing to erase
 			return
 		}
 		nnb = textbswidth(t, r)
 		q1 = t.q0
 		q0 = q1 - nnb
-		/* if selection is at beginning of window, avoid deleting invisible text */
+		// if selection is at beginning of window, avoid deleting invisible text
 		if q0 < t.org {
 			q0 = t.org
 			nnb = q1 - q0
@@ -885,8 +885,8 @@ func texttype(t *Text, r rune) {
 		return
 	case '\n':
 		if t.w.autoindent {
-			/* find beginning of previous line using backspace code */
-			nnb = textbswidth(t, 0x15) /* ^U case */
+			// find beginning of previous line using backspace code
+			nnb = textbswidth(t, 0x15) // ^U case
 			rp = make([]rune, 1, nnb+1)
 			rp[0] = '\n'
 			for i = 0; i < nnb; i++ {
@@ -897,9 +897,9 @@ func texttype(t *Text, r rune) {
 				rp = append(rp, r)
 			}
 		}
-		/* break to normal code */
+		// break to normal code
 	}
-	/* otherwise ordinary character; just insert, typically in caches of all texts */
+	// otherwise ordinary character; just insert, typically in caches of all texts
 	for i = 0; i < len(t.file.text); i++ {
 		u = t.file.text[i]
 		if u.eq0 == ^0 {
@@ -1012,16 +1012,16 @@ func textselect(t *Text) {
 			display.Flush()
 			x := mouse.Point.X
 			y := mouse.Point.Y
-			/* stay here until something interesting happens */
+			// stay here until something interesting happens
 			for {
 				mousectl.Read()
 				if !(mouse.Buttons == b && abs(mouse.Point.X-x) < 3) || !(abs(mouse.Point.Y-y) < 3) {
 					break
 				}
 			}
-			mouse.Point.X = x /* in case we're calling frselect */
+			mouse.Point.X = x // in case we're calling frselect
 			mouse.Point.Y = y
-			q0 = t.q0 /* may have changed */
+			q0 = t.q0 // may have changed
 			q1 = t.q1
 			selectq = q0
 		}
@@ -1029,7 +1029,7 @@ func textselect(t *Text) {
 	if mouse.Buttons == b {
 		t.fr.Scroll = framescroll
 		t.fr.Select(mousectl)
-		/* horrible botch: while asleep, may have lost selection altogether */
+		// horrible botch: while asleep, may have lost selection altogether
 		if selectq > t.Len() {
 			selectq = t.org + t.fr.P0
 		}
@@ -1058,7 +1058,7 @@ func textselect(t *Text) {
 	}
 	textsetselect(t, q0, q1)
 	display.Flush()
-	state := None /* what we've done; undo when possible */
+	state := None // what we've done; undo when possible
 	for mouse.Buttons != 0 {
 		mouse.Msec = 0
 		b = mouse.Buttons
@@ -1111,7 +1111,7 @@ func textshow(t *Text, q0 int, q1 int, doselect bool) {
 		textsetselect(t, q0, q1)
 	}
 	qe := t.org + t.fr.NumChars
-	tsd := false /* do we call textscrdraw? */
+	tsd := false // do we call textscrdraw?
 	nc := t.Len() + len(t.cache)
 	if t.org <= q0 {
 		if nc == 0 || q0 < qe {
@@ -1136,7 +1136,7 @@ func textshow(t *Text, q0 int, q1 int, doselect bool) {
 			nl = t.fr.MaxLines / 4
 		}
 		q := textbacknl(t, q0, nl)
-		/* avoid going backwards if trying to go forwards - long lines! */
+		// avoid going backwards if trying to go forwards - long lines!
 		if !(q0 > t.org) || !(q < t.org) {
 			textsetorigin(t, q, true)
 		}
@@ -1158,38 +1158,38 @@ func region(a int, b int) int {
 
 func selrestore(f *frame.Frame, pt0 draw.Point, p0 int, p1 int) {
 	if p1 <= f.P0 || p0 >= f.P1 {
-		/* no overlap */
+		// no overlap
 		f.Drawsel0(pt0, p0, p1, f.Cols[frame.BACK], f.Cols[frame.TEXT])
 		return
 	}
 	if p0 >= f.P0 && p1 <= f.P1 {
-		/* entirely inside */
+		// entirely inside
 		f.Drawsel0(pt0, p0, p1, f.Cols[frame.HIGH], f.Cols[frame.HTEXT])
 		return
 	}
 
-	/* they now are known to overlap */
+	// they now are known to overlap
 
-	/* before selection */
+	// before selection
 	if p0 < f.P0 {
 		f.Drawsel0(pt0, p0, f.P0, f.Cols[frame.BACK], f.Cols[frame.TEXT])
 		p0 = f.P0
 		pt0 = f.PointOf(p0)
 	}
-	/* after selection */
+	// after selection
 	if p1 > f.P1 {
 		f.Drawsel0(f.PointOf(f.P1), f.P1, p1, f.Cols[frame.BACK], f.Cols[frame.TEXT])
 		p1 = f.P1
 	}
-	/* inside selection */
+	// inside selection
 	f.Drawsel0(pt0, p0, p1, f.Cols[frame.HIGH], f.Cols[frame.HTEXT])
 }
 
 func textsetselect(t *Text, q0 int, q1 int) {
-	/* t->fr.p0 and t->fr.p1 are always right; t->q0 and t->q1 may be off */
+	// t->fr.p0 and t->fr.p1 are always right; t->q0 and t->q1 may be off
 	t.q0 = q0
 	t.q1 = q1
-	/* compute desired p0,p1 from q0,q1 */
+	// compute desired p0,p1 from q0,q1
 	p0 := q0 - t.org
 	p1 := q1 - t.org
 	ticked := true
@@ -1216,28 +1216,28 @@ func textsetselect(t *Text, q0 int, q1 int) {
 	if p0 > p1 {
 		panic(fmt.Sprintf("acme: textsetselect p0=%d p1=%d q0=%d q1=%d t->org=%d nchars=%d", p0, p1, q0, q1, int(t.org), int(t.fr.NumChars)))
 	}
-	/* screen disagrees with desired selection */
+	// screen disagrees with desired selection
 	if t.fr.P1 <= p0 || p1 <= t.fr.P0 || p0 == p1 || t.fr.P1 == t.fr.P0 {
-		/* no overlap or too easy to bother trying */
+		// no overlap or too easy to bother trying
 		t.fr.Drawsel(t.fr.PointOf(t.fr.P0), t.fr.P0, t.fr.P1, false)
 		if p0 != p1 || ticked {
 			t.fr.Drawsel(t.fr.PointOf(p0), p0, p1, true)
 		}
 		goto Return
 	}
-	/* overlap; avoid unnecessary painting */
+	// overlap; avoid unnecessary painting
 	if p0 < t.fr.P0 {
-		/* extend selection backwards */
+		// extend selection backwards
 		t.fr.Drawsel(t.fr.PointOf(p0), p0, t.fr.P0, true)
 	} else if p0 > t.fr.P0 {
-		/* trim first part of selection */
+		// trim first part of selection
 		t.fr.Drawsel(t.fr.PointOf(t.fr.P0), t.fr.P0, p0, false)
 	}
 	if p1 > t.fr.P1 {
-		/* extend selection forwards */
+		// extend selection forwards
 		t.fr.Drawsel(t.fr.PointOf(t.fr.P1), t.fr.P1, p1, true)
 	} else if p1 < t.fr.P1 {
-		/* trim last part of selection */
+		// trim last part of selection
 		t.fr.Drawsel(t.fr.PointOf(p1), p1, t.fr.P1, false)
 	}
 
@@ -1261,7 +1261,7 @@ func xselect(f *frame.Frame, mc *draw.Mousectl, col *draw.Image, p1p *int) int {
 	b := mc.Buttons
 	msec := mc.Msec
 
-	/* remove tick */
+	// remove tick
 	if f.P0 == f.P1 {
 		f.Tick(f.PointOf(f.P0), false)
 	}
@@ -1277,7 +1277,7 @@ func xselect(f *frame.Frame, mc *draw.Mousectl, col *draw.Image, p1p *int) int {
 			if p0 == p1 {
 				f.Tick(pt0, false)
 			}
-			if reg != region(q, p0) { /* crossed starting point; reset */
+			if reg != region(q, p0) { // crossed starting point; reset
 				if reg > 0 {
 					selrestore(f, pt0, p0, p1)
 				} else if reg < 0 {
@@ -1334,7 +1334,7 @@ func xselect(f *frame.Frame, mc *draw.Mousectl, col *draw.Image, p1p *int) int {
 		f.Tick(pt0, false)
 	}
 	selrestore(f, pt0, p0, p1)
-	/* restore tick */
+	// restore tick
 	if f.P0 == f.P1 {
 		f.Tick(f.PointOf(f.P0), true)
 	}
@@ -1364,7 +1364,7 @@ func textselect2(t *Text, q0 *int, q1 *int, tp **Text) int {
 	if buts&4 != 0 {
 		return 0
 	}
-	if buts&1 != 0 { /* pick up argument */
+	if buts&1 != 0 { // pick up argument
 		*tp = argtext
 		return 1
 	}
@@ -1390,7 +1390,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		l := left[i]
 		r := right[i]
 		var c rune
-		/* try matching character to left, looking right */
+		// try matching character to left, looking right
 		if q == 0 {
 			c = '\n'
 		} else {
@@ -1406,7 +1406,7 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 			}
 			return
 		}
-		/* try matching character to right, looking left */
+		// try matching character to right, looking left
 		if q == t.Len() {
 			c = '\n'
 		} else {
@@ -1428,11 +1428,11 @@ func textdoubleclick(t *Text, q0 *int, q1 *int) {
 		}
 	}
 
-	/* try filling out word to right */
+	// try filling out word to right
 	for *q1 < t.Len() && runes.IsAlphaNum(t.RuneAt(*q1)) {
 		(*q1)++
 	}
-	/* try filling out word to left */
+	// try filling out word to left
 	for *q0 > 0 && runes.IsAlphaNum(t.RuneAt(*q0-1)) {
 		(*q0)--
 	}
@@ -1583,7 +1583,7 @@ func textclickhtmlmatch(t *Text, q0 *int, q1 *int) int {
 }
 
 func textbacknl(t *Text, p int, n int) int {
-	/* look for start of this line if n==0 */
+	// look for start of this line if n==0
 	if n == 0 && p > 0 && t.RuneAt(p-1) != '\n' {
 		n = 1
 	}
@@ -1594,11 +1594,11 @@ func textbacknl(t *Text, p int, n int) int {
 		if !(tmp29 > 0) || !(p > 0) {
 			break
 		}
-		p-- /* it's at a newline now; back over it */
+		p-- // it's at a newline now; back over it
 		if p == 0 {
 			break
 		}
-		/* at 128 chars, call it a line anyway */
+		// at 128 chars, call it a line anyway
 		for j := 128; ; p-- {
 			j--
 			if !(j > 0) || !(p > 0) {
@@ -1614,8 +1614,8 @@ func textbacknl(t *Text, p int, n int) int {
 
 func textsetorigin(t *Text, org int, exact bool) {
 	if org > 0 && !exact && t.RuneAt(org-1) != '\n' {
-		/* org is an estimate of the char posn; find a newline */
-		/* don't try harder than 256 chars */
+		// org is an estimate of the char posn; find a newline
+		// don't try harder than 256 chars
 		for i := 0; i < 256 && org < t.Len(); i++ {
 			if t.RuneAt(org) == '\n' {
 				org++
@@ -1628,7 +1628,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 	fixup := 0
 	if a >= 0 && a < t.fr.NumChars {
 		t.fr.Delete(0, a)
-		fixup = 1 /* frdelete can leave end of last line in wrong selection mode; it doesn't know what follows */
+		fixup = 1 // frdelete can leave end of last line in wrong selection mode; it doesn't know what follows
 	} else if a < 0 && -a < t.fr.NumChars {
 		n := t.org - org
 		r := make([]rune, n)
@@ -1649,7 +1649,7 @@ func textsetorigin(t *Text, org int, exact bool) {
 func textreset(t *Text) {
 	t.file.SetSeq(0)
 	t.eq0 = ^0
-	/* do t->delete(0, t->nc, TRUE) without building backup stuff */
+	// do t->delete(0, t->nc, TRUE) without building backup stuff
 	textsetselect(t, t.org, t.org)
 	t.fr.Delete(0, t.fr.NumChars)
 	t.org = 0

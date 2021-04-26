@@ -49,12 +49,12 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 	var v *Window
 	r := c.r
 	r.Min.Y = c.tag.fr.R.Max.Y + Border()
-	if y < r.Min.Y && len(c.w) > 0 { /* steal half of last window by default */
+	if y < r.Min.Y && len(c.w) > 0 { // steal half of last window by default
 		v = c.w[len(c.w)-1]
 		y = v.body.fr.R.Min.Y + v.body.fr.R.Dy()/2
 	}
 	var i int
-	/* look for window we'll land on */
+	// look for window we'll land on
 	for i = 0; i < len(c.w); i++ {
 		v = c.w[i]
 		if y < v.r.Max.Y {
@@ -64,7 +64,7 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 	buggered := 0
 	if len(c.w) > 0 {
 		if i < len(c.w) {
-			i++ /* new window will go after v */
+			i++ // new window will go after v
 		}
 		/*
 		 * if landing window (v) is too small, grow it first.
@@ -74,7 +74,7 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 		for !c.safe || v.body.fr.MaxLines <= 3 || v.body.all.Dy() <= minht {
 			j++
 			if j > 10 {
-				buggered = 1 /* too many windows in column */
+				buggered = 1 // too many windows in column
 				break
 			}
 			colgrow(c, v, 1)
@@ -85,20 +85,20 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 		 * figure out where to split v to make room for w
 		 */
 
-		/* new window stops where next window begins */
+		// new window stops where next window begins
 		if i < len(c.w) {
 			ymax = c.w[i].r.Min.Y - Border()
 		} else {
 			ymax = c.r.Max.Y
 		}
 
-		/* new window must start after v's tag ends */
+		// new window must start after v's tag ends
 		y = util.Max(y, v.tagtop.Max.Y+Border())
 
-		/* new window must start early enough to end before ymax */
+		// new window must start early enough to end before ymax
 		y = util.Min(y, ymax-minht)
 
-		/* if y is too small, too many windows in column */
+		// if y is too small, too many windows in column
 		if y < v.tagtop.Max.Y+Border() {
 			buggered = 1
 		}
@@ -139,20 +139,20 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 	c.w[i] = w
 	c.safe = true
 
-	/* if there were too many windows, redraw the whole column */
+	// if there were too many windows, redraw the whole column
 	if buggered != 0 {
 		colresize(c, c.r)
 	}
 
 	savemouse(w)
-	/* near the button, but in the body */
+	// near the button, but in the body
 	display.MoveCursor(w.tag.scrollr.Max.Add(draw.Pt(3, 3)))
 	barttext = &w.body
 	return w
 }
 
 func colclose(c *Column, w *Window, dofree bool) {
-	/* w is locked */
+	// w is locked
 	if !c.safe {
 		colgrow(c, w, 1)
 	}
@@ -180,11 +180,11 @@ Found:
 		return
 	}
 	up := 0
-	if i == len(c.w) { /* extend last window down */
+	if i == len(c.w) { // extend last window down
 		w = c.w[i-1]
 		r.Min.Y = w.r.Min.Y
 		r.Max.Y = c.r.Max.Y
-	} else { /* extend next window up */
+	} else { // extend next window up
 		up = 1
 		w = c.w[i]
 		r.Max.Y = w.r.Max.Y
@@ -298,7 +298,7 @@ func colgrow(c *Column, w *Window, but int) {
 Found:
 	cr := c.r
 	var r draw.Rectangle
-	if but < 0 { /* make sure window fills its own space properly */
+	if but < 0 { // make sure window fills its own space properly
 		r = w.r
 		if i == len(c.w)-1 || !c.safe {
 			r.Max.Y = cr.Max.Y
@@ -310,7 +310,7 @@ Found:
 	}
 	cr.Min.Y = c.w[0].r.Min.Y
 	var v *Window
-	if but == 3 { /* full size */
+	if but == 3 { // full size
 		if i != 0 {
 			v = c.w[0]
 			c.w[0] = w
@@ -324,7 +324,7 @@ Found:
 		c.safe = false
 		return
 	}
-	/* store old #lines for each window */
+	// store old #lines for each window
 	onl := w.body.fr.MaxLines
 	nl := make([]int, len(c.w))
 	ny := make([]int, len(c.w))
@@ -336,8 +336,8 @@ Found:
 		nl[j] = l
 		tot += l
 	}
-	/* approximate new #lines for this window */
-	if but == 2 { /* as big as can be */
+	// approximate new #lines for this window
+	if but == 2 { // as big as can be
 		for i := range nl {
 			nl[i] = 0
 		}
@@ -350,9 +350,9 @@ Found:
 			nnl = 2
 		}
 		dnl := nnl - onl
-		/* compute new #lines for each window */
+		// compute new #lines for each window
 		for k := 1; k < len(c.w); k++ {
-			/* prune from later window */
+			// prune from later window
 			j = i + k
 			if j < len(c.w) && nl[j] != 0 {
 				l = util.Min(dnl, util.Max(1, nl[j]/2))
@@ -360,7 +360,7 @@ Found:
 				nl[i] += l
 				dnl -= l
 			}
-			/* prune from earlier window */
+			// prune from earlier window
 			j = i - k
 			if j >= 0 && nl[j] != 0 {
 				l = util.Min(dnl, util.Max(1, nl[j]/2))
@@ -370,7 +370,7 @@ Found:
 			}
 		}
 	}
-	/* pack everyone above */
+	// pack everyone above
 	y1 := cr.Min.Y
 	for j = 0; j < i; j++ {
 		v = c.w[j]
@@ -385,7 +385,7 @@ Found:
 		display.ScreenImage.Draw(r, display.Black, nil, draw.ZP)
 		y1 = r.Max.Y
 	}
-	/* scan to see new size of everyone below */
+	// scan to see new size of everyone below
 	y2 := c.r.Max.Y
 	for j = len(c.w) - 1; j > i; j-- {
 		v = c.w[j]
@@ -398,7 +398,7 @@ Found:
 		ny[j] = r.Min.Y
 		y2 = r.Min.Y
 	}
-	/* compute new size of window */
+	// compute new size of window
 	r = w.r
 	r.Min.Y = y1
 	r.Max.Y = y2
@@ -406,7 +406,7 @@ Found:
 	if r.Dy() < w.tagtop.Dy()+1+h+Border() {
 		r.Max.Y = r.Min.Y + w.tagtop.Dy() + 1 + h + Border()
 	}
-	/* draw window */
+	// draw window
 	r.Max.Y = winresize(w, r, c.safe, true)
 	if i < len(c.w)-1 {
 		r.Min.Y = r.Max.Y
@@ -416,7 +416,7 @@ Found:
 			ny[j] -= (y2 - r.Max.Y)
 		}
 	}
-	/* pack everyone below */
+	// pack everyone below
 	y1 = r.Max.Y
 	for j = i + 1; j < len(c.w); j++ {
 		v = c.w[j]
@@ -427,7 +427,7 @@ Found:
 			r.Max.Y += 1 + nl[j]*v.body.fr.Font.Height
 		}
 		y1 = winresize(v, r, c.safe, j == len(c.w)-1)
-		if j < len(c.w)-1 { /* no border on last window */
+		if j < len(c.w)-1 { // no border on last window
 			r.Min.Y = y1
 			r.Max.Y += Border()
 			display.ScreenImage.Draw(r, display.Black, nil, draw.ZP)
@@ -463,7 +463,7 @@ func coldragwin(c *Column, w *Window, but int) {
 	util.Fatal("can't find window")
 
 Found:
-	if w.tagexpand { /* force recomputation of window tag size */
+	if w.tagexpand { // force recomputation of window tag size
 		w.taglines = 1
 	}
 	p := mouse.Point
@@ -472,9 +472,9 @@ Found:
 		winmousebut(w)
 		return
 	}
-	/* is it a flick to the right? */
+	// is it a flick to the right?
 	if abs(p.Y-op.Y) < 10 && p.X > op.X+30 && rowwhichcol(c.row, p) == c {
-		p.X = op.X + w.r.Dx() /* yes: toss to next column */
+		p.X = op.X + w.r.Dx() // yes: toss to next column
 	}
 	nc := rowwhichcol(c.row, p)
 	if nc != nil && nc != c {
@@ -484,10 +484,10 @@ Found:
 		return
 	}
 	if i == 0 && len(c.w) == 1 {
-		return /* can't do it */
+		return // can't do it
 	}
 	if (i > 0 && p.Y < c.w[i-1].r.Min.Y) || (i < len(c.w)-1 && p.Y > w.r.Max.Y) || (i == 0 && p.Y > w.r.Max.Y) {
-		/* shuffle */
+		// shuffle
 		colclose(c, w, false)
 		coladd(c, w, nil, p.Y)
 		winmousebut(w)
@@ -538,7 +538,7 @@ func colwhich(c *Column, p draw.Point) *Text {
 			if p.In(w.tagtop) || p.In(w.tag.all) {
 				return &w.tag
 			}
-			/* exclude partial line at bottom */
+			// exclude partial line at bottom
 			if p.X >= w.body.scrollr.Max.X && p.Y >= w.body.fr.R.Max.Y {
 				return nil
 			}

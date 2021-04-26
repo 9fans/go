@@ -42,7 +42,7 @@ var Eaddr string = "address out of range"
 var Einuse string = "already in use"
 var Ebadevent string = "bad event syntax"
 
-/* extern var Eperm [unknown]C.char */
+// extern var Eperm [unknown]C.char
 
 func clampaddr(w *Window) {
 	if w.addr.Pos < 0 {
@@ -73,7 +73,7 @@ func xfidctl(x *Xfid) {
 func xfidflush(x *Xfid) {
 	xfidlogflush(x)
 
-	/* search windows for matching tag */
+	// search windows for matching tag
 	row.lk.Lock()
 	for j := 0; j < len(row.col); j++ {
 		c := row.col[j]
@@ -231,9 +231,9 @@ func xfidclose(x *Xfid) {
 			QWxdata:
 			w.nomark = false
 			fallthrough
-		/* fall through */
+		// fall through
 		case QWaddr,
-			QWevent: /* BUG: do we need to shut down Xfid? */
+			QWevent: // BUG: do we need to shut down Xfid?
 			nopen[wq{w, q}]--
 			if nopen[wq{w, q}] == 0 {
 				if q == QWdata || q == QWxdata {
@@ -256,7 +256,7 @@ func xfidclose(x *Xfid) {
 		case QWwrsel:
 			w.nomark = false
 			t = &w.body
-			/* before: only did this if !w->noscroll, but that didn't seem right in practice */
+			// before: only did this if !w->noscroll, but that didn't seem right in practice
 			textshow(t, util.Min(w.wrselrange.Pos, t.Len()), util.Min(w.wrselrange.End, t.Len()), true)
 			textscrdraw(t)
 		case QWeditout:
@@ -324,7 +324,7 @@ func xfidread(x *Xfid) {
 		xfideventread(x, w)
 
 	case QWdata:
-		/* BUG: what should happen if q1 > q0? */
+		// BUG: what should happen if q1 > q0?
 		if w.addr.Pos > w.body.Len() {
 			respond(x, &fc, Eaddr)
 			break
@@ -333,7 +333,7 @@ func xfidread(x *Xfid) {
 		w.addr.End = w.addr.Pos
 
 	case QWxdata:
-		/* BUG: what should happen if q1 > q0? */
+		// BUG: what should happen if q1 > q0?
 		if w.addr.Pos > w.body.Len() {
 			respond(x, &fc, Eaddr)
 			break
@@ -396,7 +396,7 @@ func fullrunewrite(x *Xfid) []rune {
 	r := make([]rune, cnt)
 	nb, nr, _ := runes.Convert(x.fcall.Data, r, false)
 	r = r[:nr]
-	/* approach end of buffer */
+	// approach end of buffer
 	for utf8.FullRune(x.fcall.Data[nb:cnt]) {
 		ch, w := utf8.DecodeRune(x.fcall.Data[nb:])
 		nb += w
@@ -555,7 +555,7 @@ func xfidwrite(x *Xfid) {
 					t.file.Mark()
 				}
 				q0 = textbsinsert(t, q0, r, true, &nr)
-				textsetselect(t, t.q0, t.q1) /* insert could leave it somewhere else */
+				textsetselect(t, t.q0, t.q1) // insert could leave it somewhere else
 				if qid != QWwrsel && shouldscroll(t, q0, qid) {
 					textshow(t, q0+nr, q0+nr, true)
 				}
@@ -593,15 +593,15 @@ func xfidctlwrite(x *Xfid, w *Window) {
 	p := string(x.fcall.Data)
 	var err string
 	for p != "" {
-		if strings.HasPrefix(p, "lock") { /* make window exclusive use */
+		if strings.HasPrefix(p, "lock") { // make window exclusive use
 			w.ctllock.Lock()
 			w.ctlfid = x.f.fid
 			p = p[4:]
-		} else if strings.HasPrefix(p, "unlock") { /* release exclusive use */
+		} else if strings.HasPrefix(p, "unlock") { // release exclusive use
 			w.ctlfid = ^0
 			w.ctllock.Unlock()
 			p = p[6:]
-		} else if strings.HasPrefix(p, "clean") { /* mark window 'clean', seq=0 */
+		} else if strings.HasPrefix(p, "clean") { // mark window 'clean', seq=0
 			t := &w.body
 			t.eq0 = ^0
 			t.file.ResetLogs()
@@ -609,18 +609,18 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			w.dirty = false
 			settag = true
 			p = p[5:]
-		} else if strings.HasPrefix(p, "dirty") { /* mark window 'dirty' */
+		} else if strings.HasPrefix(p, "dirty") { // mark window 'dirty'
 			t := &w.body
-			/* doesn't change sequence number, so "Put" won't appear.  it shouldn't. */
+			// doesn't change sequence number, so "Put" won't appear.  it shouldn't.
 			t.file.SetMod(true)
 			w.dirty = true
 			settag = true
 			p = p[5:]
-		} else if strings.HasPrefix(p, "show") { /* show dot */
+		} else if strings.HasPrefix(p, "show") { // show dot
 			t := &w.body
 			textshow(t, t.q0, t.q1, true)
 			p = p[4:]
-		} else if strings.HasPrefix(p, "name ") { /* set file name */
+		} else if strings.HasPrefix(p, "name ") { // set file name
 			pp := p[5:]
 			p = p[5:]
 			i := strings.Index(pp, "\n")
@@ -647,7 +647,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			file.Seq++
 			w.body.file.Mark()
 			winsetname(w, r[:nr])
-		} else if strings.HasPrefix(p, "font ") { /* execute font command */
+		} else if strings.HasPrefix(p, "font ") { // execute font command
 			pp := p[5:]
 			p = p[5:]
 			i := strings.Index(pp, "\n")
@@ -665,7 +665,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			}
 			r = r[:nr]
 			fontx(&w.body, nil, nil, false, XXX, r)
-		} else if strings.HasPrefix(p, "dump ") { /* set dump string */
+		} else if strings.HasPrefix(p, "dump ") { // set dump string
 			pp := p[5:]
 			p = p[5:]
 			i := strings.Index(pp, "\n")
@@ -683,7 +683,7 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			}
 			r = r[:nr]
 			w.dumpstr = string(r)
-		} else if strings.HasPrefix(p, "dumpdir ") { /* set dump directory */
+		} else if strings.HasPrefix(p, "dumpdir ") { // set dump directory
 			pp := p[8:]
 			p = p[8:]
 			i := strings.Index(pp, "\n")
@@ -701,23 +701,23 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			}
 			r = r[:nr]
 			w.dumpdir = string(r)
-		} else if strings.HasPrefix(p, "delete") { /* delete for sure */
+		} else if strings.HasPrefix(p, "delete") { // delete for sure
 			colclose(w.col, w, true)
 			p = p[6:]
-		} else if strings.HasPrefix(p, "del") { /* delete, but check dirty */
+		} else if strings.HasPrefix(p, "del") { // delete, but check dirty
 			if !winclean(w, true) {
 				err = "file dirty"
 				break
 			}
 			colclose(w.col, w, true)
 			p = p[3:]
-		} else if strings.HasPrefix(p, "get") { /* get file */
+		} else if strings.HasPrefix(p, "get") { // get file
 			get(&w.body, nil, nil, false, XXX, nil)
 			p = p[3:]
-		} else if strings.HasPrefix(p, "put") { /* put file */
+		} else if strings.HasPrefix(p, "put") { // put file
 			put(&w.body, nil, nil, XXX, XXX, nil)
 			p = p[3:]
-		} else if strings.HasPrefix(p, "dot=addr") { /* set dot */
+		} else if strings.HasPrefix(p, "dot=addr") { // set dot
 			textcommit(&w.body, true)
 			clampaddr(w)
 			w.body.q0 = w.addr.Pos
@@ -725,33 +725,33 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			textsetselect(&w.body, w.body.q0, w.body.q1)
 			settag = true
 			p = p[8:]
-		} else if strings.HasPrefix(p, "addr=dot") { /* set addr */
+		} else if strings.HasPrefix(p, "addr=dot") { // set addr
 			w.addr.Pos = w.body.q0
 			w.addr.End = w.body.q1
 			p = p[8:]
-		} else if strings.HasPrefix(p, "limit=addr") { /* set limit */
+		} else if strings.HasPrefix(p, "limit=addr") { // set limit
 			textcommit(&w.body, true)
 			clampaddr(w)
 			w.limit.Pos = w.addr.Pos
 			w.limit.End = w.addr.End
 			p = p[10:]
-		} else if strings.HasPrefix(p, "nomark") { /* turn off automatic marking */
+		} else if strings.HasPrefix(p, "nomark") { // turn off automatic marking
 			w.nomark = true
 			p = p[6:]
-		} else if strings.HasPrefix(p, "mark") { /* mark file */
+		} else if strings.HasPrefix(p, "mark") { // mark file
 			file.Seq++
 			w.body.file.Mark()
 			settag = true
 			p = p[4:]
-		} else if strings.HasPrefix(p, "nomenu") { /* turn off automatic menu */
+		} else if strings.HasPrefix(p, "nomenu") { // turn off automatic menu
 			w.filemenu = false
 			settag = true
 			p = p[6:]
-		} else if strings.HasPrefix(p, "menu") { /* enable automatic menu */
+		} else if strings.HasPrefix(p, "menu") { // enable automatic menu
 			w.filemenu = true
 			settag = true
 			p = p[4:]
-		} else if strings.HasPrefix(p, "cleartag") { /* wipe tag right of bar */
+		} else if strings.HasPrefix(p, "cleartag") { // wipe tag right of bar
 			wincleartag(w)
 			settag = true
 			p = p[8:]
@@ -839,7 +839,7 @@ func xfideventwrite(x *Xfid, w *Window) {
 			goto Rescue
 		}
 
-		row.lk.Lock() /* just like mousethread */
+		row.lk.Lock() // just like mousethread
 		switch c {
 		case 'x',
 			'X':
@@ -894,7 +894,7 @@ func xfidutfread(x *Xfid, t *Text, q1 int, qid int) {
 		boff = w.utflastboff
 		q = w.utflastq
 	} else {
-		/* BUG: stupid code: scan from beginning */
+		// BUG: stupid code: scan from beginning
 		boff = 0
 		q = 0
 	}
@@ -962,7 +962,7 @@ func xfidruneread(x *Xfid, t *Text, q0 int, q1 int) int {
 		m := nb
 		if boff+m > int(x.fcall.Count) {
 			i := int(x.fcall.Count) - boff
-			/* copy whole runes only */
+			// copy whole runes only
 			m = 0
 			nr = 0
 			for m < i {
@@ -1043,7 +1043,7 @@ func xfidindexread(x *Xfid) {
 		c = row.col[j]
 		for i = 0; i < len(c.w); i++ {
 			w = c.w[i]
-			/* only show the currently active window of a set */
+			// only show the currently active window of a set
 			if w.body.file.curtext != &w.body {
 				continue
 			}

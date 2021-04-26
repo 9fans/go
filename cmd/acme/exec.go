@@ -124,8 +124,8 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 	q0 := aq0
 	q1 := aq1
 	var c rune
-	if q1 == q0 { /* expand to find word (actually file name) */
-		/* if in selection, choose selection */
+	if q1 == q0 { // expand to find word (actually file name)
+		// if in selection, choose selection
 		if t.q1 > t.q0 && t.q0 <= q0 && q0 <= t.q1 {
 			q0 = t.q0
 			q1 = t.q1
@@ -157,7 +157,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		}
 		aa = getbytearg(argt, true, true, &a)
 		if a != nil {
-			if len(*a) > EVENTSIZE { /* too big; too bad */
+			if len(*a) > EVENTSIZE { // too big; too bad
 				alog.Printf("argument string too long\n")
 				return
 			}
@@ -212,7 +212,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 
 	b := string(r)
 	dir := dirname(t, nil)
-	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	aa = getbytearg(argt, true, true, &a)
@@ -330,11 +330,11 @@ func xsort(et, _, _ *Text, _, _ bool, _ []rune) {
 }
 
 func seqof(w *Window, isundo bool) int {
-	/* if it's undo, see who changed with us */
+	// if it's undo, see who changed with us
 	if isundo {
 		return w.body.file.Seq()
 	}
-	/* if it's redo, see who we'll be sync'ed up with */
+	// if it's redo, see who we'll be sync'ed up with
 	return w.body.file.RedoSeq()
 }
 
@@ -344,7 +344,7 @@ func undo(et, _, _ *Text, isundo, _ bool, _ []rune) {
 	}
 	seq := seqof(et.w, isundo)
 	if seq == 0 {
-		/* nothing to undo */
+		// nothing to undo
 		return
 	}
 	/*
@@ -374,8 +374,8 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 	if r == nil {
 		promote = true
 	} else if isput {
-		/* if are doing a Put, want to synthesize name even for non-existent file */
-		/* best guess is that file name doesn't contain a slash */
+		// if are doing a Put, want to synthesize name even for non-existent file
+		// best guess is that file name doesn't contain a slash
 		promote = true
 		for i := 0; i < len(r); i++ {
 			if r[i] == '/' {
@@ -393,11 +393,11 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 			return string(t.file.Name())
 		}
 		var dir []rune
-		/* prefix with directory name if necessary */
+		// prefix with directory name if necessary
 		dir = nil
 		if len(arg) > 0 && arg[0] != '/' {
 			dir = dirname(t, nil)
-			if len(dir) == 1 && dir[0] == '.' { /* sigh */
+			if len(dir) == 1 && dir[0] == '.' { // sigh
 				dir = nil
 			}
 		}
@@ -437,7 +437,7 @@ func zeroxx(et, t, _ *Text, _, _ bool, _ []rune) {
 		alog.Printf("%s is a directory; Zerox illegal\n", string(t.file.Name()))
 	} else {
 		nw := coladd(t.w.col, nil, t.w, -1)
-		/* ugly: fix locks so w->unlock works */
+		// ugly: fix locks so w->unlock works
 		winlock1(nw, t.w.owner)
 		xfidlog(nw, "zerox")
 	}
@@ -488,7 +488,7 @@ func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
 	r := []rune(name)
 	for i := 0; i < len(t.file.text); i++ {
 		u := t.file.text[i]
-		/* second and subsequent calls with zero an already empty buffer, but OK */
+		// second and subsequent calls with zero an already empty buffer, but OK
 		textreset(u)
 		windirfree(u.w)
 	}
@@ -654,7 +654,7 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 Rescue2:
 	bufs.FreeRunes(s)
 	bufs.FreeRunes(r)
-	/* fall through */
+	// fall through
 }
 
 func trimspaces(et *Text) {
@@ -663,7 +663,7 @@ func trimspaces(et *Text) {
 	marked := 0
 
 	if t.w != nil && et.w != t.w {
-		/* can this happen when t == &et->w->body? */
+		// can this happen when t == &et->w->body?
 		c := 'M'
 		if et.w != nil {
 			c = et.w.owner
@@ -673,7 +673,7 @@ func trimspaces(et *Text) {
 
 	r := bufs.AllocRunes()
 	q0 := f.Len()
-	delstart := q0 /* end of current space run, or 0 if no active run; = q0 to delete spaces before EOF */
+	delstart := q0 // end of current space run, or 0 if no active run; = q0 to delete spaces before EOF
 	for q0 > 0 {
 		n := bufs.RuneLen
 		if n > q0 {
@@ -693,7 +693,7 @@ func trimspaces(et *Text) {
 					textdelete(t, q0+i, delstart, true)
 				}
 				if i == 0 {
-					/* keep run active into tail of next buffer */
+					// keep run active into tail of next buffer
 					if delstart > 0 {
 						delstart = q0
 					}
@@ -701,7 +701,7 @@ func trimspaces(et *Text) {
 				}
 				delstart = 0
 				if r[i-1] == '\n' {
-					delstart = q0 + i - 1 /* delete spaces before this newline */
+					delstart = q0 + i - 1 // delete spaces before this newline
 				}
 			}
 		}
@@ -760,7 +760,7 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 		if et.w.body.q1 > et.w.body.q0 {
 			t = &et.w.body
 			if docut {
-				t.file.Mark() /* seq has been incremented by execute */
+				t.file.Mark() // seq has been incremented by execute
 			}
 		} else if et.w.tag.q1 > et.w.tag.q0 {
 			t = &et.w.tag
@@ -768,7 +768,7 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 			t = nil
 		}
 	}
-	if t == nil { /* no selection */
+	if t == nil { // no selection
 		return
 	}
 
@@ -811,7 +811,7 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 			textscrdraw(t)
 			winsettag(t.w)
 		}
-	} else if dosnarf { /* Snarf command */
+	} else if dosnarf { // Snarf command
 		argtext = t
 	}
 	if locked {
@@ -821,10 +821,10 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 
 func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 
-	/* if(tobody), use body of executing window  (Paste or Send command) */
+	// if(tobody), use body of executing window  (Paste or Send command)
 	if tobody && et != nil && et.w != nil {
 		t = &et.w.body
-		t.file.Mark() /* seq has been incremented by execute */
+		t.file.Mark() // seq has been incremented by execute
 	}
 	if t == nil {
 		return
@@ -962,7 +962,7 @@ func local(et, _, argt *Text, _, _ bool, arg []rune) {
 	var a *string
 	aa := getbytearg(argt, true, true, &a)
 	dir := dirname(et, nil)
-	if len(dir) == 1 && dir[0] == '.' { /* sigh */
+	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	run(nil, string(arg), dir, false, aa, a, false)
@@ -974,7 +974,7 @@ func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
 	if r != nil {
 		xkill(nil, nil, nil, false, false, r)
 	}
-	/* loop condition: *arg is not a blank */
+	// loop condition: *arg is not a blank
 	for {
 		a := runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
@@ -995,7 +995,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	t = &et.w.body
 	var flag []rune
 	var file []rune
-	/* loop condition: *arg is not a blank */
+	// loop condition: *arg is not a blank
 	var r []rune
 	for {
 		a := runes.SkipNonBlank(arg)
@@ -1041,14 +1041,14 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 		t.fr.Font = newfont.f
 		t.fr.InitTick()
 		if t.w.isdir {
-			t.all.Min.X++ /* force recolumnation; disgusting! */
+			t.all.Min.X++ // force recolumnation; disgusting!
 			for i := 0; i < len(t.w.dlp); i++ {
 				dp := t.w.dlp[i]
 				aa = string(dp.r)
 				dp.wid = newfont.f.StringWidth(aa)
 			}
 		}
-		/* avoid shrinking of window due to quantization */
+		// avoid shrinking of window due to quantization
 		colgrow(t.w.col, t.w, -1)
 	}
 }
@@ -1065,7 +1065,7 @@ func incl(et, _, argt *Text, _, _ bool, arg []rune) {
 		n++
 		winaddincl(w, r)
 	}
-	/* loop condition: len(arg) == 0 || arg[0] is not a blank */
+	// loop condition: len(arg) == 0 || arg[0] is not a blank
 	for {
 		a := runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
@@ -1186,7 +1186,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 	if i := strings.LastIndex(name, "/"); i >= 0 {
 		name = name[i+1:]
 	}
-	name += " " /* add blank here for ease in waittask */
+	name += " " // add blank here for ease in waittask
 	c.name = []rune(name)
 	pipechar := '\x00'
 	if len(t) > 0 && (t[0] == '<' || t[0] == '|' || t[0] == '>') {
@@ -1199,7 +1199,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 	if newns {
 		var incl [][]rune
 		var winid int
-		/* end of args */
+		// end of args
 		var filename string
 		if win != nil {
 			filename = string(win.body.file.Name())
@@ -1346,7 +1346,7 @@ Hard:
 		if shell == "" {
 			shell = "rc"
 		}
-		/*static void *parg[2]; */
+		//static void *parg[2];
 		cmd := exec.Command(shell, "-c", t)
 		cmd.Dir = dir
 		cmd.Stdin = sfd[0]
@@ -1360,7 +1360,7 @@ Hard:
 			return
 		}
 		alog.Printf("exec %s: %v\n", shell, err)
-		/* threadexec hasn't happened, so send a zero */
+		// threadexec hasn't happened, so send a zero
 	}
 
 Fail:
@@ -1372,7 +1372,7 @@ Fail:
 func runwaittask(c *Command, cpid chan int) {
 	c.pid = <-cpid
 	c.av = nil
-	if c.pid != 0 { /* successful exec */
+	if c.pid != 0 { // successful exec
 		ccommand <- c
 	} else if c.iseditcmd {
 		cedit <- 0
@@ -1386,7 +1386,7 @@ func run(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *string, 
 	c := new(Command)
 	cpid := make(chan int, 0)
 	go runproc(win, s, rdir, newns, argaddr, xarg, c, cpid, iseditcmd)
-	/* mustn't block here because must be ready to answer mount() call in run() */
+	// mustn't block here because must be ready to answer mount() call in run()
 	go runwaittask(c, cpid)
 }
 
