@@ -148,8 +148,14 @@ func rowdragcol(row *Row, c *Column, _0 int) {
 		}
 		return
 	}
-	var i int
 
+	rowdragcol1(row, c, op, mouse.Point)
+}
+
+func rowdragcol1(row *Row, c *Column, op, p draw.Point) {
+	defer colmousebut(c)
+
+	var i int
 	for i = 0; i < len(row.col); i++ {
 		if row.col[i] == c {
 			goto Found
@@ -158,7 +164,6 @@ func rowdragcol(row *Row, c *Column, _0 int) {
 	util.Fatal("can't find column")
 
 Found:
-	p := mouse.Point
 	if abs(p.X-op.X) < 5 && abs(p.Y-op.Y) < 5 {
 		return
 	}
@@ -174,7 +179,6 @@ Found:
 				}
 			}
 		}
-		colmousebut(c)
 		return
 	}
 	if i == 0 {
@@ -200,7 +204,6 @@ Found:
 	r.Min.X = r.Max.X
 	r.Max.X = c.r.Max.X
 	colresize(c, r)
-	colmousebut(c)
 }
 
 func rowclose(row *Row, c *Column, dofree bool) {

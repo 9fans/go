@@ -452,6 +452,12 @@ func coldragwin(c *Column, w *Window, but int) {
 		}
 		return
 	}
+	coldragwin1(c, w, but, op, mouse.Point)
+}
+
+func coldragwin1(c *Column, w *Window, but int, op, p draw.Point) {
+	defer winmousebut(w)
+
 	var i int
 
 	for i = 0; i < len(c.w); i++ {
@@ -465,10 +471,8 @@ Found:
 	if w.tagexpand { // force recomputation of window tag size
 		w.taglines = 1
 	}
-	p := mouse.Point
 	if abs(p.X-op.X) < 5 && abs(p.Y-op.Y) < 5 {
 		colgrow(c, w, but)
-		winmousebut(w)
 		return
 	}
 	// is it a flick to the right?
@@ -479,7 +483,6 @@ Found:
 	if nc != nil && nc != c {
 		colclose(c, w, false)
 		coladd(nc, w, nil, p.Y)
-		winmousebut(w)
 		return
 	}
 	if i == 0 && len(c.w) == 1 {
@@ -489,7 +492,6 @@ Found:
 		// shuffle
 		colclose(c, w, false)
 		coladd(c, w, nil, p.Y)
-		winmousebut(w)
 		return
 	}
 	if i == 0 {
@@ -521,7 +523,6 @@ Found:
 	}
 	winresize(w, r, c.safe, true)
 	c.safe = true
-	winmousebut(w)
 }
 
 func colwhich(c *Column, p draw.Point) *Text {
