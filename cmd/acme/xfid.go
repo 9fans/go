@@ -106,19 +106,21 @@ func xfidopen(x *Xfid) {
 		winlock(w, 'E')
 		switch q {
 		case QWaddr:
-			tmp30 := w.nopen[q]
-			w.nopen[q]++
+			tmp30 := nopen[wq{w, q}]
+			nopen[wq{w, q}]++
 			if tmp30 == 0 {
 				w.addr = runes.Rng(0, 0)
 				w.limit = runes.Rng(-1, -1)
 			}
 		case QWdata,
 			QWxdata:
-			w.nopen[q]++
+			nopen[wq{w, q}]++
 		case QWevent:
-			tmp31 := w.nopen[q]
-			w.nopen[q]++
+			tmp31 := nopen[wq{w, q}]
+			nopen[wq{w, q}]++
 			if tmp31 == 0 {
+
+				w.external = true
 				if !w.isdir && w.col != nil {
 					w.filemenu = false
 					winsettag(w)
@@ -144,7 +146,7 @@ func xfidopen(x *Xfid) {
 				respond(x, &fc, "can't create temp file")
 				return
 			}
-			w.nopen[q]++
+			nopen[wq{w, q}]++
 			q0 := t.q0
 			q1 := t.q1
 			r := bufs.AllocRunes()
@@ -165,7 +167,7 @@ func xfidopen(x *Xfid) {
 			bufs.FreeRunes(s)
 			bufs.FreeRunes(r)
 		case QWwrsel:
-			w.nopen[q]++
+			nopen[wq{w, q}]++
 			file.Seq++
 			t.file.Mark()
 			cut(t, t, nil, false, true, nil)
@@ -233,8 +235,8 @@ func xfidclose(x *Xfid) {
 		/* fall through */
 		case QWaddr,
 			QWevent: /* BUG: do we need to shut down Xfid? */
-			w.nopen[q]--
-			if w.nopen[q] == 0 {
+			nopen[wq{w, q}]--
+			if nopen[wq{w, q}] == 0 {
 				if q == QWdata || q == QWxdata {
 					w.nomark = false
 				}
@@ -243,6 +245,8 @@ func xfidclose(x *Xfid) {
 					winsettag(w)
 				}
 				if q == QWevent {
+
+					w.external = false
 					w.dumpstr = ""
 					w.dumpdir = ""
 				}
@@ -1068,3 +1072,10 @@ func xfidindexread(x *Xfid) {
 	fc.Data = buf.Bytes()[off : off+cnt]
 	respond(x, &fc, "")
 }
+
+type wq struct {
+	w *Window
+	q int
+}
+
+var nopen = make(map[wq]int)

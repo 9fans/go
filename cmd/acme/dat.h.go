@@ -93,7 +93,6 @@ type Window struct {
 	id          int
 	addr        runes.Range
 	limit       runes.Range
-	nopen       [QMAX]uint8
 	nomark      bool
 	wrselrange  runes.Range
 	rdselfd     *os.File
@@ -119,6 +118,7 @@ type Window struct {
 	taglines    int
 	tagtop      draw.Rectangle
 	editoutlk   util.QLock
+	external    bool
 }
 
 type Column struct {

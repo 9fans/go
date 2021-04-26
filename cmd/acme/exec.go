@@ -146,7 +146,7 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 	e := lookup(r)
 	var a, aa *string
 	var n int
-	if !external && t.w != nil && t.w.nopen[QWevent] > 0 {
+	if !external && t.w != nil && t.w.external {
 		f := 0
 		if e != nil {
 			f |= 1
@@ -305,7 +305,7 @@ func delcol(et, _, _ *Text, _, _ bool, _ []rune) {
 	}
 	for i := 0; i < len(c.w); i++ {
 		w := c.w[i]
-		if w.nopen[QWevent]+w.nopen[QWaddr]+w.nopen[QWdata]+w.nopen[QWxdata] > 0 {
+		if w.external {
 			alog.Printf("can't delete column; %s is running an external command\n", string(w.body.file.Name()))
 			return
 		}
@@ -935,7 +935,7 @@ func putall(et, _, _ *Text, _, _ bool, _ []rune) {
 			if w.isscratch || w.isdir || len(w.body.file.Name()) == 0 {
 				continue
 			}
-			if w.nopen[QWevent] > 0 {
+			if w.external {
 				continue
 			}
 			a := string(w.body.file.Name())

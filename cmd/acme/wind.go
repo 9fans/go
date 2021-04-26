@@ -565,7 +565,7 @@ func winclean(w *Window, conservative bool) bool {
 	if w.isscratch || w.isdir { /* don't whine if it's a guide file, error window, etc. */
 		return true
 	}
-	if !conservative && w.nopen[QWevent] > 0 {
+	if !conservative && w.external {
 		return true
 	}
 	if w.dirty {
@@ -600,7 +600,7 @@ func winctlprint(w *Window, fonts bool) string {
 }
 
 func winevent(w *Window, format string, args ...interface{}) {
-	if w.nopen[QWevent] == 0 {
+	if !w.external {
 		return
 	}
 	if w.owner == 0 {

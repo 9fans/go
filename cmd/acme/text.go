@@ -1130,7 +1130,7 @@ func textshow(t *Text, q0 int, q1 int, doselect bool) {
 		textscrdraw(t)
 	} else {
 		var nl int
-		if t.w.nopen[QWevent] > 0 {
+		if t.w.external {
 			nl = 3 * t.fr.MaxLines / 4
 		} else {
 			nl = t.fr.MaxLines / 4

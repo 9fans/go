@@ -357,7 +357,7 @@ func rowdump(row *Row, file *string) {
 			wincommit(w, &w.tag)
 			t := &w.body
 			/* windows owned by others get special treatment */
-			if w.nopen[QWevent] > 0 {
+			if w.external {
 				if w.dumpstr == "" {
 					continue
 				}
@@ -369,7 +369,7 @@ func rowdump(row *Row, file *string) {
 					if w == w1 {
 						continue
 					}
-					if w1.nopen[QWevent] != 0 {
+					if w1.external {
 						continue Windows
 					}
 				}

@@ -106,7 +106,7 @@ func look3(t *Text, q0, q1 int, external bool) {
 	var n int
 	var c rune
 	var r []rune
-	if !external && t.w != nil && t.w.nopen[QWevent] > 0 {
+	if !external && t.w != nil && t.w.external {
 		/* send alphanumeric expansion to external client */
 		if !expanded {
 			return
