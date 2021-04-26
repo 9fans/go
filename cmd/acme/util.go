@@ -27,15 +27,13 @@ import (
 var prevmouse draw.Point
 var mousew *Window
 
-var Lpluserrors = []rune("+Errors")
-
 func errorwin1(dir []rune, incl [][]rune) *Window {
 	var r []rune
 	if len(dir) > 0 {
 		r = append(r, dir...)
 		r = append(r, '/')
 	}
-	r = append(r, Lpluserrors...)
+	r = append(r, []rune("+Errors")...)
 	w := lookfile(r)
 	if w == nil {
 		if len(row.col) == 0 {

@@ -888,8 +888,6 @@ func look(et, t, argt *Text, _, _ bool, arg []rune) {
 	}
 }
 
-var Lnl = []rune("\n")
-
 func sendx(et, t, _ *Text, _, _ bool, _ []rune) {
 	if et.w == nil {
 		return
@@ -901,7 +899,7 @@ func sendx(et, t, _ *Text, _, _ bool, _ []rune) {
 	textsetselect(t, t.Len(), t.Len())
 	paste(t, t, nil, true, true, nil)
 	if t.RuneAt(t.Len()-1) != '\n' {
-		textinsert(t, t.Len(), Lnl, true)
+		textinsert(t, t.Len(), []rune("\n"), true)
 		textsetselect(t, t.Len(), t.Len())
 	}
 	t.iq1 = t.q1
@@ -985,9 +983,6 @@ func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
 	}
 }
 
-var Lfix = []rune("fix")
-var Lvar = []rune("var")
-
 func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	if et == nil || et.w == nil {
 		return
@@ -1003,7 +998,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 			break
 		}
 		r = runes.Clone(arg[:len(arg)-len(a)])
-		if runes.Equal(r, Lfix) || runes.Equal(r, Lvar) {
+		if runes.Equal(r, []rune("fix")) || runes.Equal(r, []rune("var")) {
 			flag = r
 		} else {
 			file = r
@@ -1012,7 +1007,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	}
 	getarg(argt, false, true, &r)
 	if r != nil {
-		if runes.Equal(r, Lfix) || runes.Equal(r, Lvar) {
+		if runes.Equal(r, []rune("fix")) || runes.Equal(r, []rune("var")) {
 			flag = r
 		} else {
 			file = r
@@ -1021,7 +1016,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	fix := true
 	var newfont *Reffont
 	if flag != nil {
-		fix = runes.Equal(flag, Lfix)
+		fix = runes.Equal(flag, []rune("fix"))
 	} else if file == nil {
 		newfont = rfget(false, false, false, "")
 		if newfont != nil {
@@ -1087,10 +1082,6 @@ func incl(et, _, argt *Text, _, _ bool, arg []rune) {
 	}
 }
 
-var LON = []rune("ON")
-var LOFF = []rune("OFF")
-var Lon = []rune("on")
-
 const (
 	IGlobal = -2
 	IError  = -1
@@ -1102,17 +1093,17 @@ func indentval(s []rune) int {
 	if len(s) < 2 {
 		return IError
 	}
-	if runes.Equal(s, LON) {
+	if runes.Equal(s, []rune("ON")) {
 		globalautoindent = true
 		alog.Printf("Indent ON\n")
 		return IGlobal
 	}
-	if runes.Equal(s, LOFF) {
+	if runes.Equal(s, []rune("OFF")) {
 		globalautoindent = false
 		alog.Printf("Indent OFF\n")
 		return IGlobal
 	}
-	if runes.Equal(s, Lon) {
+	if runes.Equal(s, []rune("on")) {
 		return Ion
 	}
 	return Ioff

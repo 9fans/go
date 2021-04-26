@@ -29,8 +29,6 @@ import (
 	"9fans.net/go/draw"
 )
 
-var Lcolhdr = []rune("Newcol Kill Putall Dump Exit ")
-
 func rowinit(row *Row, r draw.Rectangle) {
 	display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
 	row.r = r
@@ -46,7 +44,7 @@ func rowinit(row *Row, r draw.Rectangle) {
 	r1.Min.Y = r1.Max.Y
 	r1.Max.Y += Border()
 	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
-	textinsert(t, 0, Lcolhdr, true)
+	textinsert(t, 0, []rune("Newcol Kill Putall Dump Exit "), true)
 	textsetselect(t, t.Len(), t.Len())
 }
 

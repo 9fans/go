@@ -319,17 +319,15 @@ func winundo(w *Window, isundo bool) {
 	winsettag(w)
 }
 
-var Lslashguide = []rune("/guide")
-
 func winsetname(w *Window, name []rune) {
 	t := &w.body
 	if runes.Equal(t.file.Name(), name) {
 		return
 	}
 	w.isscratch = false
-	if len(name) >= 6 && runes.Equal(Lslashguide, name[len(name)-6:]) {
+	if len(name) >= 6 && runes.Equal([]rune("/guide"), name[len(name)-6:]) {
 		w.isscratch = true
-	} else if len(name) >= 7 && runes.Equal(Lpluserrors, name[len(name)-7:]) {
+	} else if len(name) >= 7 && runes.Equal([]rune("+Errors"), name[len(name)-7:]) {
 		w.isscratch = true
 	}
 	t.file.SetName(name)
@@ -374,10 +372,6 @@ func wincleartag(w *Window) {
 	textsetselect(&w.tag, w.tag.q0, w.tag.q1)
 }
 
-var Ldelsnarf = []rune(" Del Snarf")
-var Lspacepipe = []rune(" |")
-var Ltabpipe = []rune("\t|")
-
 func parsetag(w *Window, extra int) ([]rune, int) {
 	r := make([]rune, w.tag.Len(), w.tag.Len()+extra+1)
 	w.tag.file.Read(0, r)
@@ -387,12 +381,12 @@ func parsetag(w *Window, extra int) ([]rune, int) {
 	 * If we find " Del Snarf" in the left half of the tag
 	 * (before the pipe), that ends the file name.
 	 */
-	pipe := runes.Index(r, Lspacepipe)
-	p := runes.Index(r, Ltabpipe)
+	pipe := runes.Index(r, []rune(" |"))
+	p := runes.Index(r, []rune("\t|"))
 	if p >= 0 && (pipe < 0 || p < pipe) {
 		pipe = p
 	}
-	p = runes.Index(r, Ldelsnarf)
+	p = runes.Index(r, []rune(" Del Snarf"))
 	var i int
 	if p >= 0 && (pipe < 0 || p < pipe) {
 		i = p
@@ -405,13 +399,6 @@ func parsetag(w *Window, extra int) ([]rune, int) {
 	}
 	return r, i
 }
-
-var Lundo = []rune(" Undo")
-var Lredo = []rune(" Redo")
-var Lget = []rune(" Get")
-var Lput = []rune(" Put")
-var Llook = []rune(" Look ")
-var Lpipe = []rune(" |")
 
 func winsettag1(w *Window) {
 
@@ -430,23 +417,23 @@ func winsettag1(w *Window) {
 	// compute the text for the whole tag, replacing current only if it differs
 	new_ := make([]rune, 0, len(w.body.file.Name())+100)
 	new_ = append(new_, w.body.file.Name()...)
-	new_ = append(new_, Ldelsnarf...)
+	new_ = append(new_, []rune(" Del Snarf")...)
 	if w.filemenu {
 		if w.body.needundo || w.body.file.CanUndo() || len(w.body.cache) != 0 {
-			new_ = append(new_, Lundo...)
+			new_ = append(new_, []rune(" Undo")...)
 		}
 		if w.body.file.CanRedo() {
-			new_ = append(new_, Lredo...)
+			new_ = append(new_, []rune(" Redo")...)
 		}
 		dirty := len(w.body.file.Name()) != 0 && (len(w.body.cache) != 0 || w.body.file.Seq() != w.putseq)
 		if !w.isdir && dirty {
-			new_ = append(new_, Lput...)
+			new_ = append(new_, []rune(" Put")...)
 		}
 	}
 	if w.isdir {
-		new_ = append(new_, Lget...)
+		new_ = append(new_, []rune(" Get")...)
 	}
-	new_ = append(new_, Lpipe...)
+	new_ = append(new_, []rune(" |")...)
 	r := runes.IndexRune(old, '|')
 	var k int
 	if r >= 0 {
@@ -454,7 +441,7 @@ func winsettag1(w *Window) {
 	} else {
 		k = len(old)
 		if w.body.file.Seq() == 0 {
-			new_ = append(new_, Llook...)
+			new_ = append(new_, []rune(" Look ")...)
 		}
 	}
 

@@ -23,8 +23,6 @@ import (
 	"9fans.net/go/draw/frame"
 )
 
-var Lheader = []rune("New Cut Paste Snarf Sort Zerox Delcol ")
-
 func colinit(c *Column, r draw.Rectangle) {
 	display.ScreenImage.Draw(r, display.White, nil, draw.ZP)
 	c.r = r
@@ -39,7 +37,7 @@ func colinit(c *Column, r draw.Rectangle) {
 	r1.Min.Y = r1.Max.Y
 	r1.Max.Y += Border()
 	display.ScreenImage.Draw(r1, display.Black, nil, draw.ZP)
-	textinsert(t, 0, Lheader, true)
+	textinsert(t, 0, []rune("New Cut Paste Snarf Sort Zerox Delcol "), true)
 	textsetselect(t, t.Len(), t.Len())
 	display.ScreenImage.Draw(t.scrollr, colbutton, nil, colbutton.R.Min)
 	c.safe = true

@@ -374,13 +374,6 @@ func includefile(dir []rune, file []rune) []rune {
 
 var objdir []rune
 
-var (
-	Lsysinclude           = []rune("/sys/include")
-	Lusrinclude           = []rune("/usr/include")
-	Lusrlocalinclude      = []rune("/usr/local/include")
-	Lusrlocalplan9include = []rune("/usr/local/plan9/include")
-)
-
 func includename(t *Text, r []rune) []rune {
 	var i int
 	if objdir == nil && objtype != "" {
@@ -402,16 +395,16 @@ func includename(t *Text, r []rune) []rune {
 	}
 
 	if file == nil {
-		file = includefile(Lsysinclude, r)
+		file = includefile([]rune("/sys/include"), r)
 	}
 	if file == nil {
-		file = includefile(Lusrlocalplan9include, r)
+		file = includefile([]rune("/usr/local/plan9/include"), r)
 	}
 	if file == nil {
-		file = includefile(Lusrlocalinclude, r)
+		file = includefile([]rune("/usr/local/include"), r)
 	}
 	if file == nil {
-		file = includefile(Lusrinclude, r)
+		file = includefile([]rune("/usr/include"), r)
 	}
 	if file == nil && objdir != nil {
 		file = includefile(objdir, r)
@@ -481,11 +474,6 @@ func hasPrefix(r []rune, s []rune) bool {
 	return true
 }
 
-var (
-	Lhttpcss  = []rune("http://")
-	Lhttpscss = []rune("https://")
-)
-
 func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	amax := q1
 	var c rune
@@ -496,7 +484,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 			if !runes.IsFilename(c) {
 				break
 			}
-			if c == ':' && !texthas(t, q1-4, Lhttpcss) && !texthas(t, q1-5, Lhttpscss) {
+			if c == ':' && !texthas(t, q1-4, []rune("http://")) && !texthas(t, q1-5, []rune("https://")) {
 				colon = q1
 				break
 			}
@@ -508,7 +496,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 				break
 			}
 			q0--
-			if colon < 0 && c == ':' && !texthas(t, q0-4, Lhttpcss) && !texthas(t, q0-5, Lhttpscss) {
+			if colon < 0 && c == ':' && !texthas(t, q0-4, []rune("http://")) && !texthas(t, q0-5, []rune("https://")) {
 				colon = q0
 			}
 		}
@@ -549,7 +537,7 @@ func expandfile(t *Text, q0 int, q1 int, e *Expand) bool {
 	r := make([]rune, n)
 	t.file.Read(q0, r)
 	// is it a URL? look for http:// and https:// prefix
-	if hasPrefix(r, Lhttpcss) || hasPrefix(r, Lhttpscss) {
+	if hasPrefix(r, []rune("http://")) || hasPrefix(r, []rune("https://")) {
 		// Avoid capturing end-of-sentence punctuation.
 		if r[n-1] == '.' {
 			e.q1--

@@ -36,7 +36,6 @@ import (
 
 var tagcols [frame.NCOL]*draw.Image
 var textcols [frame.NCOL]*draw.Image
-var Ldot = []rune(".")
 
 const (
 	TABDIR = 3
@@ -132,8 +131,6 @@ func textclose(t *Text) {
 	}
 }
 
-var Ltab = []rune("\t")
-
 func textcolumnate(t *Text, dlp []*Dirlist) {
 	if len(t.file.text) > 1 {
 		return
@@ -178,12 +175,12 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 			}
 			w = dl.wid
 			if maxt-w%maxt < mint {
-				t.file.Insert(q1, Ltab)
+				t.file.Insert(q1, []rune("\t"))
 				q1++
 				w += mint
 			}
 			for {
-				t.file.Insert(q1, Ltab)
+				t.file.Insert(q1, []rune("\t"))
 				q1++
 				w += maxt - (w % maxt)
 				if w >= colw {
@@ -191,7 +188,7 @@ func textcolumnate(t *Text, dlp []*Dirlist) {
 				}
 			}
 		}
-		t.file.Insert(q1, Lnl)
+		t.file.Insert(q1, []rune("\n"))
 		q1++
 	}
 }
@@ -612,7 +609,7 @@ func textcomplete(t *Text) []rune {
 			return nil
 		}
 		if len(dir) == 0 {
-			dir = runes.Clone(Ldot)
+			dir = runes.Clone([]rune("."))
 		}
 		copy(tmp, dir)
 		tmp[len(dir)] = '/'
