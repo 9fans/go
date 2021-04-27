@@ -179,10 +179,30 @@ func wintaglines(w *Window, r draw.Rectangle) int {
 	return n
 }
 
-func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
+func winresizeAndMouse(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	mouseintag := mouse.Point.In(w.tag.all)
 	mouseinbody := mouse.Point.In(w.body.all)
 
+	y := winresize(w, r, safe, keepextra)
+
+	// If mouse is in tag, pull up as tag closes.
+	if mouseintag && !mouse.Point.In(w.tag.all) {
+		p := mouse.Point
+		p.Y = w.tag.all.Max.Y - 3
+		adraw.Display.MoveCursor(p)
+	}
+
+	// If mouse is in body, push down as tag expands.
+	if mouseinbody && mouse.Point.In(w.tag.all) {
+		p := mouse.Point
+		p.Y = w.tag.all.Max.Y + 3
+		adraw.Display.MoveCursor(p)
+	}
+
+	return y
+}
+
+func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 	// tagtop is first line of tag
 	w.tagtop = r
 	w.tagtop.Max.Y = r.Min.Y + adraw.Font.Height
@@ -203,21 +223,6 @@ func winresize(w *Window, r draw.Rectangle, safe, keepextra bool) int {
 		y = w.tag.fr.R.Max.Y
 		windrawbutton(w)
 		w.tagsafe = true
-		var p draw.Point
-
-		// If mouse is in tag, pull up as tag closes.
-		if mouseintag && !mouse.Point.In(w.tag.all) {
-			p = mouse.Point
-			p.Y = w.tag.all.Max.Y - 3
-			adraw.Display.MoveCursor(p)
-		}
-
-		// If mouse is in body, push down as tag expands.
-		if mouseinbody && mouse.Point.In(w.tag.all) {
-			p = mouse.Point
-			p.Y = w.tag.all.Max.Y + 3
-			adraw.Display.MoveCursor(p)
-		}
 	}
 
 	// If needed, resize & redraw body.

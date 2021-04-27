@@ -674,7 +674,7 @@ func texttype(t *Text, r rune) {
 			// expand tag to show all text
 			if !t.w.tagexpand {
 				t.w.tagexpand = true
-				winresize(t.w, t.w.r, false, true)
+				winresizeAndMouse(t.w, t.w.r, false, true)
 			}
 			return
 		}
@@ -698,7 +698,7 @@ func texttype(t *Text, r rune) {
 			if t.w.tagexpand {
 				t.w.tagexpand = false
 				t.w.taglines = 1
-				winresize(t.w, t.w.r, false, true)
+				winresizeAndMouse(t.w, t.w.r, false, true)
 			}
 			return
 		}

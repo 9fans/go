@@ -97,7 +97,6 @@ func rowadd(row *Row, c *Column, x int) *Column {
 	row.col = append(row.col, nil)
 	copy(row.col[i+1:], row.col[i:])
 	row.col[i] = c
-	clearmouse()
 	return c
 }
 
@@ -150,11 +149,11 @@ func rowdragcol(row *Row, c *Column, _0 int) {
 	}
 
 	rowdragcol1(row, c, op, mouse.Point)
+	clearmouse()
+	colmousebut(c)
 }
 
 func rowdragcol1(row *Row, c *Column, op, p draw.Point) {
-	defer colmousebut(c)
-
 	var i int
 	for i = 0; i < len(row.col); i++ {
 		if row.col[i] == c {
@@ -284,7 +283,7 @@ func rowtype(row *Row, r rune, p draw.Point) *Text {
 				if r == '\n' {
 					t.w.tagexpand = true
 				}
-				winresize(w, w.r, true, true)
+				winresizeAndMouse(w, w.r, true, true)
 			}
 			winunlock(w)
 		}

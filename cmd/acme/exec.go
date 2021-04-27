@@ -291,8 +291,9 @@ func doabort(_, _, _ *Text, _, _ bool, _ []rune) {
 func newcol(et, _, _ *Text, _, _ bool, _ []rune) {
 
 	c := rowadd(et.row, nil, -1)
+	clearmouse()
 	if c != nil {
-		w := coladd(c, nil, nil, -1)
+		w := coladdAndMouse(c, nil, nil, -1)
 		winsettag(w)
 		xfidlog(w, "new")
 	}
@@ -312,6 +313,7 @@ func delcol(et, _, _ *Text, _, _ bool, _ []rune) {
 		}
 	}
 	rowclose(et.col.row, et.col, true)
+	clearmouse()
 }
 
 func del(et, _, _ *Text, isDelete, _ bool, _ []rune) {
@@ -319,13 +321,14 @@ func del(et, _, _ *Text, isDelete, _ bool, _ []rune) {
 		return
 	}
 	if isDelete || len(et.w.body.file.text) > 1 || winclean(et.w, false) {
-		colclose(et.col, et.w, true)
+		colcloseAndMouse(et.col, et.w, true)
 	}
 }
 
 func xsort(et, _, _ *Text, _, _ bool, _ []rune) {
 
 	if et.col != nil {
+		clearmouse()
 		colsort(et.col)
 	}
 }
@@ -437,7 +440,7 @@ func zeroxx(et, t, _ *Text, _, _ bool, _ []rune) {
 	if t.w.isdir {
 		alog.Printf("%s is a directory; Zerox illegal\n", string(t.file.Name()))
 	} else {
-		nw := coladd(t.w.col, nil, t.w, -1)
+		nw := coladdAndMouse(t.w.col, nil, t.w, -1)
 		// ugly: fix locks so w->unlock works
 		winlock1(nw, t.w.owner)
 		xfidlog(nw, "zerox")
@@ -1162,7 +1165,7 @@ func tab(et, _, argt *Text, _, _ bool, arg []rune) {
 	if tab > 0 {
 		if w.body.tabstop != tab {
 			w.body.tabstop = tab
-			winresize(w, w.r, false, true)
+			winresizeAndMouse(w, w.r, false, true)
 		}
 	} else {
 		alog.Printf("%s: Tab %d\n", string(w.body.file.Name()), w.body.tabstop)

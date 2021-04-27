@@ -204,7 +204,7 @@ func d_cmd(t *Text, cp *Cmd) bool {
 
 func D1(t *Text) {
 	if len(t.w.body.file.text) > 1 || winclean(t.w, false) {
-		colclose(t.col, t.w, true)
+		colcloseAndMouse(t.col, t.w, true)
 	}
 }
 

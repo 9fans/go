@@ -198,7 +198,7 @@ func main() {
 }
 
 func readfile(c *Column, s string) {
-	w := coladd(c, nil, nil, -1)
+	w := coladdAndMouse(c, nil, nil, -1)
 	var rb []rune
 	if !strings.HasPrefix(s, "/") {
 		rb = []rune(wdir + "/" + s)
@@ -211,7 +211,7 @@ func readfile(c *Column, s string) {
 	w.body.file.SetMod(false)
 	w.dirty = false
 	winsettag(w)
-	winresize(w, w.r, false, true)
+	winresizeAndMouse(w, w.r, false, true)
 	textscrdraw(&w.body)
 	textsetselect(&w.tag, w.tag.Len(), w.tag.Len())
 	xfidlog(w, "new")
@@ -403,6 +403,7 @@ func mousethread() {
 			adraw.Init()
 			scrlresize()
 			rowresize(&row, adraw.Display.ScreenImage.Clipr)
+			clearmouse()
 
 		case pm := <-cplumb:
 			bigLock()
@@ -707,6 +708,7 @@ func newwindowthread() {
 		bigLock()
 		w := makenewwindow(nil)
 		winsettag(w)
+		winmousebut(w)
 		xfidlog(w, "new")
 		bigUnlock()
 		cnewwindow <- w

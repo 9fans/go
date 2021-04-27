@@ -274,6 +274,7 @@ func plumblook(m *plumb.Message) {
 func plumbshow(m *plumb.Message) {
 	adraw.Display.Top()
 	w := makenewwindow(nil)
+	winmousebut(w)
 	name := m.LookupAttr("filename")
 	if name == "" {
 		nuntitled++
@@ -785,7 +786,7 @@ func new_(et, t, argt *Text, flag1, flag2 bool, arg []rune) {
 		a = runes.SkipNonBlank(arg)
 		if len(a) == len(arg) {
 			if ndone == 0 && et.col != nil {
-				w := coladd(et.col, nil, nil, -1)
+				w := coladdAndMouse(et.col, nil, nil, -1)
 				winsettag(w)
 				xfidlog(w, "new")
 			}

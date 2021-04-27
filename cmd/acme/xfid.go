@@ -703,14 +703,14 @@ func xfidctlwrite(x *Xfid, w *Window) {
 			r = r[:nr]
 			w.dumpdir = string(r)
 		} else if strings.HasPrefix(p, "delete") { // delete for sure
-			colclose(w.col, w, true)
+			colcloseAndMouse(w.col, w, true)
 			p = p[6:]
 		} else if strings.HasPrefix(p, "del") { // delete, but check dirty
 			if !winclean(w, true) {
 				err = "file dirty"
 				break
 			}
-			colclose(w.col, w, true)
+			colcloseAndMouse(w.col, w, true)
 			p = p[3:]
 		} else if strings.HasPrefix(p, "get") { // get file
 			get(&w.body, nil, nil, false, XXX, nil)

@@ -44,6 +44,15 @@ func colinit(c *Column, r draw.Rectangle) {
 	c.safe = true
 }
 
+func coladdAndMouse(c *Column, w *Window, clone *Window, y int) *Window {
+	w = coladd(c, w, clone, y)
+	savemouse(w)
+	// near the button, but in the body
+	adraw.Display.MoveCursor(w.tag.scrollr.Max.Add(draw.Pt(3, 3)))
+	barttext = &w.body
+	return w
+}
+
 func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 	var v *Window
 	r := c.r
@@ -143,14 +152,21 @@ func coladd(c *Column, w *Window, clone *Window, y int) *Window {
 		colresize(c, c.r)
 	}
 
-	savemouse(w)
-	// near the button, but in the body
-	adraw.Display.MoveCursor(w.tag.scrollr.Max.Add(draw.Pt(3, 3)))
-	barttext = &w.body
 	return w
 }
 
-func colclose(c *Column, w *Window, dofree bool) {
+func colcloseAndMouse(c *Column, w *Window, dofree bool) {
+	didmouse := restoremouse(w) != 0
+	wr := w.r
+	w = colclose(c, w, dofree)
+	if !didmouse && w != nil && w.r.Min.Y == wr.Min.Y {
+		w.showdel = true
+		winresize(w, w.r, false, true)
+		movetodel(w)
+	}
+}
+
+func colclose(c *Column, w *Window, dofree bool) *Window {
 	// w is locked
 	if !c.safe {
 		colgrow(c, w, 1)
@@ -167,7 +183,6 @@ Found:
 	w.tag.col = nil
 	w.body.col = nil
 	w.col = nil
-	didmouse := restoremouse(w)
 	if dofree {
 		windelete(w)
 		winclose(w)
@@ -176,28 +191,21 @@ Found:
 	c.w = c.w[:len(c.w)-1]
 	if len(c.w) == 0 {
 		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-		return
+		return nil
 	}
-	up := 0
 	if i == len(c.w) { // extend last window down
 		w = c.w[i-1]
 		r.Min.Y = w.r.Min.Y
 		r.Max.Y = c.r.Max.Y
 	} else { // extend next window up
-		up = 1
 		w = c.w[i]
 		r.Max.Y = w.r.Max.Y
 	}
 	adraw.Display.ScreenImage.Draw(r, adraw.TextCols[frame.BACK], nil, draw.ZP)
 	if c.safe {
-		if didmouse == 0 && up != 0 {
-			w.showdel = true
-		}
 		winresize(w, r, false, true)
-		if didmouse == 0 && up != 0 {
-			movetodel(w)
-		}
 	}
+	return w
 }
 
 func colcloseall(c *Column) {
@@ -209,7 +217,6 @@ func colcloseall(c *Column) {
 		w := c.w[i]
 		winclose(w)
 	}
-	clearmouse()
 }
 
 func colmousebut(c *Column) {
@@ -217,7 +224,6 @@ func colmousebut(c *Column) {
 }
 
 func colresize(c *Column, r draw.Rectangle) {
-	clearmouse()
 	r1 := r
 	r1.Max.Y = r1.Min.Y + c.tag.fr.Font.Height
 	textresize(&c.tag, r1, true)
@@ -253,7 +259,6 @@ func colsort(c *Column) {
 	if len(c.w) == 0 {
 		return
 	}
-	clearmouse()
 	rp := make([]draw.Rectangle, len(c.w))
 	wp := make([]*Window, len(c.w))
 	copy(wp, c.w)
@@ -434,7 +439,6 @@ Found:
 		}
 	}
 	c.safe = true
-	winmousebut(w)
 }
 
 func coldragwin(c *Column, w *Window, but int) {
@@ -453,11 +457,10 @@ func coldragwin(c *Column, w *Window, but int) {
 		return
 	}
 	coldragwin1(c, w, but, op, mouse.Point)
+	winmousebut(w)
 }
 
 func coldragwin1(c *Column, w *Window, but int, op, p draw.Point) {
-	defer winmousebut(w)
-
 	var i int
 
 	for i = 0; i < len(c.w); i++ {

@@ -42,7 +42,7 @@ func errorwin1(dir []rune, incl [][]rune) *Window {
 				util.Fatal("can't create column to make error window")
 			}
 		}
-		w = coladd(row.col[len(row.col)-1], nil, nil, -1)
+		w = coladdAndMouse(row.col[len(row.col)-1], nil, nil, -1)
 		w.filemenu = false
 		winsetname(w, r)
 		xfidlog(w, "new")
@@ -234,7 +234,7 @@ func makenewwindow(t *Text) *Window {
 	}
 	activecol = c
 	if t == nil || t.w == nil || len(c.w) == 0 {
-		return coladd(c, nil, nil, -1)
+		return coladdAndMouse(c, nil, nil, -1)
 	}
 
 	// find biggest window and biggest blank spot
@@ -264,7 +264,7 @@ func makenewwindow(t *Text) *Window {
 		}
 		y = (bigw.r.Min.Y + bigw.r.Max.Y) / 2
 	}
-	w = coladd(c, nil, nil, y)
+	w = coladdAndMouse(c, nil, nil, y)
 	if w.body.fr.MaxLines < 2 {
 		colgrow(w.col, w, 1)
 	}
