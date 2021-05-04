@@ -114,7 +114,7 @@ func scroll(l *Flayer, but int) {
 	var p0 int
 	for {
 		oin := in
-		in = abs(x-mousep.Point.X) <= FLSCROLLWID(l)/2
+		in = (but > 3) || (but == 2) || abs(x-mousep.Point.X) <= FLSCROLLWID(l)/2
 		if oin && !in {
 			scrunmark(l, r)
 		}
@@ -131,7 +131,7 @@ func scroll(l *Flayer, but int) {
 			if mousep.Point != image.Pt(x, my) {
 				display.MoveCursor(image.Pt(x, my))
 			}
-			if but == 1 {
+			if but == 1 || but == 4 {
 				p0 = l.origin - l.f.CharOf(image.Pt(s.Max.X, my))
 				rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
 				y = rt.Min.Y
@@ -140,7 +140,7 @@ func scroll(l *Flayer, but int) {
 				if y > s.Max.Y-2 {
 					y = s.Max.Y - 2
 				}
-			} else if but == 3 {
+			} else if but == 3 || but == 5 {
 				p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
 				rt := scrpos(l.scroll, p0, p0+l.f.NumChars, tot)
 				y = rt.Min.Y
@@ -159,7 +159,8 @@ func scroll(l *Flayer, but int) {
 		h := s.Max.Y - s.Min.Y
 		scrunmark(l, r)
 		p0 = 0
-		if but == 1 {
+		if but == 1 || but == 4 {
+			but = 1
 			p0 = int(my-s.Min.Y)/l.f.Font.Height + 1
 		} else if but == 2 {
 			if tot > 1024*1024 {
@@ -167,7 +168,8 @@ func scroll(l *Flayer, but int) {
 			} else {
 				p0 = tot * (y - s.Min.Y) / h
 			}
-		} else if but == 3 {
+		} else if but == 3 || but == 5 {
+			but = 3
 			p0 = l.origin + l.f.CharOf(image.Pt(s.Max.X, my))
 			if p0 > tot {
 				p0 = tot
