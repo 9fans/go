@@ -171,8 +171,8 @@ func closeio(p Posn) {
 	}
 }
 
-var remotefd0 = os.Stdin
-var remotefd1 = os.Stdout
+var remotefd0 IOFile = os.Stdin
+var remotefd1 IOFile = os.Stdout
 
 func bootterm(machine string, argv []string) {
 	if machine != "" {
@@ -182,8 +182,6 @@ func bootterm(machine string, argv []string) {
 		if err := cmd.Start(); err != nil {
 			log.Fatal(err)
 		}
-		remotefd0.Close()
-		remotefd1.Close()
 		if err := cmd.Wait(); err != nil {
 			log.Fatalf("samterm: %v", err)
 		}
@@ -228,8 +226,8 @@ func connectto(machine string, files []string) {
 	if err != nil {
 		log.Fatalf("%s: %v", RX, err)
 	}
-	remotefd0 = stdout.(*os.File)
-	remotefd1 = stdin.(*os.File)
+	remotefd0 = stdout.(IOFile)
+	remotefd1 = stdin.(IOFile)
 }
 
 func startup(machine string, Rflag bool, argv []string, files []string) {
