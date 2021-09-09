@@ -162,7 +162,18 @@ func reformat(id int, name string) {
 			w.Write("data", nil)
 		}
 	}
+	if !bytes.HasSuffix(old, nlBytes) && bytes.HasSuffix(new, nlBytes) {
+		// plan9port diff doesn't report a difference if there's a mismatch in the
+		// final newline, so add one if needed.
+		if err := w.Addr("$"); err != nil {
+			log.Print(err)
+			return
+		}
+		w.Write("data", nlBytes)
+	}
 }
+
+var nlBytes = []byte("\n")
 
 func parseSpan(text string) (start, end int) {
 	i := strings.Index(text, ",")
