@@ -32,9 +32,9 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
-	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
@@ -42,8 +42,6 @@ import (
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 )
-
-var snarfbuf disk.Buffer
 
 /*
  * These functions get called as:
@@ -70,7 +68,7 @@ type Exectab struct {
 
 var exectab = [30]Exectab{
 	Exectab{[]rune("Abort"), doabort, false, XXX, XXX},
-	Exectab{[]rune("Cut"), cut, true, true, true},
+	Exectab{[]rune("Cut"), ui.XCut, true, true, true},
 	Exectab{[]rune("Del"), del, false, false, XXX},
 	Exectab{[]rune("Delcol"), delcol, false, XXX, XXX},
 	Exectab{[]rune("Delete"), del, false, true, XXX},
@@ -88,15 +86,15 @@ var exectab = [30]Exectab{
 	Exectab{[]rune("Look"), look, false, XXX, XXX},
 	Exectab{[]rune("New"), new_, false, XXX, XXX},
 	Exectab{[]rune("Newcol"), newcol, false, XXX, XXX},
-	Exectab{[]rune("Paste"), paste, true, true, XXX},
+	Exectab{[]rune("Paste"), ui.XPaste, true, true, XXX},
 	Exectab{[]rune("Put"), put, false, XXX, XXX},
 	Exectab{[]rune("Putall"), putall, false, XXX, XXX},
-	Exectab{[]rune("Redo"), undo, false, false, XXX},
+	Exectab{[]rune("Redo"), ui.XUndo, false, false, XXX},
 	Exectab{[]rune("Send"), sendx, true, XXX, XXX},
-	Exectab{[]rune("Snarf"), cut, false, true, false},
+	Exectab{[]rune("Snarf"), ui.XCut, false, true, false},
 	Exectab{[]rune("Sort"), xsort, false, XXX, XXX},
 	Exectab{[]rune("Tab"), tab, false, XXX, XXX},
-	Exectab{[]rune("Undo"), undo, false, true, XXX},
+	Exectab{[]rune("Undo"), ui.XUndo, false, true, XXX},
 	Exectab{[]rune("Zerox"), zeroxx, false, XXX, XXX},
 }
 
@@ -243,25 +241,25 @@ func getarg(argt *wind.Text, doaddr, dofile bool, rp *[]rune) *string {
 		return nil
 	}
 	wind.Textcommit(argt, true)
-	var e Expand
+	var e ui.Expand
 	var a *string
-	if expand(argt, argt.Q0, argt.Q1, &e) {
-		if len(e.name) > 0 && dofile {
+	if ui.Expand_(argt, argt.Q0, argt.Q1, &e) {
+		if len(e.Name) > 0 && dofile {
 			if doaddr {
-				a = printarg(argt, e.q0, e.q1)
+				a = printarg(argt, e.Q0, e.Q1)
 			}
-			*rp = e.name
+			*rp = e.Name
 			return a
 		}
 	} else {
-		e.q0 = argt.Q0
-		e.q1 = argt.Q1
+		e.Q0 = argt.Q0
+		e.Q1 = argt.Q1
 	}
-	n := e.q1 - e.q0
+	n := e.Q1 - e.Q0
 	*rp = make([]rune, n)
-	argt.File.Read(e.q0, *rp)
+	argt.File.Read(e.Q0, *rp)
 	if doaddr {
-		a = printarg(argt, e.q0, e.q1)
+		a = printarg(argt, e.Q0, e.Q1)
 	}
 	return a
 }
@@ -292,9 +290,9 @@ func doabort(_, _, _ *wind.Text, _, _ bool, _ []rune) {
 func newcol(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
 	c := wind.RowAdd(et.Row, nil, -1)
-	clearmouse()
+	ui.Clearmouse()
 	if c != nil {
-		w := coladdAndMouse(c, nil, nil, -1)
+		w := ui.ColaddAndMouse(c, nil, nil, -1)
 		wind.Winsettag(w)
 		xfidlog(w, "new")
 	}
@@ -314,7 +312,7 @@ func delcol(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 		}
 	}
 	wind.Rowclose(et.Col.Row, et.Col, true)
-	clearmouse()
+	ui.Clearmouse()
 }
 
 func del(et, _, _ *wind.Text, isDelete, _ bool, _ []rune) {
@@ -322,53 +320,15 @@ func del(et, _, _ *wind.Text, isDelete, _ bool, _ []rune) {
 		return
 	}
 	if isDelete || len(et.W.Body.File.Text) > 1 || wind.Winclean(et.W, false) {
-		colcloseAndMouse(et.Col, et.W, true)
+		ui.ColcloseAndMouse(et.Col, et.W, true)
 	}
 }
 
 func xsort(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
 	if et.Col != nil {
-		clearmouse()
+		ui.Clearmouse()
 		wind.Colsort(et.Col)
-	}
-}
-
-func seqof(w *wind.Window, isundo bool) int {
-	// if it's undo, see who changed with us
-	if isundo {
-		return w.Body.File.Seq()
-	}
-	// if it's redo, see who we'll be sync'ed up with
-	return w.Body.File.RedoSeq()
-}
-
-func undo(et, _, _ *wind.Text, isundo, _ bool, _ []rune) {
-	if et == nil || et.W == nil {
-		return
-	}
-	seq := seqof(et.W, isundo)
-	if seq == 0 {
-		// nothing to undo
-		return
-	}
-	/*
-	 * Undo the executing window first. Its display will update. other windows
-	 * in the same file will not call show() and jump to a different location in the file.
-	 * Simultaneous changes to other files will be chaotic, however.
-	 */
-	wind.Winundo(et.W, isundo)
-	for i := 0; i < len(wind.TheRow.Col); i++ {
-		c := wind.TheRow.Col[i]
-		for j := 0; j < len(c.W); j++ {
-			w := c.W[j]
-			if w == et.W {
-				continue
-			}
-			if seqof(w, isundo) == seq {
-				wind.Winundo(w, isundo)
-			}
-		}
 	}
 }
 
@@ -441,7 +401,7 @@ func zeroxx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
 	if t.W.IsDir {
 		alog.Printf("%s is a directory; Zerox illegal\n", string(t.File.Name()))
 	} else {
-		nw := coladdAndMouse(t.W.Col, nil, t.W, -1)
+		nw := ui.ColaddAndMouse(t.W.Col, nil, t.W, -1)
 		// ugly: fix locks so w->unlock works
 		wind.Winlock1(nw, t.W.Owner)
 		xfidlog(nw, "zerox")
@@ -753,134 +713,11 @@ func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
 	}
 }
 
-func cut(et, t, _ *wind.Text, dosnarf, docut bool, _ []rune) {
-
-	/*
-	 * if not executing a mouse chord (et != t) and snarfing (dosnarf)
-	 * and executed Cut or Snarf in window tag (et->w != nil),
-	 * then use the window body selection or the tag selection
-	 * or do nothing at all.
-	 */
-	if et != t && dosnarf && et.W != nil {
-		if et.W.Body.Q1 > et.W.Body.Q0 {
-			t = &et.W.Body
-			if docut {
-				t.File.Mark() // seq has been incremented by execute
-			}
-		} else if et.W.Tag.Q1 > et.W.Tag.Q0 {
-			t = &et.W.Tag
-		} else {
-			t = nil
-		}
-	}
-	if t == nil { // no selection
-		return
-	}
-
-	locked := false
-	if t.W != nil && et.W != t.W {
-		locked = true
-		c := 'M'
-		if et.W != nil {
-			c = et.W.Owner
-		}
-		wind.Winlock(t.W, c)
-	}
-	if t.Q0 == t.Q1 {
-		if locked {
-			wind.Winunlock(t.W)
-		}
-		return
-	}
-	if dosnarf {
-		q0 := t.Q0
-		q1 := t.Q1
-		snarfbuf.Delete(0, snarfbuf.Len())
-		r := bufs.AllocRunes()
-		for q0 < q1 {
-			n := q1 - q0
-			if n > bufs.RuneLen {
-				n = bufs.RuneLen
-			}
-			t.File.Read(q0, r[:n])
-			snarfbuf.Insert(snarfbuf.Len(), r[:n])
-			q0 += n
-		}
-		bufs.FreeRunes(r)
-		acmeputsnarf()
-	}
-	if docut {
-		wind.Textdelete(t, t.Q0, t.Q1, true)
-		wind.Textsetselect(t, t.Q0, t.Q0)
-		if t.W != nil {
-			wind.Textscrdraw(t)
-			wind.Winsettag(t.W)
-		}
-	} else if dosnarf { // Snarf command
-		wind.Argtext = t
-	}
-	if locked {
-		wind.Winunlock(t.W)
-	}
-}
-
-func paste(et, t, _ *wind.Text, selectall, tobody bool, _ []rune) {
-
-	// if(tobody), use body of executing window  (Paste or Send command)
-	if tobody && et != nil && et.W != nil {
-		t = &et.W.Body
-		t.File.Mark() // seq has been incremented by execute
-	}
-	if t == nil {
-		return
-	}
-
-	acmegetsnarf()
-	if t == nil || snarfbuf.Len() == 0 {
-		return
-	}
-	if t.W != nil && et.W != t.W {
-		c := 'M'
-		if et.W != nil {
-			c = et.W.Owner
-		}
-		wind.Winlock(t.W, c)
-	}
-	cut(t, t, nil, false, true, nil)
-	q := 0
-	q0 := t.Q0
-	q1 := t.Q0 + snarfbuf.Len()
-	r := bufs.AllocRunes()
-	for q0 < q1 {
-		n := q1 - q0
-		if n > bufs.RuneLen {
-			n = bufs.RuneLen
-		}
-		snarfbuf.Read(q, r[:n])
-		wind.Textinsert(t, q0, r[:n], true)
-		q += n
-		q0 += n
-	}
-	bufs.FreeRunes(r)
-	if selectall {
-		wind.Textsetselect(t, t.Q0, q1)
-	} else {
-		wind.Textsetselect(t, q1, q1)
-	}
-	if t.W != nil {
-		wind.Textscrdraw(t)
-		wind.Winsettag(t.W)
-	}
-	if t.W != nil && et.W != t.W {
-		wind.Winunlock(t.W)
-	}
-}
-
 func look(et, t, argt *wind.Text, _, _ bool, arg []rune) {
 	if et != nil && et.W != nil {
 		t = &et.W.Body
 		if len(arg) > 0 {
-			search(t, arg)
+			ui.Search(t, arg)
 			return
 		}
 		var r []rune
@@ -889,7 +726,7 @@ func look(et, t, argt *wind.Text, _, _ bool, arg []rune) {
 			r = make([]rune, t.Q1-t.Q0)
 			t.File.Read(t.Q0, r)
 		}
-		search(t, r)
+		ui.Search(t, r)
 	}
 }
 
@@ -899,10 +736,10 @@ func sendx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
 	}
 	t = &et.W.Body
 	if t.Q0 != t.Q1 {
-		cut(t, t, nil, true, false, nil)
+		ui.XCut(t, t, nil, true, false, nil)
 	}
 	wind.Textsetselect(t, t.Len(), t.Len())
-	paste(t, t, nil, true, true, nil)
+	ui.XPaste(t, t, nil, true, true, nil)
 	if t.RuneAt(t.Len()-1) != '\n' {
 		wind.Textinsert(t, t.Len(), []rune("\n"), true)
 		wind.Textsetselect(t, t.Len(), t.Len())
@@ -1166,7 +1003,7 @@ func tab(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	if tab > 0 {
 		if w.Body.Tabstop != tab {
 			w.Body.Tabstop = tab
-			winresizeAndMouse(w, w.R, false, true)
+			ui.WinresizeAndMouse(w, w.R, false, true)
 		}
 	} else {
 		alog.Printf("%s: Tab %d\n", string(w.Body.File.Name()), w.Body.Tabstop)

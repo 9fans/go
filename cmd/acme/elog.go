@@ -25,6 +25,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 )
@@ -282,7 +283,7 @@ func elogapply(f *elogFile) {
 				mod = true
 				f.Mark()
 			}
-			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
+			ui.Textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
 			wind.Textdelete(t, tq0, tq1, true)
 			up -= b.nr
 			for i = 0; i < b.nr; i += n {
@@ -305,7 +306,7 @@ func elogapply(f *elogFile) {
 				mod = true
 				f.Mark()
 			}
-			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
+			ui.Textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
 			wind.Textdelete(t, tq0, tq1, true)
 
 		case elogInsert:
@@ -316,7 +317,7 @@ func elogapply(f *elogFile) {
 				mod = true
 				f.Mark()
 			}
-			textconstrain(t, b.q0, b.q0, &tq0, &tq1)
+			ui.Textconstrain(t, b.q0, b.q0, &tq0, &tq1)
 			up -= b.nr
 			for i = 0; i < b.nr; i += n {
 				n = b.nr - i

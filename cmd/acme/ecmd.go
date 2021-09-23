@@ -25,6 +25,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 )
@@ -33,7 +34,7 @@ var Glooping int
 var nest int
 var Enoname = "no file name given"
 
-var addr Address
+var TheAddr Address
 var menu *wind.File
 
 // extern var curtext *Text
@@ -93,11 +94,11 @@ func cmdexec(t *wind.Text, cp *Cmd) bool {
 			none := Address{}
 			if f != nil {
 				mkaddr(&dot, f)
-				addr = cmdaddress(ap, dot, 0)
+				TheAddr = cmdaddress(ap, dot, 0)
 			} else { // a "
-				addr = cmdaddress(ap, none, 0)
+				TheAddr = cmdaddress(ap, none, 0)
 			}
-			f = addr.f
+			f = TheAddr.f
 			t = f.Curtext
 		}
 	}
@@ -156,7 +157,7 @@ func filelist(t *wind.Text, r []rune) []rune {
 }
 
 func a_cmd(t *wind.Text, cp *Cmd) bool {
-	return fappend(t.File, cp, addr.r.End)
+	return fappend(t.File, cp, TheAddr.r.End)
 }
 
 func b_cmd(t *wind.Text, cp *Cmd) bool {
@@ -188,24 +189,24 @@ func B_cmd(t *wind.Text, cp *Cmd) bool {
 }
 
 func c_cmd(t *wind.Text, cp *Cmd) bool {
-	elogreplace(t.File, addr.r.Pos, addr.r.End, cp.u.text.r)
-	t.Q0 = addr.r.Pos
-	t.Q1 = addr.r.End
+	elogreplace(t.File, TheAddr.r.Pos, TheAddr.r.End, cp.u.text.r)
+	t.Q0 = TheAddr.r.Pos
+	t.Q1 = TheAddr.r.End
 	return true
 }
 
 func d_cmd(t *wind.Text, cp *Cmd) bool {
-	if addr.r.End > addr.r.Pos {
-		elogdelete(t.File, addr.r.Pos, addr.r.End)
+	if TheAddr.r.End > TheAddr.r.Pos {
+		elogdelete(t.File, TheAddr.r.Pos, TheAddr.r.End)
 	}
-	t.Q0 = addr.r.Pos
-	t.Q1 = addr.r.Pos
+	t.Q0 = TheAddr.r.Pos
+	t.Q1 = TheAddr.r.Pos
 	return true
 }
 
 func D1(t *wind.Text) {
 	if len(t.W.Body.File.Text) > 1 || wind.Winclean(t.W, false) {
-		colcloseAndMouse(t.Col, t.W, true)
+		ui.ColcloseAndMouse(t.Col, t.W, true)
 	}
 }
 
@@ -231,7 +232,7 @@ func D_cmd(t *wind.Text, cp *Cmd) bool {
 			copy(n[len(dir)+1:], r)
 			rs = runes.CleanPath(n)
 		}
-		w := lookfile(rs)
+		w := ui.LookFile(rs)
 		if w == nil {
 			editerror(fmt.Sprintf("no such file %s", string(rs)))
 		}
@@ -256,8 +257,8 @@ func readloader(f *wind.File) func(pos int, data []rune) int {
 
 func e_cmd(t *wind.Text, cp *Cmd) bool {
 	f := t.File
-	q0 := addr.r.Pos
-	q1 := addr.r.End
+	q0 := TheAddr.r.Pos
+	q1 := TheAddr.r.End
 	if cp.cmdc == 'e' {
 		if !wind.Winclean(t.W, true) {
 			editerror("") // winclean generated message already
@@ -304,23 +305,23 @@ func f_cmd(t *wind.Text, cp *Cmd) bool {
 }
 
 func g_cmd(t *wind.Text, cp *Cmd) bool {
-	if t.File != addr.f {
+	if t.File != TheAddr.f {
 		alog.Printf("internal error: g_cmd f!=addr.f\n")
 		return false
 	}
 	if !regx.Compile(cp.re.r) {
 		editerror("bad regexp in g command")
 	}
-	if regx.Match(t, nil, addr.r.Pos, addr.r.End, &regx.Sel) != (cp.cmdc == 'v') {
-		t.Q0 = addr.r.Pos
-		t.Q1 = addr.r.End
+	if regx.Match(t, nil, TheAddr.r.Pos, TheAddr.r.End, &regx.Sel) != (cp.cmdc == 'v') {
+		t.Q0 = TheAddr.r.Pos
+		t.Q1 = TheAddr.r.End
 		return cmdexec(t, cp.u.cmd)
 	}
 	return true
 }
 
 func i_cmd(t *wind.Text, cp *Cmd) bool {
-	return fappend(t.File, cp, addr.r.Pos)
+	return fappend(t.File, cp, TheAddr.r.Pos)
 }
 
 func fbufalloc() []rune {
@@ -332,8 +333,8 @@ func fbuffree(b []rune) {}
 func fcopy(f *wind.File, addr2 Address) {
 	buf := bufs.AllocRunes()
 	var ni int
-	for p := addr.r.Pos; p < addr.r.End; p += ni {
-		ni = addr.r.End - p
+	for p := TheAddr.r.Pos; p < TheAddr.r.End; p += ni {
+		ni = TheAddr.r.End - p
 		if ni > bufs.RuneLen {
 			ni = bufs.RuneLen
 		}
@@ -344,13 +345,13 @@ func fcopy(f *wind.File, addr2 Address) {
 }
 
 func move(f *wind.File, addr2 Address) {
-	if addr.f != addr2.f || addr.r.End <= addr2.r.Pos {
-		elogdelete(f, addr.r.Pos, addr.r.End)
+	if TheAddr.f != addr2.f || TheAddr.r.End <= addr2.r.Pos {
+		elogdelete(f, TheAddr.r.Pos, TheAddr.r.End)
 		fcopy(f, addr2)
-	} else if addr.r.Pos >= addr2.r.End {
+	} else if TheAddr.r.Pos >= addr2.r.End {
 		fcopy(f, addr2)
-		elogdelete(f, addr.r.Pos, addr.r.End)
-	} else if addr.r.Pos == addr2.r.Pos && addr.r.End == addr2.r.End { // move to self; no-op
+		elogdelete(f, TheAddr.r.Pos, TheAddr.r.End)
+	} else if TheAddr.r.Pos == addr2.r.Pos && TheAddr.r.End == addr2.r.End { // move to self; no-op
 	} else {
 		editerror("move overlaps itself")
 	}
@@ -381,7 +382,7 @@ func s_cmd(t *wind.Text, cp *Cmd) bool {
 	var rp []regx.Ranges
 	delta := 0
 	didsub := false
-	for p1 := addr.r.Pos; p1 <= addr.r.End && regx.Match(t, nil, p1, addr.r.End, &regx.Sel); {
+	for p1 := TheAddr.r.Pos; p1 <= TheAddr.r.End && regx.Match(t, nil, p1, TheAddr.r.End, &regx.Sel); {
 		if regx.Sel.R[0].Pos == regx.Sel.R[0].End { // empty match?
 			if regx.Sel.R[0].Pos == op {
 				p1++
@@ -448,8 +449,8 @@ func s_cmd(t *wind.Text, cp *Cmd) bool {
 	if !didsub && nest == 0 {
 		editerror("no substitution")
 	}
-	t.Q0 = addr.r.Pos
-	t.Q1 = addr.r.End
+	t.Q0 = TheAddr.r.Pos
+	t.Q1 = TheAddr.r.End
 	return true
 
 Err:
@@ -474,7 +475,7 @@ func u_cmd(t *wind.Text, cp *Cmd) bool {
 			break
 		}
 		oseq = t.File.Seq()
-		undo(t, nil, nil, flag, XXX, nil)
+		ui.XUndo(t, nil, nil, flag, XXX, nil)
 	}
 	return true
 }
@@ -488,7 +489,7 @@ func w_cmd(t *wind.Text, cp *Cmd) bool {
 	if r == nil {
 		editerror("no name specified for 'w' command")
 	}
-	putfile(f, addr.r.Pos, addr.r.End, r)
+	putfile(f, TheAddr.r.Pos, TheAddr.r.End, r)
 	// r is freed by putfile
 	return true
 }
@@ -516,8 +517,8 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	var w *wind.Window
 	if state == Inserting {
 		w = t.W
-		t.Q0 = addr.r.Pos
-		t.Q1 = addr.r.End
+		t.Q0 = TheAddr.r.Pos
+		t.Q1 = TheAddr.r.End
 		if cmd == '<' || cmd == '|' {
 			elogdelete(t.File, t.Q0, t.Q1)
 		}
@@ -620,19 +621,19 @@ func printposn(t *wind.Text, mode int) {
 
 	switch mode {
 	case PosnChars:
-		alog.Printf("#%d", addr.r.Pos)
-		if addr.r.End != addr.r.Pos {
-			alog.Printf(",#%d", addr.r.End)
+		alog.Printf("#%d", TheAddr.r.Pos)
+		if TheAddr.r.End != TheAddr.r.Pos {
+			alog.Printf(",#%d", TheAddr.r.End)
 		}
 		alog.Printf("\n")
 		return
 
 	default:
 	case PosnLine:
-		l1 = 1 + nlcount(t, 0, addr.r.Pos, nil)
-		l2 = l1 + nlcount(t, addr.r.Pos, addr.r.End, nil)
+		l1 = 1 + nlcount(t, 0, TheAddr.r.Pos, nil)
+		l2 = l1 + nlcount(t, TheAddr.r.Pos, TheAddr.r.End, nil)
 		// check if addr ends with '\n'
-		if addr.r.End > 0 && addr.r.End > addr.r.Pos && t.RuneAt(addr.r.End-1) == '\n' {
+		if TheAddr.r.End > 0 && TheAddr.r.End > TheAddr.r.Pos && t.RuneAt(TheAddr.r.End-1) == '\n' {
 			l2--
 		}
 		alog.Printf("%d", l1)
@@ -643,8 +644,8 @@ func printposn(t *wind.Text, mode int) {
 		return
 
 	case PosnLineChars:
-		l1 = 1 + nlcount(t, 0, addr.r.Pos, &r1)
-		l2 = l1 + nlcount(t, addr.r.Pos, addr.r.End, &r2)
+		l1 = 1 + nlcount(t, 0, TheAddr.r.Pos, &r1)
+		l2 = l1 + nlcount(t, TheAddr.r.Pos, TheAddr.r.End, &r2)
 		if l2 == l1 {
 			r2 += r1
 		}
@@ -685,15 +686,15 @@ func nl_cmd(t *wind.Text, cp *Cmd) bool {
 		var a Address
 		// First put it on newline boundaries
 		mkaddr(&a, f)
-		addr = lineaddr(0, a, -1)
+		TheAddr = lineaddr(0, a, -1)
 		a = lineaddr(0, a, 1)
-		addr.r.End = a.r.End
-		if addr.r.Pos == t.Q0 && addr.r.End == t.Q1 {
+		TheAddr.r.End = a.r.End
+		if TheAddr.r.Pos == t.Q0 && TheAddr.r.End == t.Q1 {
 			mkaddr(&a, f)
-			addr = lineaddr(1, a, 1)
+			TheAddr = lineaddr(1, a, 1)
 		}
 	}
-	wind.Textshow(t, addr.r.Pos, addr.r.End, true)
+	wind.Textshow(t, TheAddr.r.Pos, TheAddr.r.End, true)
 	return true
 }
 
@@ -707,8 +708,8 @@ func fappend(f *wind.File, cp *Cmd, p int) bool {
 }
 
 func pdisplay(f *wind.File) bool {
-	p1 := addr.r.Pos
-	p2 := addr.r.End
+	p1 := TheAddr.r.Pos
+	p2 := TheAddr.r.End
 	if p2 > f.Len() {
 		p2 = f.Len()
 	}
@@ -723,8 +724,8 @@ func pdisplay(f *wind.File) bool {
 		p1 += np
 	}
 	bufs.FreeRunes(buf)
-	f.Curtext.Q0 = addr.r.Pos
-	f.Curtext.Q1 = addr.r.End
+	f.Curtext.Q0 = TheAddr.r.Pos
+	f.Curtext.Q1 = TheAddr.r.End
 	return true
 }
 
@@ -750,7 +751,7 @@ func loopcmd(f *wind.File, cp *Cmd, rp []runes.Range) {
 }
 
 func looper(f *wind.File, cp *Cmd, xy bool) {
-	r := addr.r
+	r := TheAddr.r
 	op := r.Pos
 	if xy {
 		op = -1
@@ -796,7 +797,7 @@ func looper(f *wind.File, cp *Cmd, xy bool) {
 func linelooper(f *wind.File, cp *Cmd) {
 	nest++
 	var rp []runes.Range
-	r := addr.r
+	r := TheAddr.r
 	var a3 Address
 	a3.f = f
 	a3.r.End = r.Pos

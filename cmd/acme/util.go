@@ -17,17 +17,13 @@ package main
 import (
 	"fmt"
 
-	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
-	"9fans.net/go/draw"
 )
-
-var prevmouse draw.Point
-var mousew *wind.Window
 
 func errorwin1(dir []rune, incl [][]rune) *wind.Window {
 	var r []rune
@@ -36,14 +32,14 @@ func errorwin1(dir []rune, incl [][]rune) *wind.Window {
 		r = append(r, '/')
 	}
 	r = append(r, []rune("+Errors")...)
-	w := lookfile(r)
+	w := ui.LookFile(r)
 	if w == nil {
 		if len(wind.TheRow.Col) == 0 {
 			if wind.RowAdd(&wind.TheRow, nil, -1) == nil {
 				util.Fatal("can't create column to make error window")
 			}
 		}
-		w = coladdAndMouse(wind.TheRow.Col[len(wind.TheRow.Col)-1], nil, nil, -1)
+		w = ui.ColaddAndMouse(wind.TheRow.Col[len(wind.TheRow.Col)-1], nil, nil, -1)
 		w.Filemenu = false
 		wind.Winsetname(w, r)
 		xfidlog(w, "new")
@@ -187,87 +183,4 @@ func rgetc(v interface{}, n int) rune {
 		return 0
 	}
 	return r[n]
-}
-
-func tgetc(a interface{}, n int) rune {
-	t := a.(*wind.Text)
-	if n >= t.Len() {
-		return 0
-	}
-	return t.RuneAt(n)
-}
-
-func savemouse(w *wind.Window) {
-	prevmouse = mouse.Point
-	mousew = w
-}
-
-func restoremouse(w *wind.Window) int {
-	did := 0
-	if mousew != nil && mousew == w {
-		adraw.Display.MoveCursor(prevmouse)
-		did = 1
-	}
-	mousew = nil
-	return did
-}
-
-func clearmouse() {
-	mousew = nil
-}
-
-/*
- * Heuristic city.
- */
-func makenewwindow(t *wind.Text) *wind.Window {
-	var c *wind.Column
-	if wind.Activecol != nil {
-		c = wind.Activecol
-	} else if wind.Seltext != nil && wind.Seltext.Col != nil {
-		c = wind.Seltext.Col
-	} else if t != nil && t.Col != nil {
-		c = t.Col
-	} else {
-		if len(wind.TheRow.Col) == 0 && wind.RowAdd(&wind.TheRow, nil, -1) == nil {
-			util.Fatal("can't make column")
-		}
-		c = wind.TheRow.Col[len(wind.TheRow.Col)-1]
-	}
-	wind.Activecol = c
-	if t == nil || t.W == nil || len(c.W) == 0 {
-		return coladdAndMouse(c, nil, nil, -1)
-	}
-
-	// find biggest window and biggest blank spot
-	emptyw := c.W[0]
-	bigw := emptyw
-	var w *wind.Window
-	for i := 1; i < len(c.W); i++ {
-		w = c.W[i]
-		// use >= to choose one near bottom of screen
-		if w.Body.Fr.MaxLines >= bigw.Body.Fr.MaxLines {
-			bigw = w
-		}
-		if w.Body.Fr.MaxLines-w.Body.Fr.NumLines >= emptyw.Body.Fr.MaxLines-emptyw.Body.Fr.NumLines {
-			emptyw = w
-		}
-	}
-	emptyb := &emptyw.Body
-	el := emptyb.Fr.MaxLines - emptyb.Fr.NumLines
-	var y int
-	// if empty space is big, use it
-	if el > 15 || (el > 3 && el > (bigw.Body.Fr.MaxLines-1)/2) {
-		y = emptyb.Fr.R.Min.Y + emptyb.Fr.NumLines*adraw.Font.Height
-	} else {
-		// if this window is in column and isn't much smaller, split it
-		if t.Col == c && t.W.R.Dy() > 2*bigw.R.Dy()/3 {
-			bigw = t.W
-		}
-		y = (bigw.R.Min.Y + bigw.R.Max.Y) / 2
-	}
-	w = coladdAndMouse(c, nil, nil, y)
-	if w.Body.Fr.MaxLines < 2 {
-		wind.Colgrow(w.Col, w, 1)
-	}
-	return w
 }

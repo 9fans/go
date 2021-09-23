@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/plan9"
@@ -373,7 +374,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 			}
 			id, _ = strconv.Atoi(x.fcall.Wname[i])
 			wind.TheRow.Lk.Lock()
-			w = lookid(id)
+			w = ui.LookID(id)
 			if w == nil {
 				wind.TheRow.Lk.Unlock()
 				break

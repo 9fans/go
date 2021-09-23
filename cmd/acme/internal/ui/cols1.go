@@ -12,7 +12,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package ui
 
 import (
 	"9fans.net/go/cmd/acme/internal/adraw"
@@ -20,7 +20,7 @@ import (
 	"9fans.net/go/draw"
 )
 
-func coladdAndMouse(c *wind.Column, w *wind.Window, clone *wind.Window, y int) *wind.Window {
+func ColaddAndMouse(c *wind.Column, w *wind.Window, clone *wind.Window, y int) *wind.Window {
 	w = wind.Coladd(c, w, clone, y)
 	savemouse(w)
 	// near the button, but in the body
@@ -29,7 +29,7 @@ func coladdAndMouse(c *wind.Column, w *wind.Window, clone *wind.Window, y int) *
 	return w
 }
 
-func colcloseAndMouse(c *wind.Column, w *wind.Window, dofree bool) {
+func ColcloseAndMouse(c *wind.Column, w *wind.Window, dofree bool) {
 	didmouse := restoremouse(w) != 0
 	wr := w.R
 	w = wind.Colclose(c, w, dofree)
@@ -40,25 +40,25 @@ func colcloseAndMouse(c *wind.Column, w *wind.Window, dofree bool) {
 	}
 }
 
-func colmousebut(c *wind.Column) {
+func Colmousebut(c *wind.Column) {
 	adraw.Display.MoveCursor(c.Tag.ScrollR.Min.Add(c.Tag.ScrollR.Max).Div(2))
 }
 
-func coldragwin(c *wind.Column, w *wind.Window, but int) {
-	clearmouse()
+func Coldragwin(c *wind.Column, w *wind.Window, but int) {
+	Clearmouse()
 	adraw.Display.SwitchCursor2(&adraw.BoxCursor, &adraw.BoxCursor2)
-	b := mouse.Buttons
-	op := mouse.Point
-	for mouse.Buttons == b {
-		mousectl.Read()
+	b := Mouse.Buttons
+	op := Mouse.Point
+	for Mouse.Buttons == b {
+		Mousectl.Read()
 	}
 	adraw.Display.SwitchCursor(nil)
-	if mouse.Buttons != 0 {
-		for mouse.Buttons != 0 {
-			mousectl.Read()
+	if Mouse.Buttons != 0 {
+		for Mouse.Buttons != 0 {
+			Mousectl.Read()
 		}
 		return
 	}
-	wind.Coldragwin1(c, w, but, op, mouse.Point)
-	winmousebut(w)
+	wind.Coldragwin1(c, w, but, op, Mouse.Point)
+	Winmousebut(w)
 }

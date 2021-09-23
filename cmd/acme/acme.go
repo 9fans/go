@@ -16,24 +16,18 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
 
-var wdir = "."
 var snarffd = -1
 var mainpid int
 var swapscrollbuttons bool = false
 var mtpt string
 
 var mainthread sync.Mutex
-
-const (
-	NSnarf = 1000
-)
-
-var snarfrune [NSnarf + 1]rune
 
 var command *Command
 
@@ -52,7 +46,7 @@ func main() {
 
 	flag.Bool("D", false, "") // ignored
 	flag.BoolVar(&wind.GlobalAutoindent, "a", wind.GlobalAutoindent, "autoindent")
-	flag.BoolVar(&bartflag, "b", bartflag, "bartflag")
+	flag.BoolVar(&ui.Bartflag, "b", ui.Bartflag, "bartflag")
 	flag.IntVar(&ncol, "c", ncol, "set number of `columns`")
 	flag.StringVar(&adraw.FontNames[0], "f", adraw.FontNames[0], "font")
 	flag.StringVar(&adraw.FontNames[1], "F", adraw.FontNames[1], "font")
@@ -67,11 +61,11 @@ func main() {
 	flag.Parse()
 
 	alog.Init(func(msg string) { warning(nil, "%s", msg) })
-	Ismtpt = ismtpt
-	Textload = textload
+	ui.Ismtpt = ismtpt
+	ui.Textload = textload
 
 	cputype = os.Getenv("cputype")
-	objtype = os.Getenv("objtype")
+	ui.Objtype = os.Getenv("objtype")
 	home = os.Getenv("HOME")
 	acmeshell = os.Getenv("acmeshell")
 	p := os.Getenv("tabstop")
@@ -93,7 +87,7 @@ func main() {
 		}
 		bind("/acme/bin", "/bin", MBEFORE);
 	*/
-	wdir, _ = os.Getwd()
+	ui.Wdir, _ = os.Getwd()
 
 	/*
 		if(geninitdraw(nil, derror, fontnames[0], "acme", nil, Refnone) < 0){
@@ -132,17 +126,17 @@ func main() {
 	wind.OnWinclose = func(w *wind.Window) {
 		xfidlog(w, "del")
 	}
-	OnNewWindow = func(w *wind.Window) {
+	ui.OnNewWindow = func(w *wind.Window) {
 		xfidlog(w, "new")
 	}
 
-	Textcomplete = textcomplete
+	ui.Textcomplete = textcomplete
 
-	mousectl = adraw.Display.InitMouse()
-	if mousectl == nil {
+	ui.Mousectl = adraw.Display.InitMouse()
+	if ui.Mousectl == nil {
 		log.Fatal("can't initialize mouse")
 	}
-	mouse = &mousectl.Mouse
+	ui.Mouse = &ui.Mousectl.Mouse
 	keyboardctl = adraw.Display.InitKeyboard()
 	if keyboardctl == nil {
 		log.Fatal("can't initialize keyboard")
@@ -181,7 +175,7 @@ func main() {
 		}
 		c = wind.TheRow.Col[len(wind.TheRow.Col)-1]
 		if argc == 0 {
-			readfile(c, wdir)
+			readfile(c, ui.Wdir)
 		} else {
 			for i = 0; i < argc; i++ {
 				j := strings.LastIndex(argv[i], "/")
@@ -210,10 +204,10 @@ func main() {
 }
 
 func readfile(c *wind.Column, s string) {
-	w := coladdAndMouse(c, nil, nil, -1)
+	w := ui.ColaddAndMouse(c, nil, nil, -1)
 	var rb []rune
 	if !strings.HasPrefix(s, "/") {
-		rb = []rune(wdir + "/" + s)
+		rb = []rune(ui.Wdir + "/" + s)
 	} else {
 		rb = []rune(s)
 	}
@@ -223,7 +217,7 @@ func readfile(c *wind.Column, s string) {
 	w.Body.File.SetMod(false)
 	w.Dirty = false
 	wind.Winsettag(w)
-	winresizeAndMouse(w, w.R, false, true)
+	ui.WinresizeAndMouse(w, w.R, false, true)
 	wind.Textscrdraw(&w.Body)
 	wind.Textsetselect(&w.Tag, w.Tag.Len(), w.Tag.Len())
 	xfidlog(w, "new")
@@ -363,7 +357,7 @@ func keyboardthread() {
 		case r = <-keyboardctl.C:
 			bigLock()
 		Loop:
-			wind.Typetext = rowtype(&wind.TheRow, r, mouse.Point)
+			wind.Typetext = ui.Rowtype(&wind.TheRow, r, ui.Mouse.Point)
 			t = wind.Typetext
 			if t != nil && t.Col != nil && (!(r == draw.KeyDown || r == draw.KeyLeft) && !(r == draw.KeyRight)) { // scrolling doesn't change activecol
 				wind.Activecol = t.Col
@@ -406,7 +400,7 @@ func mousethread() {
 
 		bigUnlock()
 		select {
-		case <-mousectl.Resize:
+		case <-ui.Mousectl.Resize:
 			bigLock()
 			if err := adraw.Display.Attach(draw.RefNone); err != nil {
 				util.Fatal("attach to window: " + err.Error())
@@ -415,7 +409,7 @@ func mousethread() {
 			adraw.Init()
 			wind.Scrlresize()
 			wind.Rowresize(&wind.TheRow, adraw.Display.ScreenImage.Clipr)
-			clearmouse()
+			ui.Clearmouse()
 
 		case pm := <-cplumb:
 			bigLock()
@@ -437,9 +431,9 @@ func mousethread() {
 		 * underfoot.  Can't just receive into m because this introduces
 		 * another race; see /sys/src/libdraw/mouse.c.
 		 */
-		case m := <-mousectl.C:
+		case m := <-ui.Mousectl.C:
 			bigLock()
-			mousectl.Mouse = m
+			ui.Mousectl.Mouse = m
 			wind.TheRow.Lk.Lock()
 			t := wind.Rowwhich(&wind.TheRow, m.Point)
 
@@ -483,7 +477,7 @@ func mousethread() {
 					}
 					wind.Winlock(w, 'M')
 					t.Eq0 = ^0
-					textscroll(t, but)
+					ui.Textscroll(t, but)
 					wind.Winunlock(w)
 				}
 				goto Continue
@@ -492,22 +486,22 @@ func mousethread() {
 			if w != nil && m.Buttons&(8|16) != 0 {
 				var ch rune
 				if m.Buttons&8 != 0 {
-					ch = Kscrolloneup
+					ch = ui.Kscrolloneup
 				} else {
-					ch = Kscrollonedown
+					ch = ui.Kscrollonedown
 				}
 				wind.Winlock(w, 'M')
 				t.Eq0 = ^0
-				texttype(t, ch)
+				ui.Texttype(t, ch)
 				wind.Winunlock(w)
 				goto Continue
 			}
 			if m.Point.In(t.ScrollR) {
 				if but != 0 {
 					if t.What == wind.Columntag {
-						rowdragcol(&wind.TheRow, t.Col, but)
+						ui.Rowdragcol(&wind.TheRow, t.Col, but)
 					} else if t.What == wind.Tag {
-						coldragwin(t.Col, t.W, but)
+						ui.Coldragwin(t.Col, t.W, but)
 						if t.W != nil {
 							wind.Barttext = &t.W.Body
 						}
@@ -529,7 +523,7 @@ func mousethread() {
 					wind.Textcommit(t, true)
 				}
 				if m.Buttons&1 != 0 {
-					textselect(t)
+					ui.Textselect(t)
 					if w != nil {
 						wind.Winsettag(w)
 					}
@@ -544,13 +538,13 @@ func mousethread() {
 				} else if m.Buttons&2 != 0 {
 					var argt *wind.Text
 					var q0, q1 int
-					if textselect2(t, &q0, &q1, &argt) != 0 {
+					if ui.Textselect2(t, &q0, &q1, &argt) != 0 {
 						execute(t, q0, q1, false, argt)
 					}
 				} else if m.Buttons&4 != 0 {
 					var q0, q1 int
-					if textselect3(t, &q0, &q1) {
-						look3(t, q0, q1, false)
+					if ui.Textselect3(t, &q0, &q1) {
+						ui.Look3(t, q0, q1, false)
 					}
 				}
 				if w != nil {
@@ -635,7 +629,7 @@ func waitthread() {
 				p.next = pids
 				pids = p
 			} else {
-				if search(t, c.name) {
+				if ui.Search(t, c.name) {
 					wind.Textdelete(t, t.Q0, t.Q1, true)
 					wind.Textsetselect(t, 0, 0)
 				}
@@ -718,24 +712,14 @@ func newwindowthread() {
 		// TODO(rsc): split cnewwindow into two channels
 		<-cnewwindow
 		bigLock()
-		w := makenewwindow(nil)
+		w := ui.Makenewwindow(nil)
 		wind.Winsettag(w)
-		winmousebut(w)
+		ui.Winmousebut(w)
 		xfidlog(w, "new")
 		bigUnlock()
 		cnewwindow <- w
 	}
 }
-
-/*
- * /dev/snarf updates when the file is closed, so we must open our own
- * fd here rather than use snarffd
- */
-
-/* rio truncates larges snarf buffers, so this avoids using the
- * service if the string is huge */
-
-const MAXSNARF = 100 * 1024
 
 func appendRune(buf []byte, r rune) []byte {
 	n := len(buf)
@@ -745,53 +729,6 @@ func appendRune(buf []byte, r rune) []byte {
 	w := utf8.EncodeRune(buf[n:n+utf8.UTFMax], r)
 	return buf[:n+w]
 }
-
-func acmeputsnarf() {
-	if snarfbuf.Len() == 0 {
-		return
-	}
-	if snarfbuf.Len() > MAXSNARF {
-		return
-	}
-
-	var buf []byte
-	var n int
-	for i := 0; i < snarfbuf.Len(); i += n {
-		n = snarfbuf.Len() - i
-		if n >= NSnarf {
-			n = NSnarf
-		}
-		snarfbuf.Read(i, snarfrune[:n])
-		var rbuf [utf8.UTFMax]byte
-		for _, r := range snarfrune[:n] {
-			w := utf8.EncodeRune(rbuf[:], r)
-			buf = append(buf, rbuf[:w]...)
-		}
-	}
-	if len(buf) > 0 {
-		adraw.Display.WriteSnarf(buf)
-	}
-}
-
-func acmegetsnarf() {
-	_, m, err := adraw.Display.ReadSnarf(nil)
-	if err != nil {
-		return
-	}
-	buf := make([]byte, m+100)
-	n, _, err := adraw.Display.ReadSnarf(buf)
-	if n == 0 || err != nil {
-		return
-	}
-	buf = buf[:n]
-
-	r := make([]rune, utf8.RuneCount(buf))
-	_, nr, _ := runes.Convert(buf, r, true)
-	snarfbuf.Reset()
-	snarfbuf.Insert(0, r[:nr])
-}
-
-var Ismtpt func(string)bool
 
 func ismtpt(file string) bool {
 	if mtpt == "" {

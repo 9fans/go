@@ -28,6 +28,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/plan9"
@@ -171,7 +172,7 @@ func xfidopen(x *Xfid) {
 			nopen[wq{w, q}]++
 			file.Seq++
 			t.File.Mark()
-			cut(t, t, nil, false, true, nil)
+			ui.XCut(t, t, nil, false, true, nil)
 			w.Wrselrange = runes.Rng(t.Q1, t.Q1)
 			w.Nomark = true
 		case QWeditout:
@@ -704,14 +705,14 @@ func xfidctlwrite(x *Xfid, w *wind.Window) {
 			r = r[:nr]
 			w.Dumpdir = string(r)
 		} else if strings.HasPrefix(p, "delete") { // delete for sure
-			colcloseAndMouse(w.Col, w, true)
+			ui.ColcloseAndMouse(w.Col, w, true)
 			p = p[6:]
 		} else if strings.HasPrefix(p, "del") { // delete, but check dirty
 			if !wind.Winclean(w, true) {
 				err = "file dirty"
 				break
 			}
-			colcloseAndMouse(w.Col, w, true)
+			ui.ColcloseAndMouse(w.Col, w, true)
 			p = p[3:]
 		} else if strings.HasPrefix(p, "get") { // get file
 			get(&w.Body, nil, nil, false, XXX, nil)
@@ -848,7 +849,7 @@ func xfideventwrite(x *Xfid, w *wind.Window) {
 			execute(t, q0, q1, true, nil)
 		case 'l',
 			'L':
-			look3(t, q0, q1, true)
+			ui.Look3(t, q0, q1, true)
 		default:
 			wind.TheRow.Lk.Unlock()
 			goto Rescue

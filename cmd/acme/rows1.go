@@ -26,66 +26,11 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
+	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
-
-func rowdragcol(row *wind.Row, c *wind.Column, _0 int) {
-	clearmouse()
-	adraw.Display.SwitchCursor2(&adraw.BoxCursor, &adraw.BoxCursor2)
-	b := mouse.Buttons
-	op := mouse.Point
-	for mouse.Buttons == b {
-		mousectl.Read()
-	}
-	adraw.Display.SwitchCursor(nil)
-	if mouse.Buttons != 0 {
-		for mouse.Buttons != 0 {
-			mousectl.Read()
-		}
-		return
-	}
-
-	wind.Rowdragcol1(row, c, op, mouse.Point)
-	clearmouse()
-	colmousebut(c)
-}
-
-func rowtype(row *wind.Row, r rune, p draw.Point) *wind.Text {
-	if r == 0 {
-		r = utf8.RuneError
-	}
-
-	clearmouse()
-	row.Lk.Lock()
-	var t *wind.Text
-	if bartflag {
-		t = wind.Barttext
-	} else {
-		t = wind.Rowwhich(row, p)
-	}
-	if t != nil && (t.What != wind.Tag || !p.In(t.ScrollR)) {
-		w := t.W
-		if w == nil {
-			texttype(t, r)
-		} else {
-			wind.Winlock(w, 'K')
-			wintype(w, t, r)
-			// Expand tag if necessary
-			if t.What == wind.Tag {
-				t.W.Tagsafe = false
-				if r == '\n' {
-					t.W.Tagexpand = true
-				}
-				winresizeAndMouse(w, w.R, true, true)
-			}
-			wind.Winunlock(w)
-		}
-	}
-	row.Lk.Unlock()
-	return t
-}
 
 func rowdump(row *wind.Row, file *string) {
 	if len(row.Col) == 0 {
@@ -107,7 +52,7 @@ func rowdump(row *wind.Row, file *string) {
 	}
 	b := bufio.NewWriter(f)
 	r := bufs.AllocRunes()
-	fmt.Fprintf(b, "%s\n", wdir)
+	fmt.Fprintf(b, "%s\n", ui.Wdir)
 	fmt.Fprintf(b, "%s\n", adraw.FontNames[0])
 	fmt.Fprintf(b, "%s\n", adraw.FontNames[1])
 	var i int

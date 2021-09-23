@@ -95,18 +95,6 @@ type Xfid struct {
 	flushed bool
 }
 
-type Expand struct {
-	q0    int
-	q1    int
-	name  []rune
-	bname string
-	jump  bool
-	arg   interface{}
-	agetc func(interface{}, int) rune
-	a0    int
-	a1    int
-}
-
 const XXX = false
 
 // editing
@@ -118,23 +106,14 @@ const (
 )
 
 var screen *draw.Image
-var mouse *draw.Mouse
-var mousectl *draw.Mousectl
 var keyboardctl *draw.Keyboardctl
 var timerpid int
-var bartflag bool
 var fsyspid int
 var cputype string
-var objtype string
 var home string
 var acmeshell string
 
 var dodollarsigns bool
-
-const (
-	Kscrolloneup   = draw.KeyFn | 0x20
-	Kscrollonedown = draw.KeyFn | 0x21
-)
 
 type Waitmsg struct {
 	pid int

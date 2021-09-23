@@ -14,16 +14,14 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package ui
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path"
-	"time"
 
-	addrpkg "9fans.net/go/cmd/acme/internal/addr"
+	"9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
@@ -31,80 +29,17 @@ import (
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
-	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 	"9fans.net/go/plumb"
 )
 
-var plumbsendfid *client.Fid
-var plumbeditfid *client.Fid
-
-var nuntitled int
-
-func plumbthread() {
-	/*
-	 * Loop so that if plumber is restarted, acme need not be.
-	 */
-	for {
-		/*
-		 * Connect to plumber.
-		 */
-		// TODO(rsc): plumbunmount()
-		var fid *client.Fid
-		for {
-			var err error
-			fid, err = plumb.Open("edit", plan9.OREAD|plan9.OCEXEC)
-			if err == nil {
-				break
-			}
-			time.Sleep(2 * time.Second)
-		}
-		big.Lock() // TODO still racy
-		plumbeditfid = fid
-		plumbsendfid, _ = plumb.Open("send", plan9.OWRITE|plan9.OCEXEC)
-		big.Unlock()
-
-		/*
-		 * Relay messages.
-		 */
-		bedit := bufio.NewReader(fid)
-		for {
-			m := new(plumb.Message)
-			err := m.Recv(bedit)
-			if err != nil {
-				break
-			}
-			cplumb <- m
-		}
-
-		/*
-		 * Lost connection.
-		 */
-		big.Lock() // TODO still racy
-		fid = plumbsendfid
-		plumbsendfid = nil
-		big.Unlock()
-		fid.Close()
-
-		big.Lock() // TODO still racy
-		fid = plumbeditfid
-		plumbeditfid = nil
-		big.Unlock()
-		fid.Close()
-	}
-}
-
-func startplumbing() {
-	go plumbthread()
-}
-
-func look3(t *wind.Text, q0, q1 int, external bool) {
+func Look3(t *wind.Text, q0, q1 int, external bool) {
 	ct := wind.Seltext
 	if ct == nil {
 		wind.Seltext = t
 	}
 	var e Expand
-	expanded := expand(t, q0, q1, &e)
+	expanded := Expand_(t, q0, q1, &e)
 	var n int
 	var c rune
 	var r []rune
@@ -114,13 +49,13 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 			return
 		}
 		f := 0
-		if (e.arg != nil && t.W != nil) || (len(e.name) > 0 && lookfile(e.name) != nil) {
+		if (e.Arg != nil && t.W != nil) || (len(e.Name) > 0 && LookFile(e.Name) != nil) {
 			f = 1 // acme can do it without loading a file
 		}
-		if q0 != e.q0 || q1 != e.q1 {
+		if q0 != e.Q0 || q1 != e.Q1 {
 			f |= 2 // second (post-expand) message follows
 		}
-		if len(e.name) != 0 {
+		if len(e.Name) != 0 {
 			f |= 4 // it's a file name
 		}
 		c = 'l'
@@ -135,25 +70,25 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 		} else {
 			wind.Winevent(t.W, "%c%d %d %d 0 \n", c, q0, q1, f)
 		}
-		if q0 == e.q0 && q1 == e.q1 {
+		if q0 == e.Q0 && q1 == e.Q1 {
 			return
 		}
-		if len(e.name) != 0 {
-			n = len(e.name)
-			if e.a1 > e.a0 {
-				n += 1 + (e.a1 - e.a0)
+		if len(e.Name) != 0 {
+			n = len(e.Name)
+			if e.A1 > e.A0 {
+				n += 1 + (e.A1 - e.A0)
 			}
 			r = make([]rune, n)
-			copy(r, e.name)
-			if e.a1 > e.a0 {
-				r[len(e.name)] = ':'
-				at := e.arg.(*wind.Text)
-				at.File.Read(e.a0, r[len(e.name)+1:])
+			copy(r, e.Name)
+			if e.A1 > e.A0 {
+				r[len(e.Name)] = ':'
+				at := e.Arg.(*wind.Text)
+				at.File.Read(e.A0, r[len(e.Name)+1:])
 			}
 		} else {
-			n = e.q1 - e.q0
+			n = e.Q1 - e.Q0
 			r = make([]rune, n)
-			t.File.Read(e.q0, r)
+			t.File.Read(e.Q0, r)
 		}
 		f &^= 2
 		if n <= wind.EVENTSIZE {
@@ -161,13 +96,13 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 			if len(r) > n {
 				r = r[:n]
 			}
-			wind.Winevent(t.W, "%c%d %d %d %d %s\n", c, e.q0, e.q1, f, n, string(r))
+			wind.Winevent(t.W, "%c%d %d %d %d %s\n", c, e.Q0, e.Q1, f, n, string(r))
 		} else {
-			wind.Winevent(t.W, "%c%d %d %d 0 \n", c, e.q0, e.q1, f)
+			wind.Winevent(t.W, "%c%d %d %d 0 \n", c, e.Q0, e.Q1, f)
 		}
 		return
 	}
-	if plumbsendfid != nil {
+	if Plumbsendfid != nil {
 		// send whitespace-delimited word to plumber
 		m := new(plumb.Message)
 		m.Src = "acme"
@@ -176,7 +111,7 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 			dir = nil
 		}
 		if len(dir) == 0 {
-			m.Dir = wdir
+			m.Dir = Wdir
 		} else {
 			m.Dir = string(dir)
 		}
@@ -202,7 +137,7 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 		r = make([]rune, q1-q0)
 		t.File.Read(q0, r)
 		m.Data = []byte(string(r))
-		if len(m.Data) < 7*1024 && m.Send(plumbsendfid) == nil {
+		if len(m.Data) < 7*1024 && m.Send(Plumbsendfid) == nil {
 			return
 		}
 		// plumber failed to match; fall through
@@ -212,8 +147,8 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 	if !expanded {
 		return
 	}
-	if e.name != nil || e.arg != nil {
-		openfile(t, &e)
+	if e.Name != nil || e.Arg != nil {
+		Openfile(t, &e)
 	} else {
 		if t.W == nil {
 			return
@@ -223,11 +158,11 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 			wind.Winlock(ct.W, 'M')
 		}
 		if t == ct {
-			wind.Textsetselect(ct, e.q1, e.q1)
+			wind.Textsetselect(ct, e.Q1, e.Q1)
 		}
-		r = make([]rune, e.q1-e.q0)
-		t.File.Read(e.q0, r)
-		if search(ct, r) && e.jump {
+		r = make([]rune, e.Q1-e.Q0)
+		t.File.Read(e.Q0, r)
+		if Search(ct, r) && e.Jump {
 			adraw.Display.MoveCursor(ct.Fr.PointOf(ct.Fr.P0).Add(draw.Pt(4, ct.Fr.Font.Height-4)))
 		}
 		if t.W != ct.W {
@@ -236,70 +171,7 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 	}
 }
 
-func plumbgetc(a interface{}, n int) rune {
-	r := a.([]rune)
-	if n > len(r) {
-		return 0
-	}
-	return r[n]
-}
-
-func plumblook(m *plumb.Message) {
-	if len(m.Data) >= bufs.Len {
-		alog.Printf("insanely long file name (%d bytes) in plumb message (%.32s...)\n", len(m.Data), m.Data)
-		return
-	}
-	var e Expand
-	e.q0 = 0
-	e.q1 = 0
-	if len(m.Data) == 0 {
-		return
-	}
-	e.arg = nil
-	e.bname = string(m.Data)
-	e.name = []rune(e.bname)
-	e.jump = true
-	e.a0 = 0
-	e.a1 = 0
-	addr := m.LookupAttr("addr")
-	if addr != "" {
-		r := []rune(addr)
-		e.a1 = len(r)
-		e.arg = r
-		e.agetc = plumbgetc
-	}
-	adraw.Display.Top()
-	openfile(nil, &e)
-}
-
-func plumbshow(m *plumb.Message) {
-	adraw.Display.Top()
-	w := makenewwindow(nil)
-	winmousebut(w)
-	name := m.LookupAttr("filename")
-	if name == "" {
-		nuntitled++
-		name = fmt.Sprintf("Untitled-%d", nuntitled)
-	}
-	if name[0] != '/' && m.Dir != "" {
-		name = fmt.Sprintf("%s/%s", m.Dir, name)
-	}
-	var rb [256]rune
-	_, nr, _ := runes.Convert([]byte(name), rb[:], true)
-	rs := runes.CleanPath(rb[:nr])
-	wind.Winsetname(w, rs)
-	r := make([]rune, len(m.Data))
-	_, nr, _ = runes.Convert(m.Data, r, true)
-	wind.Textinsert(&w.Body, 0, r[:nr], true)
-	w.Body.File.SetMod(false)
-	w.Dirty = false
-	wind.Winsettag(w)
-	wind.Textscrdraw(&w.Body)
-	wind.Textsetselect(&w.Tag, w.Tag.Len(), w.Tag.Len())
-	OnNewWindow(w)
-}
-
-func search(ct *wind.Text, r []rune) bool {
+func Search(ct *wind.Text, r []rune) bool {
 	if len(r) == 0 || len(r) > ct.Len() {
 		return false
 	}
@@ -379,8 +251,8 @@ var objdir []rune
 
 func includename(t *wind.Text, r []rune) []rune {
 	var i int
-	if objdir == nil && objtype != "" {
-		buf := fmt.Sprintf("/%s/include", objtype)
+	if objdir == nil && Objtype != "" {
+		buf := fmt.Sprintf("/%s/include", Objtype)
 		objdir = []rune(buf)
 	}
 
@@ -495,8 +367,8 @@ func expandfile(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 		}
 	}
 	amin := amax
-	e.q0 = q0
-	e.q1 = q1
+	e.Q0 = q0
+	e.Q1 = q1
 	n := q1 - q0
 	if n == 0 {
 		return false
@@ -508,13 +380,13 @@ func expandfile(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 	if hasPrefix(r, []rune("http://")) || hasPrefix(r, []rune("https://")) {
 		// Avoid capturing end-of-sentence punctuation.
 		if r[n-1] == '.' {
-			e.q1--
+			e.Q1--
 			n--
 		}
-		e.name = r
-		e.arg = t
-		e.a0 = e.q1
-		e.a1 = e.q1
+		e.Name = r
+		e.Arg = t
+		e.A0 = e.Q1
+		e.A1 = e.Q1
 		return true
 	}
 	// first, does it have bad chars?
@@ -556,43 +428,43 @@ func expandfile(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 		r = rs
 		nname = len(rs)
 	}
-	e.bname = string(r[:nname])
+	e.Bname = string(r[:nname])
 	// if it's already a window name, it's a file
 	{
-		w := lookfile(r[:nname])
+		w := LookFile(r[:nname])
 		if w != nil {
 			goto Isfile
 		}
 		// if it's the name of a file, it's a file
-		if Ismtpt(e.bname) {
-			e.bname = ""
+		if Ismtpt(e.Bname) {
+			e.Bname = ""
 			return false
 		}
-		if _, err := os.Stat(e.bname); err != nil {
-			e.bname = ""
+		if _, err := os.Stat(e.Bname); err != nil {
+			e.Bname = ""
 			return false
 		}
 	}
 
 Isfile:
-	e.name = r[:nname]
-	e.arg = t
-	e.a0 = amin + 1
+	e.Name = r[:nname]
+	e.Arg = t
+	e.A0 = amin + 1
 	eval := false
-	addrpkg.Eval(true, nil, runes.Rng(-1, -1), runes.Rng(0, 0), t, e.a0, amax, tgetc, &eval, (*int)(&e.a1))
+	addr.Eval(true, nil, runes.Rng(-1, -1), runes.Rng(0, 0), t, e.A0, amax, tgetc, &eval, (*int)(&e.A1))
 	return true
 }
 
-func expand(t *wind.Text, q0 int, q1 int, e *Expand) bool {
+func Expand_(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 	*e = Expand{}
-	e.agetc = tgetc
+	e.Agetc = tgetc
 	// if in selection, choose selection
-	e.jump = true
+	e.Jump = true
 	if q1 == q0 && t.Q1 > t.Q0 && t.Q0 <= q0 && q0 <= t.Q1 {
 		q0 = t.Q0
 		q1 = t.Q1
 		if t.What == wind.Tag {
-			e.jump = false
+			e.Jump = false
 		}
 	}
 
@@ -608,12 +480,12 @@ func expand(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 			q0--
 		}
 	}
-	e.q0 = q0
-	e.q1 = q1
+	e.Q0 = q0
+	e.Q1 = q1
 	return q1 > q0
 }
 
-func lookfile(s []rune) *wind.Window {
+func LookFile(s []rune) *wind.Window {
 	// avoid terminal slash on directories
 	if len(s) > 0 && s[len(s)-1] == '/' {
 		s = s[:len(s)-1]
@@ -636,7 +508,7 @@ func lookfile(s []rune) *wind.Window {
 	return nil
 }
 
-func lookid(id int) *wind.Window {
+func LookID(id int) *wind.Window {
 	for _, c := range wind.TheRow.Col {
 		for _, w := range c.W {
 			if w.ID == id {
@@ -647,22 +519,47 @@ func lookid(id int) *wind.Window {
 	return nil
 }
 
-var Textload func(*wind.Text, int, string, bool) int
-var OnNewWindow func(*wind.Window)
+type Expand struct {
+	Q0    int
+	Q1    int
+	Name  []rune
+	Bname string
+	Jump  bool
+	Arg   interface{}
+	Agetc func(interface{}, int) rune
+	A0    int
+	A1    int
+}
 
-func openfile(t *wind.Text, e *Expand) *wind.Window {
+func tgetc(a interface{}, n int) rune {
+	t := a.(*wind.Text)
+	if n >= t.Len() {
+		return 0
+	}
+	return t.RuneAt(n)
+}
+
+var Ismtpt func(string) bool
+
+var Plumbsendfid *client.Fid
+
+var Wdir = "."
+
+var Objtype string
+
+func Openfile(t *wind.Text, e *Expand) *wind.Window {
 	var r runes.Range
 	r.Pos = 0
 	r.End = 0
 	var w *wind.Window
-	if len(e.name) == 0 {
+	if len(e.Name) == 0 {
 		w = t.W
 		if w == nil {
 			return nil
 		}
 	} else {
-		w = lookfile(e.name)
-		if w == nil && e.name[0] != '/' {
+		w = LookFile(e.Name)
+		if w == nil && e.Name[0] != '/' {
 			/*
 			 * Unrooted path in new window.
 			 * This can happen if we type a pwd-relative path
@@ -673,9 +570,9 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 			 * Make the name a full path, just like we would if
 			 * opening via the plumber.
 			 */
-			rs := []rune(path.Join(string(wdir), string(e.name)))
-			e.name = rs
-			w = lookfile(e.name)
+			rs := []rune(path.Join(string(Wdir), string(e.Name)))
+			e.Name = rs
+			w = LookFile(e.Name)
 		}
 	}
 	if w != nil {
@@ -688,10 +585,10 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 		if t != nil {
 			ow = t.W
 		}
-		w = makenewwindow(t)
+		w = Makenewwindow(t)
 		t = &w.Body
-		wind.Winsetname(w, e.name)
-		if Textload(t, 0, e.bname, true) >= 0 {
+		wind.Winsetname(w, e.Name)
+		if Textload(t, 0, e.Bname, true) >= 0 {
 			t.File.Unread = false
 		}
 		t.File.SetMod(false)
@@ -714,18 +611,18 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 		OnNewWindow(w)
 	}
 	var eval bool
-	if e.a1 == e.a0 {
+	if e.A1 == e.A0 {
 		eval = false
 	} else {
 		eval = true
 		var dummy int
-		r = addrpkg.Eval(true, t, runes.Rng(-1, -1), runes.Rng(t.Q0, t.Q1), e.arg, e.a0, e.a1, e.agetc, &eval, &dummy)
+		r = addr.Eval(true, t, runes.Rng(-1, -1), runes.Rng(t.Q0, t.Q1), e.Arg, e.A0, e.A1, e.Agetc, &eval, &dummy)
 		if r.Pos > r.End {
 			eval = false
 			alog.Printf("addresses out of order\n")
 		}
 		if !eval {
-			e.jump = false // don't jump if invalid address
+			e.Jump = false // don't jump if invalid address
 		}
 	}
 	if !eval {
@@ -735,40 +632,12 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 	wind.Textshow(t, r.Pos, r.End, true)
 	wind.Winsettag(t.W)
 	wind.Seltext = t
-	if e.jump {
+	if e.Jump {
 		adraw.Display.MoveCursor(t.Fr.PointOf(t.Fr.P0).Add(draw.Pt(4, adraw.Font.Height-4)))
 	}
 	return w
 }
 
-func new_(et, t, argt *wind.Text, flag1, flag2 bool, arg []rune) {
-	var a []rune
-	getarg(argt, false, true, &a)
-	if a != nil {
-		new_(et, t, nil, flag1, flag2, a)
-		if len(arg) == 0 {
-			return
-		}
-	}
-	// loop condition: *arg is not a blank
-	for ndone := 0; ; ndone++ {
-		a = runes.SkipNonBlank(arg)
-		if len(a) == len(arg) {
-			if ndone == 0 && et.Col != nil {
-				w := coladdAndMouse(et.Col, nil, nil, -1)
-				wind.Winsettag(w)
-				OnNewWindow(w)
-			}
-			break
-		}
-		nf := len(arg) - len(a)
-		f := runes.Clone(arg[:nf])
-		rs := wind.Dirname(et, f)
-		var e Expand
-		e.name = rs
-		e.bname = string(rs)
-		e.jump = true
-		openfile(et, &e)
-		arg = runes.SkipBlank(a)
-	}
-}
+var Textload func(*wind.Text, int, string, bool) int
+
+var OnNewWindow func(*wind.Window)
