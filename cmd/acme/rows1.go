@@ -33,17 +33,22 @@ import (
 	"9fans.net/go/draw"
 )
 
+var Get = func(*wind.Text){}
+var Run = func(string, []rune){}
+var Home = ""
+var OnNewWindow = func(*wind.Window) {}
+
 func rowdump(row *wind.Row, file *string) {
 	if len(row.Col) == 0 {
 		return
 	}
 	// defer fbuffree(buf)
 	if file == nil {
-		if home == "" {
+		if Home == "" {
 			alog.Printf("can't find file for dump: $home not defined\n")
 			return
 		}
-		s := fmt.Sprintf("%s/acme.dump", home)
+		s := fmt.Sprintf("%s/acme.dump", Home)
 		file = &s
 	}
 	f, err := os.Create(*file)
@@ -218,11 +223,11 @@ func rowloadfonts(file string) {
 
 func rowload(row *wind.Row, file *string, initing bool) bool {
 	if file == nil {
-		if home == "" {
+		if Home == "" {
 			alog.Printf("can't find file for load: $home not defined\n")
 			return false
 		}
-		s := fmt.Sprintf("%s/acme.dump", home)
+		s := fmt.Sprintf("%s/acme.dump", Home)
 		file = &s
 	}
 	f, err := os.Open(*file)
@@ -370,10 +375,10 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 			}
 			l = l[:len(l)-1]
 			if len(l) == 0 {
-				if home == "" {
+				if Home == "" {
 					r = []rune("./")
 				} else {
-					r = []rune(home + "/")
+					r = []rune(Home + "/")
 				}
 			} else {
 				r = []rune(l)
@@ -382,7 +387,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 			if err != nil {
 				return bad()
 			}
-			run(nil, l, r, true, nil, nil, false)
+			Run(l, r)
 			continue
 		case 'f':
 			if len(l) < 1+5*12+1 {
@@ -503,7 +508,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 			}
 			wind.Winsettag(w)
 		} else if dumpid == 0 && r[ns+1] != '+' && r[ns+1] != '-' {
-			get(&w.Body, nil, nil, false, XXX, nil)
+			Get(&w.Body)
 		}
 		if fontr != nil {
 			fmt.Fprintf(os.Stderr, "FONTR %q\n", fontr)
@@ -515,7 +520,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 		}
 		wind.Textshow(&w.Body, q0, q1, true)
 		w.Maxlines = util.Min(w.Body.Fr.NumLines, util.Max(w.Maxlines, w.Body.Fr.MaxLines))
-		xfidlog(w, "new")
+		OnNewWindow(w)
 	}
 	return true
 }

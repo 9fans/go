@@ -65,10 +65,17 @@ func main() {
 	ui.Ismtpt = ismtpt
 	fileloadpkg.Ismtpt = ismtpt
 	ui.Textload = fileloadpkg.Textload
+	Get = func(t *wind.Text) {
+		get(t, nil, nil, false, XXX, nil)
+	}
+	Run = func(s string, rdir []rune) {
+		run(nil, s, rdir, true, nil, nil, false)
+	}
 
 	cputype = os.Getenv("cputype")
 	ui.Objtype = os.Getenv("objtype")
 	home = os.Getenv("HOME")
+	Home = home
 	acmeshell = os.Getenv("acmeshell")
 	p := os.Getenv("tabstop")
 	if p != "" {
@@ -131,6 +138,7 @@ func main() {
 	ui.OnNewWindow = func(w *wind.Window) {
 		xfidlog(w, "new")
 	}
+	OnNewWindow = ui.OnNewWindow
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
 
