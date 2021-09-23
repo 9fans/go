@@ -31,6 +31,7 @@ import (
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
+	dumppkg "9fans.net/go/cmd/acme/internal/dump"
 	"9fans.net/go/cmd/acme/internal/file"
 	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -663,9 +664,9 @@ func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
 		getbytearg(argt, false, true, &name)
 	}
 	if isdump {
-		rowdump(&wind.TheRow, name)
+		dumppkg.Dump(&wind.TheRow, name)
 	} else {
-		rowload(&wind.TheRow, name, false)
+		dumppkg.Load(&wind.TheRow, name, false)
 	}
 }
 

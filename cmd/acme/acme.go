@@ -14,6 +14,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
+	dumppkg "9fans.net/go/cmd/acme/internal/dump"
 	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -65,17 +66,17 @@ func main() {
 	ui.Ismtpt = ismtpt
 	fileloadpkg.Ismtpt = ismtpt
 	ui.Textload = fileloadpkg.Textload
-	Get = func(t *wind.Text) {
+	dumppkg.Get = func(t *wind.Text) {
 		get(t, nil, nil, false, XXX, nil)
 	}
-	Run = func(s string, rdir []rune) {
+	dumppkg.Run = func(s string, rdir []rune) {
 		run(nil, s, rdir, true, nil, nil, false)
 	}
 
 	cputype = os.Getenv("cputype")
 	ui.Objtype = os.Getenv("objtype")
 	home = os.Getenv("HOME")
-	Home = home
+	dumppkg.Home = home
 	acmeshell = os.Getenv("acmeshell")
 	p := os.Getenv("tabstop")
 	if p != "" {
@@ -85,7 +86,7 @@ func main() {
 		wind.MaxTab = 4
 	}
 	if loadfile != "" {
-		rowloadfonts(loadfile)
+		dumppkg.LoadFonts(loadfile)
 	}
 	os.Setenv("font", adraw.FontNames[0])
 	/*
@@ -138,7 +139,7 @@ func main() {
 	ui.OnNewWindow = func(w *wind.Window) {
 		xfidlog(w, "new")
 	}
-	OnNewWindow = ui.OnNewWindow
+	dumppkg.OnNewWindow = ui.OnNewWindow
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
 
@@ -158,7 +159,7 @@ func main() {
 
 	const WPERCOL = 8
 	disk.Init()
-	if loadfile == "" || !rowload(&wind.TheRow, &loadfile, true) {
+	if loadfile == "" || !dumppkg.Load(&wind.TheRow, &loadfile, true) {
 		wind.RowInit(&wind.TheRow, adraw.Display.ScreenImage.Clipr)
 		argc := flag.NArg()
 		argv := flag.Args()
@@ -259,7 +260,7 @@ func shutdown(v *[0]byte, msg string) bool {
 	killprocs()
 	if !dumping && msg != "kill" && msg != "exit" {
 		dumping = true
-		rowdump(&wind.TheRow, nil)
+		dumppkg.Dump(&wind.TheRow, nil)
 	}
 	for _, ok := range oknotes {
 		if strings.HasPrefix(msg, ok) {

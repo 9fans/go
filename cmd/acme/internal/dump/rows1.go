@@ -13,7 +13,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package dump
 
 import (
 	"bufio"
@@ -26,19 +26,19 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
-	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
+	"9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
 
-var Get = func(*wind.Text){}
-var Run = func(string, []rune){}
+var Get = func(*wind.Text) {}
+var Run = func(string, []rune) {}
 var Home = ""
 var OnNewWindow = func(*wind.Window) {}
 
-func rowdump(row *wind.Row, file *string) {
+func Dump(row *wind.Row, file *string) {
 	if len(row.Col) == 0 {
 		return
 	}
@@ -196,7 +196,7 @@ func rdline(b *bufio.Reader, linep *int) (string, error) {
 /*
  * Get font names from load file so we don't load fonts we won't use
  */
-func rowloadfonts(file string) {
+func LoadFonts(file string) {
 	f, err := os.Open(file)
 	if err != nil {
 		return
@@ -221,7 +221,7 @@ func rowloadfonts(file string) {
 	}
 }
 
-func rowload(row *wind.Row, file *string, initing bool) bool {
+func Load(row *wind.Row, file *string, initing bool) bool {
 	if file == nil {
 		if Home == "" {
 			alog.Printf("can't find file for load: $home not defined\n")
@@ -500,7 +500,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 			if err := f.Close(); err != nil {
 				return bad()
 			}
-			fileloadpkg.Textload(&w.Body, 0, tmp, true)
+			fileload.Textload(&w.Body, 0, tmp, true)
 			os.Remove(tmp)
 			w.Body.File.SetMod(true)
 			for n = 0; n < len(w.Body.File.Text); n++ {
