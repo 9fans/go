@@ -177,11 +177,11 @@ func B_cmd(t *wind.Text, cp *Cmd) bool {
 	}
 	r := runes.SkipBlank(list)
 	if len(r) == 0 {
-		new_(t, t, nil, false, false, r)
+		ui.New(t, t, nil, false, false, r)
 	} else {
 		for len(r) > 0 {
 			s := runes.SkipNonBlank(r)
-			new_(t, t, nil, false, false, r[:len(r)-len(s)])
+			ui.New(t, t, nil, false, false, r[:len(r)-len(s)])
 			r = runes.SkipBlank(s)
 		}
 	}

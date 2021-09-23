@@ -83,7 +83,7 @@ var exectab = [30]Exectab{
 	Exectab{[]rune("Load"), dump, false, false, XXX},
 	Exectab{[]rune("Local"), local, false, XXX, XXX},
 	Exectab{[]rune("Look"), look, false, XXX, XXX},
-	Exectab{[]rune("New"), new_, false, XXX, XXX},
+	Exectab{[]rune("New"), ui.New, false, XXX, XXX},
 	Exectab{[]rune("Newcol"), newcol, false, XXX, XXX},
 	Exectab{[]rune("Paste"), ui.XPaste, true, true, XXX},
 	Exectab{[]rune("Put"), put, false, XXX, XXX},
