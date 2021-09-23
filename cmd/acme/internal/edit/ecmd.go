@@ -13,7 +13,7 @@
 // #include "edit.h"
 // #include "fns.h"
 
-package main
+package edit
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/file"
-	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
+	"9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
@@ -126,9 +126,9 @@ func cmdexec(t *wind.Text, cp *Cmd) bool {
 	return true
 }
 
-func edittext(w *wind.Window, q int, r []rune) error {
+func Edittext(w *wind.Window, q int, r []rune) error {
 	f := w.Body.File
-	switch editing {
+	switch Editing {
 	case Inactive:
 		return fmt.Errorf("permission denied")
 	case Inserting:
@@ -284,7 +284,7 @@ func e_cmd(t *wind.Text, cp *Cmd) bool {
 	}
 	elogdelete(f, q0, q1)
 	nulls := false
-	fileloadpkg.Loadfile(fd, q1, &nulls, readloader(f), nil)
+	fileload.Loadfile(fd, q1, &nulls, readloader(f), nil)
 	if nulls {
 		alog.Printf("%s: NUL bytes elided\n", s)
 	} else if allreplaced && samename {
@@ -496,7 +496,7 @@ func w_cmd(t *wind.Text, cp *Cmd) bool {
 	return true
 }
 
-var Putfile = func(*wind.File, int, int, []rune){}
+var Putfile = func(*wind.File, int, int, []rune) {}
 
 func x_cmd(t *wind.Text, cp *Cmd) bool {
 	if cp.re != nil {
@@ -540,7 +540,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
-	editing = state
+	Editing = state
 	if t != nil && t.W != nil {
 		util.Incref(&t.W.Ref) // run will decref
 	}
@@ -549,7 +549,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 		wind.Winunlock(t.W)
 	}
 	wind.TheRow.Lk.Unlock()
-	<-cedit
+	<-Cedit
 	var q *util.QLock
 	/*
 	 * The editoutlk exists only so that we can tell when
@@ -565,12 +565,12 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	if w != nil {
 		q = &w.Editoutlk
 	} else {
-		q = &editoutlk
+		q = &Editoutlk
 	}
 	q.Lock() // wait for file to close
 	q.Unlock()
 	wind.TheRow.Lk.Lock()
-	editing = Inactive
+	Editing = Inactive
 	if t != nil && t.W != nil {
 		wind.Winlock(t.W, 'M')
 	}
@@ -581,7 +581,7 @@ func pipe_cmd(t *wind.Text, cp *Cmd) bool {
 	return true
 }
 
-func nlcount(t *wind.Text, q0 int, q1 int, pnr *int) int {
+func Nlcount(t *wind.Text, q0 int, q1 int, pnr *int) int {
 	buf := bufs.AllocRunes()
 	nbuf := 0
 	nl := 0
@@ -636,8 +636,8 @@ func printposn(t *wind.Text, mode int) {
 
 	default:
 	case PosnLine:
-		l1 = 1 + nlcount(t, 0, TheAddr.r.Pos, nil)
-		l2 = l1 + nlcount(t, TheAddr.r.Pos, TheAddr.r.End, nil)
+		l1 = 1 + Nlcount(t, 0, TheAddr.r.Pos, nil)
+		l2 = l1 + Nlcount(t, TheAddr.r.Pos, TheAddr.r.End, nil)
 		// check if addr ends with '\n'
 		if TheAddr.r.End > 0 && TheAddr.r.End > TheAddr.r.Pos && t.RuneAt(TheAddr.r.End-1) == '\n' {
 			l2--
@@ -650,8 +650,8 @@ func printposn(t *wind.Text, mode int) {
 		return
 
 	case PosnLineChars:
-		l1 = 1 + nlcount(t, 0, TheAddr.r.Pos, &r1)
-		l2 = l1 + nlcount(t, TheAddr.r.Pos, TheAddr.r.End, &r2)
+		l1 = 1 + Nlcount(t, 0, TheAddr.r.Pos, &r1)
+		l2 = l1 + Nlcount(t, TheAddr.r.Pos, TheAddr.r.End, &r2)
 		if l2 == l1 {
 			r2 += r1
 		}
@@ -1291,3 +1291,15 @@ func cmdname(f *wind.File, str *String, set bool) []rune {
 	}
 	return r
 }
+
+// editing
+
+const (
+	Inactive = 0 + iota
+	Inserting
+	Collecting
+)
+
+var Cedit = make(chan int)
+
+var Editoutlk util.QLock // atomic flag

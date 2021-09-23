@@ -1,6 +1,6 @@
 //#pragma	varargck	argpos	editerror	1
 
-package main
+package edit
 
 import (
 	"9fans.net/go/cmd/acme/internal/runes"

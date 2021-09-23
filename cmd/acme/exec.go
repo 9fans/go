@@ -32,6 +32,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	dumppkg "9fans.net/go/cmd/acme/internal/dump"
+	editpkg "9fans.net/go/cmd/acme/internal/edit"
 	"9fans.net/go/cmd/acme/internal/file"
 	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -403,9 +404,9 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 	for i := 0; i < len(t.File.Text); i++ {
 		a := &addr[i]
 		u := t.File.Text[i]
-		a.lorigin = nlcount(u, 0, u.Org, &a.rorigin)
-		a.lq0 = nlcount(u, 0, u.Q0, &a.rq0)
-		a.lq1 = nlcount(u, u.Q0, u.Q1, &a.rq1)
+		a.lorigin = editpkg.Nlcount(u, 0, u.Org, &a.rorigin)
+		a.lq0 = editpkg.Nlcount(u, 0, u.Q0, &a.rq0)
+		a.lq1 = editpkg.Nlcount(u, u.Q0, u.Q1, &a.rq1)
 	}
 	r := []rune(name)
 	for i := 0; i < len(t.File.Text); i++ {
@@ -713,9 +714,9 @@ func edit(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	ui.Getarg(argt, false, true, &r)
 	file.Seq++
 	if r != nil {
-		editcmd(et, r)
+		editpkg.Editcmd(et, r)
 	} else {
-		editcmd(et, arg)
+		editpkg.Editcmd(et, arg)
 	}
 }
 
@@ -1100,7 +1101,7 @@ func runwaittask(c *Command, cpid chan int) {
 	if c.pid != 0 { // successful exec
 		ccommand <- c
 	} else if c.iseditcmd {
-		cedit <- 0
+		editpkg.Cedit <- 0
 	}
 }
 

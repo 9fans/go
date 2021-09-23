@@ -26,6 +26,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
+	editpkg "9fans.net/go/cmd/acme/internal/edit"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
@@ -176,7 +177,7 @@ func xfidopen(x *Xfid) {
 			w.Wrselrange = runes.Rng(t.Q1, t.Q1)
 			w.Nomark = true
 		case QWeditout:
-			if editing == Inactive {
+			if editpkg.Editing == editpkg.Inactive {
 				wind.Winunlock(w)
 				respond(x, &fc, Eperm)
 				return
@@ -194,7 +195,7 @@ func xfidopen(x *Xfid) {
 		case Qlog:
 			xfidlogopen(x)
 		case Qeditout:
-			if !editoutlk.TryLock() {
+			if !editpkg.Editoutlk.TryLock() {
 				respond(x, &fc, Einuse)
 				return
 			}
@@ -270,7 +271,7 @@ func xfidclose(x *Xfid) {
 	} else {
 		switch q {
 		case Qeditout:
-			editoutlk.Unlock()
+			editpkg.Editoutlk.Unlock()
 		}
 	}
 	respond(x, &fc, "")
@@ -461,9 +462,9 @@ func xfidwrite(x *Xfid) {
 		r := fullrunewrite(x)
 		var err error
 		if w != nil {
-			err = edittext(w, w.Wrselrange.End, r)
+			err = editpkg.Edittext(w, w.Wrselrange.End, r)
 		} else {
-			err = edittext(nil, 0, r)
+			err = editpkg.Edittext(nil, 0, r)
 		}
 		if err != nil {
 			respond(x, &fc, err.Error())

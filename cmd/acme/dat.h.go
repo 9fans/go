@@ -1,7 +1,6 @@
 package main
 
 import (
-	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
@@ -32,13 +31,6 @@ const (
 	QWxdata
 	QMAX
 )
-
-type Elog struct {
-	typ int
-	q0  int
-	nd  int
-	r   []rune
-}
 
 type Timer struct {
 	dt     int
@@ -97,14 +89,6 @@ type Xfid struct {
 
 const XXX = false
 
-// editing
-
-const (
-	Inactive = 0 + iota
-	Inserting
-	Collecting
-)
-
 var screen *draw.Image
 var keyboardctl *draw.Keyboardctl
 var timerpid int
@@ -134,9 +118,5 @@ var (
 	cerr       = make(chan []byte)
 	cwarn      = make(chan int, 1)
 )
-
-var cedit      = make(chan int)
-
-var editoutlk util.QLock // atomic flag
 
 // #define	STACK	65536

@@ -15,6 +15,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
 	dumppkg "9fans.net/go/cmd/acme/internal/dump"
+	editpkg "9fans.net/go/cmd/acme/internal/edit"
 	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -142,8 +143,8 @@ func main() {
 	dumppkg.OnNewWindow = ui.OnNewWindow
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
-	Putfile = putfile
-	Run = func(w *wind.Window, s string, rdir []rune) {
+	editpkg.Putfile = putfile
+	editpkg.Run = func(w *wind.Window, s string, rdir []rune) {
 		run(w, s, rdir, true, nil, nil, true)
 	}
 
@@ -689,7 +690,7 @@ func waitthread() {
 	Freecmd:
 		if c != nil {
 			if c.iseditcmd {
-				cedit <- 0
+				editpkg.Cedit <- 0
 			}
 			fsysdelid(c.md)
 		}

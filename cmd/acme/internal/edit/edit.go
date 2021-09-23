@@ -13,7 +13,7 @@
 // #include "edit.h"
 // #include "fns.h"
 
-package main
+package edit
 
 import (
 	"fmt"
@@ -91,7 +91,7 @@ var cmdlist []*Cmd
 var addrlist []*Addr
 var stringlist []*String
 var curtext *wind.Text
-var editing int = Inactive
+var Editing int = Inactive
 
 func editthread() {
 	for {
@@ -151,7 +151,7 @@ func editerror(format string, args ...interface{}) {
 	runtime.Goexit() // TODO(rsc)
 }
 
-func editcmd(ct *wind.Text, r []rune) {
+func Editcmd(ct *wind.Text, r []rune) {
 	if len(r) == 0 {
 		return
 	}
@@ -179,7 +179,7 @@ func editcmd(ct *wind.Text, r []rune) {
 	}
 	go editthread()
 	err := <-editerrc
-	editing = Inactive
+	Editing = Inactive
 	if err != "" {
 		alog.Printf("Edit: %s\n", err)
 	}

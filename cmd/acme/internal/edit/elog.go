@@ -13,7 +13,7 @@
 // #include "fns.h"
 // #include "edit.h"
 
-package main
+package edit
 
 import (
 	"fmt"
@@ -376,3 +376,10 @@ const (
 	elogReplace  = 'r'
 	elogFilename = 'f'
 )
+
+type Elog struct {
+	typ int
+	q0  int
+	nd  int
+	r   []rune
+}
