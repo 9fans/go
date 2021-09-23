@@ -147,6 +147,9 @@ func main() {
 	editpkg.Run = func(w *wind.Window, s string, rdir []rune) {
 		run(w, s, rdir, true, nil, nil, true)
 	}
+	Fsysmount = fsysmount
+	Fsysdelid = fsysdelid
+	Xfidlog = xfidlog
 
 	ui.Mousectl = adraw.Display.InitMouse()
 	if ui.Mousectl == nil {

@@ -43,6 +43,10 @@ import (
 	"9fans.net/go/plan9/client"
 )
 
+var Fsysmount = func([]rune, [][]rune)*Mntdir{return nil}
+var Fsysdelid = func(*Mntdir){}
+var Xfidlog = func(*wind.Window, string){}
+
 /*
  * These functions get called as:
  *
@@ -252,7 +256,7 @@ func newcol(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 	if c != nil {
 		w := ui.ColaddAndMouse(c, nil, nil, -1)
 		wind.Winsettag(w)
-		xfidlog(w, "new")
+		Xfidlog(w, "new")
 	}
 }
 
@@ -362,7 +366,7 @@ func zeroxx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
 		nw := ui.ColaddAndMouse(t.W.Col, nil, t.W, -1)
 		// ugly: fix locks so w->unlock works
 		wind.Winlock1(nw, t.W.Owner)
-		xfidlog(nw, "zerox")
+		Xfidlog(nw, "zerox")
 	}
 	if locked {
 		wind.Winunlock(t.W)
@@ -444,7 +448,7 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 		}
 		wind.Textscrdraw(u)
 	}
-	xfidlog(w, "get")
+	Xfidlog(w, "get")
 }
 
 func checksha1(name string, f *wind.File, info os.FileInfo) {
@@ -653,7 +657,7 @@ func put(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	}
 	namer := []rune(name)
 	putfile(f, 0, f.Len(), namer)
-	xfidlog(w, "put")
+	Xfidlog(w, "put")
 }
 
 func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
@@ -948,12 +952,12 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 		}
 
 		var err error
-		c.md = fsysmount(rdir, incl)
+		c.md = Fsysmount(rdir, incl)
 
 		fs, err := client.MountServiceAname("acme", fmt.Sprint(c.md.id))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "child: can't mount acme: %v\n", err)
-			fsysdelid(c.md)
+			Fsysdelid(c.md)
 			c.md = nil
 			return // TODO(rsc): goto Fail?
 		}
