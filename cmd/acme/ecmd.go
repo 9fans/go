@@ -23,6 +23,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/file"
+	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
@@ -283,7 +284,7 @@ func e_cmd(t *wind.Text, cp *Cmd) bool {
 	}
 	elogdelete(f, q0, q1)
 	nulls := false
-	loadfile(fd, q1, &nulls, readloader(f), nil)
+	fileloadpkg.Loadfile(fd, q1, &nulls, readloader(f), nil)
 	if nulls {
 		alog.Printf("%s: NUL bytes elided\n", s)
 	} else if allreplaced && samename {

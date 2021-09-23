@@ -12,7 +12,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package fileload
 
 import (
 	"io"
@@ -26,7 +26,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/wind"
 )
 
-func loadfile(fd *os.File, q0 int, nulls *bool, f func(int, []rune) int, h io.Writer) int {
+func Loadfile(fd *os.File, q0 int, nulls *bool, f func(int, []rune) int, h io.Writer) int {
 	p := make([]byte, bufs.Len+utf8.UTFMax+1)
 	r := make([]rune, bufs.Len)
 	m := 0
@@ -69,5 +69,5 @@ func fileload1(f *wind.File, pos int, fd *os.File, nulls *bool, h io.Writer) int
 	if pos > f.Len() {
 		util.Fatal("internal error: fileload1")
 	}
-	return loadfile(fd, pos, nulls, fileloader(f), h)
+	return Loadfile(fd, pos, nulls, fileloader(f), h)
 }

@@ -32,6 +32,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/file"
+	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
@@ -413,7 +414,7 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 		wind.Windirfree(u.W)
 	}
 	samename := runes.Equal(r, t.File.Name())
-	textload(t, 0, name, samename)
+	fileloadpkg.Textload(t, 0, name, samename)
 	var dirty bool
 	if samename {
 		t.File.SetMod(false)

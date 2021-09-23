@@ -14,6 +14,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/disk"
+	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
@@ -62,8 +63,8 @@ func main() {
 
 	alog.Init(func(msg string) { warning(nil, "%s", msg) })
 	ui.Ismtpt = ismtpt
-	Ismtpt = ismtpt
-	ui.Textload = textload
+	fileloadpkg.Ismtpt = ismtpt
+	ui.Textload = fileloadpkg.Textload
 
 	cputype = os.Getenv("cputype")
 	ui.Objtype = os.Getenv("objtype")
@@ -131,7 +132,7 @@ func main() {
 		xfidlog(w, "new")
 	}
 
-	ui.Textcomplete = textcomplete
+	ui.Textcomplete = fileloadpkg.Textcomplete
 
 	ui.Mousectl = adraw.Display.InitMouse()
 	if ui.Mousectl == nil {
@@ -214,7 +215,7 @@ func readfile(c *wind.Column, s string) {
 	}
 	rs := runes.CleanPath(rb)
 	wind.Winsetname(w, rs)
-	textload(&w.Body, 0, s, true)
+	fileloadpkg.Textload(&w.Body, 0, s, true)
 	w.Body.File.SetMod(false)
 	w.Dirty = false
 	wind.Winsettag(w)

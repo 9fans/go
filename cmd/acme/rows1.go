@@ -26,6 +26,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
+	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
@@ -494,7 +495,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 			if err := f.Close(); err != nil {
 				return bad()
 			}
-			textload(&w.Body, 0, tmp, true)
+			fileloadpkg.Textload(&w.Body, 0, tmp, true)
 			os.Remove(tmp)
 			w.Body.File.SetMod(true)
 			for n = 0; n < len(w.Body.File.Text); n++ {

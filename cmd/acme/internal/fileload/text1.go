@@ -13,7 +13,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package fileload
 
 import (
 	"crypto/sha1"
@@ -32,7 +32,7 @@ import (
 
 var Ismtpt = func(string) bool { return false }
 
-func textload(t *wind.Text, q0 int, file string, setqid bool) int {
+func Textload(t *wind.Text, q0 int, file string, setqid bool) int {
 	if len(t.Cache) > 0 || t.Len() != 0 || t.W == nil || t != &t.W.Body {
 		util.Fatal("text.load")
 	}
@@ -152,7 +152,7 @@ func textload(t *wind.Text, q0 int, file string, setqid bool) int {
 	return q1 - q0
 }
 
-func textcomplete(t *wind.Text) []rune {
+func Textcomplete(t *wind.Text) []rune {
 	// control-f: filename completion; works back to white space or /
 	if t.Q0 < t.Len() && t.RuneAt(t.Q0) > ' ' { // must be at end of word
 		return nil
