@@ -132,9 +132,10 @@ var (
 	mouseexit1 chan int
 	cexit      = make(chan int)
 	cerr       = make(chan []byte)
-	cedit      = make(chan int)
 	cwarn      = make(chan int, 1)
 )
+
+var cedit      = make(chan int)
 
 var editoutlk util.QLock // atomic flag
 

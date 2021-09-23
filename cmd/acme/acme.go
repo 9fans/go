@@ -142,6 +142,10 @@ func main() {
 	dumppkg.OnNewWindow = ui.OnNewWindow
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
+	Putfile = putfile
+	Run = func(w *wind.Window, s string, rdir []rune) {
+		run(w, s, rdir, true, nil, nil, true)
+	}
 
 	ui.Mousectl = adraw.Display.InitMouse()
 	if ui.Mousectl == nil {

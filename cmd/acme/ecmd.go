@@ -476,6 +476,7 @@ func u_cmd(t *wind.Text, cp *Cmd) bool {
 			break
 		}
 		oseq = t.File.Seq()
+		const XXX = false
 		ui.XUndo(t, nil, nil, flag, XXX, nil)
 	}
 	return true
@@ -490,10 +491,12 @@ func w_cmd(t *wind.Text, cp *Cmd) bool {
 	if r == nil {
 		editerror("no name specified for 'w' command")
 	}
-	putfile(f, TheAddr.r.Pos, TheAddr.r.End, r)
+	Putfile(f, TheAddr.r.Pos, TheAddr.r.End, r)
 	// r is freed by putfile
 	return true
 }
+
+var Putfile = func(*wind.File, int, int, []rune){}
 
 func x_cmd(t *wind.Text, cp *Cmd) bool {
 	if cp.re != nil {
@@ -509,6 +512,8 @@ func X_cmd(t *wind.Text, cp *Cmd) bool {
 	filelooper(t, cp, cp.cmdc == 'X')
 	return true
 }
+
+var Run = func(w *wind.Window, s string, rdir []rune) {}
 
 func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	r := runes.SkipBlank(cr)
@@ -539,7 +544,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	if t != nil && t.W != nil {
 		util.Incref(&t.W.Ref) // run will decref
 	}
-	run(w, string(s), dir, true, nil, nil, true)
+	Run(w, string(s), dir)
 	if t != nil && t.W != nil {
 		wind.Winunlock(t.W)
 	}
