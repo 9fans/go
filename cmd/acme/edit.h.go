@@ -2,7 +2,10 @@
 
 package main
 
-import "9fans.net/go/cmd/acme/internal/runes"
+import (
+	"9fans.net/go/cmd/acme/internal/runes"
+	"9fans.net/go/cmd/acme/internal/wind"
+)
 
 type String struct {
 	r []rune
@@ -20,7 +23,7 @@ type Addr struct {
 
 type Address struct {
 	r runes.Range
-	f *File
+	f *wind.File
 }
 
 type Cmd struct {

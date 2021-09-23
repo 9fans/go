@@ -26,6 +26,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 )
 
 var Wsequence = "warning: changes out of sequence\n"
@@ -63,15 +64,15 @@ const (
 )
 
 type elogFile struct {
-	*File
+	*wind.File
 	elogbuf   *disk.Buffer
 	elog      Elog
 	editclean bool
 }
 
-var elogs = make(map[*File]*elogFile)
+var elogs = make(map[*wind.File]*elogFile)
 
-func eloginit(f *File) *elogFile {
+func eloginit(f *wind.File) *elogFile {
 	if ef := elogs[f]; ef != nil {
 		return ef
 	}
@@ -89,7 +90,7 @@ func elogreset(f *elogFile) {
 	f.elog.r = f.elog.r[:0]
 }
 
-func elogfind(f *File) *elogFile {
+func elogfind(f *wind.File) *elogFile {
 	return elogs[f]
 }
 
@@ -136,7 +137,7 @@ func buflogrunes(b *Buflog) []rune {
 	return r
 }
 
-func elogreplace(ff *File, q0 int, q1 int, r []rune) {
+func elogreplace(ff *wind.File, q0 int, q1 int, r []rune) {
 	if q0 == q1 && len(r) == 0 {
 		return
 	}
@@ -173,7 +174,7 @@ func elogreplace(ff *File, q0 int, q1 int, r []rune) {
 	copy(f.elog.r, r)
 }
 
-func eloginsert(ff *File, q0 int, r []rune) {
+func eloginsert(ff *wind.File, q0 int, r []rune) {
 	if len(r) == 0 {
 		return
 	}
@@ -203,7 +204,7 @@ func eloginsert(ff *File, q0 int, r []rune) {
 	}
 }
 
-func elogdelete(ff *File, q0 int, q1 int) {
+func elogdelete(ff *wind.File, q0 int, q1 int) {
 	if q0 == q1 {
 		return
 	}
@@ -231,16 +232,16 @@ func elogapply(f *elogFile) {
 
 	elogflush(f)
 	log := f.elogbuf
-	t := f.curtext
+	t := f.Curtext
 
 	buf := bufs.AllocRunes()
 	mod := false
 
 	owner := rune(0)
-	if t.w != nil {
-		owner = t.w.owner
+	if t.W != nil {
+		owner = t.W.Owner
 		if owner == 0 {
-			t.w.owner = 'E'
+			t.W.Owner = 'E'
 		}
 	}
 
@@ -275,14 +276,14 @@ func elogapply(f *elogFile) {
 
 		case elogReplace:
 			if tracelog {
-				alog.Printf("elog replace %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
+				alog.Printf("elog replace %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.Q0, t.Q1)
 			}
 			if !mod {
 				mod = true
 				f.Mark()
 			}
 			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
-			textdelete(t, tq0, tq1, true)
+			wind.Textdelete(t, tq0, tq1, true)
 			up -= b.nr
 			for i = 0; i < b.nr; i += n {
 				n = b.nr - i
@@ -290,26 +291,26 @@ func elogapply(f *elogFile) {
 					n = bufs.RuneLen
 				}
 				log.Read(up+i, buf[:n])
-				textinsert(t, tq0+i, buf[:n], true)
+				wind.Textinsert(t, tq0+i, buf[:n], true)
 			}
-			if t.q0 == b.q0 && t.q1 == b.q0 {
-				t.q1 += b.nr
+			if t.Q0 == b.q0 && t.Q1 == b.q0 {
+				t.Q1 += b.nr
 			}
 
 		case elogDelete:
 			if tracelog {
-				alog.Printf("elog delete %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.q0, t.q1)
+				alog.Printf("elog delete %d %d (%d %d)\n", b.q0, b.q0+b.nd, t.Q0, t.Q1)
 			}
 			if !mod {
 				mod = true
 				f.Mark()
 			}
 			textconstrain(t, b.q0, b.q0+b.nd, &tq0, &tq1)
-			textdelete(t, tq0, tq1, true)
+			wind.Textdelete(t, tq0, tq1, true)
 
 		case elogInsert:
 			if tracelog {
-				alog.Printf("elog insert %d %d (%d %d)\n", b.q0, b.q0+b.nr, t.q0, t.q1)
+				alog.Printf("elog insert %d %d (%d %d)\n", b.q0, b.q0+b.nr, t.Q0, t.Q1)
 			}
 			if !mod {
 				mod = true
@@ -323,10 +324,10 @@ func elogapply(f *elogFile) {
 					n = bufs.RuneLen
 				}
 				log.Read(up+i, buf[:n])
-				textinsert(t, tq0+i, buf[:n], true)
+				wind.Textinsert(t, tq0+i, buf[:n], true)
 			}
-			if t.q0 == b.q0 && t.q1 == b.q0 {
-				t.q1 += b.nr
+			if t.Q0 == b.q0 && t.Q1 == b.q0 {
+				t.Q1 += b.nr
 			}
 
 			/*		case Filename:
@@ -353,16 +354,16 @@ func elogapply(f *elogFile) {
 	 * Bad addresses will cause bufload to crash, so double check.
 	 * If changes were out of order, we expect problems so don't complain further.
 	 */
-	if t.q0 > f.Len() || t.q1 > f.Len() || t.q0 > t.q1 {
+	if t.Q0 > f.Len() || t.Q1 > f.Len() || t.Q0 > t.Q1 {
 		if !warned {
-			alog.Printf("elogapply: can't happen %d %d %d\n", t.q0, t.q1, f.Len())
+			alog.Printf("elogapply: can't happen %d %d %d\n", t.Q0, t.Q1, f.Len())
 		}
-		t.q1 = util.Min(t.q1, f.Len())
-		t.q0 = util.Min(t.q0, t.q1)
+		t.Q1 = util.Min(t.Q1, f.Len())
+		t.Q0 = util.Min(t.Q0, t.Q1)
 	}
 
-	if t.w != nil {
-		t.w.owner = owner
+	if t.W != nil {
+		t.W.Owner = owner
 	}
 }
 

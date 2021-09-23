@@ -23,6 +23,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 )
 
 func loadfile(fd *os.File, q0 int, nulls *bool, f func(int, []rune) int, h io.Writer) int {
@@ -57,14 +58,14 @@ func loadfile(fd *os.File, q0 int, nulls *bool, f func(int, []rune) int, h io.Wr
 	return q1 - q0
 }
 
-func fileloader(f *File) func(pos int, data []rune) int {
+func fileloader(f *wind.File) func(pos int, data []rune) int {
 	return func(pos int, data []rune) int {
 		f.Insert(pos, data)
 		return len(data)
 	}
 }
 
-func fileload1(f *File, pos int, fd *os.File, nulls *bool, h io.Writer) int {
+func fileload1(f *wind.File, pos int, fd *os.File, nulls *bool, h io.Writer) int {
 	if pos > f.Len() {
 		util.Fatal("internal error: fileload1")
 	}

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/plan9"
 )
 
@@ -307,7 +308,7 @@ func fsysattach(x *Xfid, f *Fid) *Xfid {
 
 func fsyswalk(x *Xfid, f *Fid) *Xfid {
 	var nf *Fid
-	var w *Window
+	var w *wind.Window
 	var t plan9.Fcall
 	if f.open {
 		return respond(x, &t, "walk of open file")
@@ -328,7 +329,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 		nf.w = f.w
 		nf.rpart = nf.rpart[:0] // not open, so must be zero
 		if nf.w != nil {
-			util.Incref(&nf.w.ref)
+			util.Incref(&nf.w.Ref)
 		}
 		f = nf // walk f
 	}
@@ -353,7 +354,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				path_ = Qdir
 				id = 0
 				if w != nil {
-					winclose(w)
+					wind.Winclose(w)
 					w = nil
 				}
 				goto Accept
@@ -371,16 +372,16 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				break
 			}
 			id, _ = strconv.Atoi(x.fcall.Wname[i])
-			row.lk.Lock()
+			wind.TheRow.Lk.Lock()
 			w = lookid(id)
 			if w == nil {
-				row.lk.Unlock()
+				wind.TheRow.Lk.Unlock()
 				break
 			}
-			util.Incref(&w.ref) // we'll drop reference at end if there's an error
+			util.Incref(&w.Ref) // we'll drop reference at end if there's an error
 			path_ = Qdir
 			typ = plan9.QTDIR
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 			dir = dirtabw[:]
 			goto Accept
 
@@ -391,10 +392,10 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 				}
 				cnewwindow <- nil // signal newwindowthread
 				w = <-cnewwindow  // receive new window
-				util.Incref(&w.ref)
+				util.Incref(&w.Ref)
 				typ = plan9.QTDIR
 				path_ = Qdir
-				id = w.id
+				id = w.ID
 				dir = dirtabw[:]
 				goto Accept
 			}
@@ -453,7 +454,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 	}
 
 	if w != nil {
-		winclose(w)
+		wind.Winclose(w)
 	}
 
 	return respond(x, &t, err)
@@ -539,18 +540,18 @@ func fsysread(x *Xfid, f *Fid) *Xfid {
 			d = d[1:]
 		}
 		if id == 0 {
-			row.lk.Lock()
+			wind.TheRow.Lk.Lock()
 			nids := 0
 			var ids []int
 			var j int
 			var k int
-			for j = 0; j < len(row.col); j++ {
-				c := row.col[j]
-				for k = 0; k < len(c.w); k++ {
-					ids = append(ids, c.w[k].id)
+			for j = 0; j < len(wind.TheRow.Col); j++ {
+				c := wind.TheRow.Col[j]
+				for k = 0; k < len(c.W); k++ {
+					ids = append(ids, c.W[k].ID)
 				}
 			}
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 			sort.Ints(ids)
 			j = 0
 			var dt Dirtab

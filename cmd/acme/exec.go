@@ -36,6 +36,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
@@ -61,7 +62,7 @@ var snarfbuf disk.Buffer
 
 type Exectab struct {
 	name  []rune
-	fn    func(et, t, argt *Text, flag1, flag2 bool, s []rune)
+	fn    func(et, t, argt *wind.Text, flag1, flag2 bool, s []rune)
 	mark  bool
 	flag1 bool
 	flag2 bool
@@ -121,15 +122,15 @@ func isexecc(c rune) bool {
 	return c == '<' || c == '|' || c == '>'
 }
 
-func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
+func execute(t *wind.Text, aq0 int, aq1 int, external bool, argt *wind.Text) {
 	q0 := aq0
 	q1 := aq1
 	var c rune
 	if q1 == q0 { // expand to find word (actually file name)
 		// if in selection, choose selection
-		if t.q1 > t.q0 && t.q0 <= q0 && q0 <= t.q1 {
-			q0 = t.q0
-			q1 = t.q1
+		if t.Q1 > t.Q0 && t.Q0 <= q0 && q0 <= t.Q1 {
+			q0 = t.Q0
+			q1 = t.Q1
 		} else {
 			for q1 < t.Len() && func() bool { c = t.RuneAt(q1); return isexecc(c) }() && c != ':' {
 				q1++
@@ -143,108 +144,108 @@ func execute(t *Text, aq0 int, aq1 int, external bool, argt *Text) {
 		}
 	}
 	r := make([]rune, q1-q0)
-	t.file.Read(q0, r)
+	t.File.Read(q0, r)
 	e := lookup(r)
 	var a, aa *string
 	var n int
-	if !external && t.w != nil && t.w.external {
+	if !external && t.W != nil && t.W.External {
 		f := 0
 		if e != nil {
 			f |= 1
 		}
 		if q0 != aq0 || q1 != aq1 {
-			t.file.Read(aq0, r[:aq1-aq0])
+			t.File.Read(aq0, r[:aq1-aq0])
 			f |= 2
 		}
 		aa = getbytearg(argt, true, true, &a)
 		if a != nil {
-			if len(*a) > EVENTSIZE { // too big; too bad
+			if len(*a) > wind.EVENTSIZE { // too big; too bad
 				alog.Printf("argument string too long\n")
 				return
 			}
 			f |= 8
 		}
 		c = 'x'
-		if t.what == Body {
+		if t.What == wind.Body {
 			c = 'X'
 		}
 		n = aq1 - aq0
-		if n <= EVENTSIZE {
+		if n <= wind.EVENTSIZE {
 			r := r
 			if len(r) > n {
 				r = r[:n]
 			}
-			winevent(t.w, "%c%d %d %d %d %s\n", c, aq0, aq1, f, n, string(r))
+			wind.Winevent(t.W, "%c%d %d %d %d %s\n", c, aq0, aq1, f, n, string(r))
 		} else {
-			winevent(t.w, "%c%d %d %d 0 \n", c, aq0, aq1, f)
+			wind.Winevent(t.W, "%c%d %d %d 0 \n", c, aq0, aq1, f)
 		}
 		if q0 != aq0 || q1 != aq1 {
 			n = q1 - q0
-			t.file.Read(q0, r[:n])
-			if n <= EVENTSIZE {
-				winevent(t.w, "%c%d %d 0 %d %s\n", c, q0, q1, n, string(r[:n]))
+			t.File.Read(q0, r[:n])
+			if n <= wind.EVENTSIZE {
+				wind.Winevent(t.W, "%c%d %d 0 %d %s\n", c, q0, q1, n, string(r[:n]))
 			} else {
-				winevent(t.w, "%c%d %d 0 0 \n", c, q0, q1)
+				wind.Winevent(t.W, "%c%d %d 0 0 \n", c, q0, q1)
 			}
 		}
 		if a != nil {
-			winevent(t.w, "%c0 0 0 %d %s\n", c, utf8.RuneCountInString(*a), *a)
+			wind.Winevent(t.W, "%c0 0 0 %d %s\n", c, utf8.RuneCountInString(*a), *a)
 			if aa != nil {
-				winevent(t.w, "%c0 0 0 %d %s\n", c, utf8.RuneCountInString(*aa), *aa)
+				wind.Winevent(t.W, "%c0 0 0 %d %s\n", c, utf8.RuneCountInString(*aa), *aa)
 			} else {
-				winevent(t.w, "%c0 0 0 0 \n", c)
+				wind.Winevent(t.W, "%c0 0 0 0 \n", c)
 			}
 		}
 		return
 	}
 	if e != nil {
-		if e.mark && seltext != nil {
-			if seltext.what == Body {
+		if e.mark && wind.Seltext != nil {
+			if wind.Seltext.What == wind.Body {
 				file.Seq++
-				seltext.w.body.file.Mark()
+				wind.Seltext.W.Body.File.Mark()
 			}
 		}
 		s := runes.SkipBlank(r[:q1-q0])
 		s = runes.SkipNonBlank(s)
 		s = runes.SkipBlank(s)
-		e.fn(t, seltext, argt, e.flag1, e.flag2, s)
+		e.fn(t, wind.Seltext, argt, e.flag1, e.flag2, s)
 		return
 	}
 
 	b := string(r)
-	dir := dirname(t, nil)
+	dir := wind.Dirname(t, nil)
 	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	aa = getbytearg(argt, true, true, &a)
-	if t.w != nil {
-		util.Incref(&t.w.ref)
+	if t.W != nil {
+		util.Incref(&t.W.Ref)
 	}
-	run(t.w, b, dir, true, aa, a, false)
+	run(t.W, b, dir, true, aa, a, false)
 }
 
-func printarg(argt *Text, q0 int, q1 int) *string {
-	if argt.what != Body || argt.file.Name() == nil {
+func printarg(argt *wind.Text, q0 int, q1 int) *string {
+	if argt.What != wind.Body || argt.File.Name() == nil {
 		return nil
 	}
 	var buf string
 	if q0 == q1 {
-		buf = fmt.Sprintf("%s:#%d", string(argt.file.Name()), q0)
+		buf = fmt.Sprintf("%s:#%d", string(argt.File.Name()), q0)
 	} else {
-		buf = fmt.Sprintf("%s:#%d,#%d", string(argt.file.Name()), q0, q1)
+		buf = fmt.Sprintf("%s:#%d,#%d", string(argt.File.Name()), q0, q1)
 	}
 	return &buf
 }
 
-func getarg(argt *Text, doaddr, dofile bool, rp *[]rune) *string {
+func getarg(argt *wind.Text, doaddr, dofile bool, rp *[]rune) *string {
 	*rp = nil
 	if argt == nil {
 		return nil
 	}
-	textcommit(argt, true)
+	wind.Textcommit(argt, true)
 	var e Expand
 	var a *string
-	if expand(argt, argt.q0, argt.q1, &e) {
+	if expand(argt, argt.Q0, argt.Q1, &e) {
 		if len(e.name) > 0 && dofile {
 			if doaddr {
 				a = printarg(argt, e.q0, e.q1)
@@ -253,19 +254,19 @@ func getarg(argt *Text, doaddr, dofile bool, rp *[]rune) *string {
 			return a
 		}
 	} else {
-		e.q0 = argt.q0
-		e.q1 = argt.q1
+		e.q0 = argt.Q0
+		e.q1 = argt.Q1
 	}
 	n := e.q1 - e.q0
 	*rp = make([]rune, n)
-	argt.file.Read(e.q0, *rp)
+	argt.File.Read(e.q0, *rp)
 	if doaddr {
 		a = printarg(argt, e.q0, e.q1)
 	}
 	return a
 }
 
-func getbytearg(argt *Text, doaddr, dofile bool, bp **string) *string {
+func getbytearg(argt *wind.Text, doaddr, dofile bool, bp **string) *string {
 	*bp = nil
 	var r []rune
 	a := getarg(argt, doaddr, dofile, &r)
@@ -279,7 +280,7 @@ func getbytearg(argt *Text, doaddr, dofile bool, bp **string) *string {
 
 var doabort_n int
 
-func doabort(_, _, _ *Text, _, _ bool, _ []rune) {
+func doabort(_, _, _ *wind.Text, _, _ bool, _ []rune) {
 	if doabort_n == 0 {
 		doabort_n++
 		alog.Printf("executing Abort again will call abort()\n")
@@ -288,65 +289,65 @@ func doabort(_, _, _ *Text, _, _ bool, _ []rune) {
 	panic("abort")
 }
 
-func newcol(et, _, _ *Text, _, _ bool, _ []rune) {
+func newcol(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
-	c := rowadd(et.row, nil, -1)
+	c := wind.RowAdd(et.Row, nil, -1)
 	clearmouse()
 	if c != nil {
 		w := coladdAndMouse(c, nil, nil, -1)
-		winsettag(w)
+		wind.Winsettag(w)
 		xfidlog(w, "new")
 	}
 }
 
-func delcol(et, _, _ *Text, _, _ bool, _ []rune) {
+func delcol(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
-	c := et.col
-	if c == nil || !colclean(c) {
+	c := et.Col
+	if c == nil || !wind.Colclean(c) {
 		return
 	}
-	for i := 0; i < len(c.w); i++ {
-		w := c.w[i]
-		if w.external {
-			alog.Printf("can't delete column; %s is running an external command\n", string(w.body.file.Name()))
+	for i := 0; i < len(c.W); i++ {
+		w := c.W[i]
+		if w.External {
+			alog.Printf("can't delete column; %s is running an external command\n", string(w.Body.File.Name()))
 			return
 		}
 	}
-	rowclose(et.col.row, et.col, true)
+	wind.Rowclose(et.Col.Row, et.Col, true)
 	clearmouse()
 }
 
-func del(et, _, _ *Text, isDelete, _ bool, _ []rune) {
-	if et.col == nil || et.w == nil {
+func del(et, _, _ *wind.Text, isDelete, _ bool, _ []rune) {
+	if et.Col == nil || et.W == nil {
 		return
 	}
-	if isDelete || len(et.w.body.file.text) > 1 || winclean(et.w, false) {
-		colcloseAndMouse(et.col, et.w, true)
+	if isDelete || len(et.W.Body.File.Text) > 1 || wind.Winclean(et.W, false) {
+		colcloseAndMouse(et.Col, et.W, true)
 	}
 }
 
-func xsort(et, _, _ *Text, _, _ bool, _ []rune) {
+func xsort(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
-	if et.col != nil {
+	if et.Col != nil {
 		clearmouse()
-		colsort(et.col)
+		wind.Colsort(et.Col)
 	}
 }
 
-func seqof(w *Window, isundo bool) int {
+func seqof(w *wind.Window, isundo bool) int {
 	// if it's undo, see who changed with us
 	if isundo {
-		return w.body.file.Seq()
+		return w.Body.File.Seq()
 	}
 	// if it's redo, see who we'll be sync'ed up with
-	return w.body.file.RedoSeq()
+	return w.Body.File.RedoSeq()
 }
 
-func undo(et, _, _ *Text, isundo, _ bool, _ []rune) {
-	if et == nil || et.w == nil {
+func undo(et, _, _ *wind.Text, isundo, _ bool, _ []rune) {
+	if et == nil || et.W == nil {
 		return
 	}
-	seq := seqof(et.w, isundo)
+	seq := seqof(et.W, isundo)
 	if seq == 0 {
 		// nothing to undo
 		return
@@ -356,22 +357,22 @@ func undo(et, _, _ *Text, isundo, _ bool, _ []rune) {
 	 * in the same file will not call show() and jump to a different location in the file.
 	 * Simultaneous changes to other files will be chaotic, however.
 	 */
-	winundo(et.w, isundo)
-	for i := 0; i < len(row.col); i++ {
-		c := row.col[i]
-		for j := 0; j < len(c.w); j++ {
-			w := c.w[j]
-			if w == et.w {
+	wind.Winundo(et.W, isundo)
+	for i := 0; i < len(wind.TheRow.Col); i++ {
+		c := wind.TheRow.Col[i]
+		for j := 0; j < len(c.W); j++ {
+			w := c.W[j]
+			if w == et.W {
 				continue
 			}
 			if seqof(w, isundo) == seq {
-				winundo(w, isundo)
+				wind.Winundo(w, isundo)
 			}
 		}
 	}
 }
 
-func getname(t *Text, argt *Text, arg []rune, isput bool) string {
+func getname(t *wind.Text, argt *wind.Text, arg []rune, isput bool) string {
 	var r []rune
 	getarg(argt, false, true, &r)
 	promote := false
@@ -394,13 +395,13 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 	}
 	if promote {
 		if len(arg) == 0 {
-			return string(t.file.Name())
+			return string(t.File.Name())
 		}
 		var dir []rune
 		// prefix with directory name if necessary
 		dir = nil
 		if len(arg) > 0 && arg[0] != '/' {
-			dir = dirname(t, nil)
+			dir = wind.Dirname(t, nil)
 			if len(dir) == 1 && dir[0] == '.' { // sigh
 				dir = nil
 			}
@@ -419,34 +420,34 @@ func getname(t *Text, argt *Text, arg []rune, isput bool) string {
 	return string(r)
 }
 
-func zeroxx(et, t, _ *Text, _, _ bool, _ []rune) {
+func zeroxx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
 
 	locked := false
-	if t != nil && t.w != nil && t.w != et.w {
+	if t != nil && t.W != nil && t.W != et.W {
 		locked = true
 		c := 'M'
-		if et.w != nil {
-			c = et.w.owner
+		if et.W != nil {
+			c = et.W.Owner
 		}
-		winlock(t.w, c)
+		wind.Winlock(t.W, c)
 	}
 	if t == nil {
 		t = et
 	}
-	if t == nil || t.w == nil {
+	if t == nil || t.W == nil {
 		return
 	}
-	t = &t.w.body
-	if t.w.isdir {
-		alog.Printf("%s is a directory; Zerox illegal\n", string(t.file.Name()))
+	t = &t.W.Body
+	if t.W.IsDir {
+		alog.Printf("%s is a directory; Zerox illegal\n", string(t.File.Name()))
 	} else {
-		nw := coladdAndMouse(t.w.col, nil, t.w, -1)
+		nw := coladdAndMouse(t.W.Col, nil, t.W, -1)
 		// ugly: fix locks so w->unlock works
-		winlock1(nw, t.w.owner)
+		wind.Winlock1(nw, t.W.Owner)
 		xfidlog(nw, "zerox")
 	}
 	if locked {
-		winunlock(t.w)
+		wind.Winunlock(t.W)
 	}
 }
 
@@ -459,76 +460,76 @@ type TextAddr struct {
 	rq1     int
 }
 
-func get(et, t, argt *Text, flag1, _ bool, arg []rune) {
+func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 	if flag1 {
-		if et == nil || et.w == nil {
+		if et == nil || et.W == nil {
 			return
 		}
 	}
-	if !et.w.isdir && (et.w.body.Len() > 0 && !winclean(et.w, true)) {
+	if !et.W.IsDir && (et.W.Body.Len() > 0 && !wind.Winclean(et.W, true)) {
 		return
 	}
-	w := et.w
-	t = &w.body
+	w := et.W
+	t = &w.Body
 	name := getname(t, argt, arg, false)
 	if name == "" {
 		alog.Printf("no file name\n")
 		return
 	}
-	if len(t.file.text) > 1 {
+	if len(t.File.Text) > 1 {
 		if info, err := os.Stat(name); err == nil && info.IsDir() {
 			alog.Printf("%s is a directory; can't read with multiple windows on it\n", name)
 			return
 		}
 	}
-	addr := make([]TextAddr, len(t.file.text))
-	for i := 0; i < len(t.file.text); i++ {
+	addr := make([]TextAddr, len(t.File.Text))
+	for i := 0; i < len(t.File.Text); i++ {
 		a := &addr[i]
-		u := t.file.text[i]
-		a.lorigin = nlcount(u, 0, u.org, &a.rorigin)
-		a.lq0 = nlcount(u, 0, u.q0, &a.rq0)
-		a.lq1 = nlcount(u, u.q0, u.q1, &a.rq1)
+		u := t.File.Text[i]
+		a.lorigin = nlcount(u, 0, u.Org, &a.rorigin)
+		a.lq0 = nlcount(u, 0, u.Q0, &a.rq0)
+		a.lq1 = nlcount(u, u.Q0, u.Q1, &a.rq1)
 	}
 	r := []rune(name)
-	for i := 0; i < len(t.file.text); i++ {
-		u := t.file.text[i]
+	for i := 0; i < len(t.File.Text); i++ {
+		u := t.File.Text[i]
 		// second and subsequent calls with zero an already empty buffer, but OK
-		textreset(u)
-		windirfree(u.w)
+		wind.Textreset(u)
+		wind.Windirfree(u.W)
 	}
-	samename := runes.Equal(r, t.file.Name())
+	samename := runes.Equal(r, t.File.Name())
 	textload(t, 0, name, samename)
 	var dirty bool
 	if samename {
-		t.file.SetMod(false)
+		t.File.SetMod(false)
 		dirty = false
 	} else {
-		t.file.SetMod(true)
+		t.File.SetMod(true)
 		dirty = true
 	}
-	for i := 0; i < len(t.file.text); i++ {
-		t.file.text[i].w.dirty = dirty
+	for i := 0; i < len(t.File.Text); i++ {
+		t.File.Text[i].W.Dirty = dirty
 	}
-	winsettag(w)
-	t.file.unread = false
-	for i := 0; i < len(t.file.text); i++ {
-		u := t.file.text[i]
-		textsetselect(&u.w.tag, u.w.tag.Len(), u.w.tag.Len())
+	wind.Winsettag(w)
+	t.File.Unread = false
+	for i := 0; i < len(t.File.Text); i++ {
+		u := t.File.Text[i]
+		wind.Textsetselect(&u.W.Tag, u.W.Tag.Len(), u.W.Tag.Len())
 		if samename {
 			a := &addr[i]
 			// Printf("%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
 			q0 := addrpkg.Advance(u, 0, a.lq0, a.rq0)
 			q1 := addrpkg.Advance(u, q0, a.lq1, a.rq1)
-			textsetselect(u, q0, q1)
+			wind.Textsetselect(u, q0, q1)
 			q0 = addrpkg.Advance(u, 0, a.lorigin, a.rorigin)
-			textsetorigin(u, q0, false)
+			wind.Textsetorigin(u, q0, false)
 		}
-		textscrdraw(u)
+		wind.Textscrdraw(u)
 	}
 	xfidlog(w, "get")
 }
 
-func checksha1(name string, f *File, info os.FileInfo) {
+func checksha1(name string, f *wind.File, info os.FileInfo) {
 	fd, err := os.Open(name)
 	if err != nil {
 		return
@@ -545,8 +546,8 @@ func checksha1(name string, f *File, info os.FileInfo) {
 	fd.Close()
 	var out [20]uint8
 	h.Sum(out[:0])
-	if out == f.sha1 {
-		f.info = info
+	if out == f.SHA1 {
+		f.Info = info
 	}
 }
 
@@ -554,21 +555,21 @@ func sameInfo(fi1, fi2 os.FileInfo) bool {
 	return fi1 != nil && fi2 != nil && os.SameFile(fi1, fi2) && fi1.ModTime().Equal(fi2.ModTime()) && fi1.Size() == fi2.Size()
 }
 
-func putfile(f *File, q0 int, q1 int, namer []rune) {
-	w := f.curtext.w
+func putfile(f *wind.File, q0 int, q1 int, namer []rune) {
+	w := f.Curtext.W
 	name := string(namer)
 	info, err := os.Stat(name)
 	if err == nil && runes.Equal(namer, f.Name()) {
-		if !sameInfo(info, f.info) {
+		if !sameInfo(info, f.Info) {
 			checksha1(name, f, info)
 		}
-		if !sameInfo(info, f.info) {
-			if f.unread {
+		if !sameInfo(info, f.Info) {
+			if f.Unread {
 				alog.Printf("%s not written; file already exists\n", name)
 			} else {
-				alog.Printf("%s modified since last read\n\twas %v; now %v\n", name, f.info.ModTime().Format(timefmt), info.ModTime().Format(timefmt))
+				alog.Printf("%s modified since last read\n\twas %v; now %v\n", name, f.Info.ModTime().Format(timefmt), info.ModTime().Format(timefmt))
 			}
-			f.info = info
+			f.Info = info
 			return
 		}
 	}
@@ -621,8 +622,8 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 	if runes.Equal(namer, f.Name()) {
 		if q0 != 0 || q1 != f.Len() {
 			f.SetMod(true)
-			w.dirty = true
-			f.unread = true
+			w.Dirty = true
+			f.Unread = true
 		} else {
 			// In case the file is on NFS, reopen the fd
 			// before dirfstat to cause the attribute cache
@@ -640,19 +641,19 @@ func putfile(f *File, q0 int, q1 int, namer []rune) {
 				}
 				fd.Close()
 			}
-			f.info = info
-			h.Sum(f.sha1[:0])
+			f.Info = info
+			h.Sum(f.SHA1[:0])
 			f.SetMod(false)
-			w.dirty = false
-			f.unread = false
+			w.Dirty = false
+			f.Unread = false
 		}
-		for i := 0; i < len(f.text); i++ {
-			f.text[i].w.putseq = f.Seq()
-			f.text[i].w.dirty = w.dirty
+		for i := 0; i < len(f.Text); i++ {
+			f.Text[i].W.Putseq = f.Seq()
+			f.Text[i].W.Dirty = w.Dirty
 		}
 	}
 	bufs.FreeRunes(s)
-	winsettag(w)
+	wind.Winsettag(w)
 	return
 
 Rescue2:
@@ -661,18 +662,18 @@ Rescue2:
 	// fall through
 }
 
-func trimspaces(et *Text) {
-	t := &et.w.body
-	f := t.file
+func trimspaces(et *wind.Text) {
+	t := &et.W.Body
+	f := t.File
 	marked := 0
 
-	if t.w != nil && et.w != t.w {
+	if t.W != nil && et.W != t.W {
 		// can this happen when t == &et->w->body?
 		c := 'M'
-		if et.w != nil {
-			c = et.w.owner
+		if et.W != nil {
+			c = et.W.Owner
 		}
-		winlock(t.w, c)
+		wind.Winlock(t.W, c)
 	}
 
 	r := bufs.AllocRunes()
@@ -694,7 +695,7 @@ func trimspaces(et *Text) {
 						file.Seq++
 						f.Mark()
 					}
-					textdelete(t, q0+i, delstart, true)
+					wind.Textdelete(t, q0+i, delstart, true)
 				}
 				if i == 0 {
 					// keep run active into tail of next buffer
@@ -712,24 +713,24 @@ func trimspaces(et *Text) {
 	}
 	bufs.FreeRunes(r)
 
-	if t.w != nil && et.w != t.w {
-		winunlock(t.w)
+	if t.W != nil && et.W != t.W {
+		wind.Winunlock(t.W)
 	}
 }
 
-func put(et, _, argt *Text, _, _ bool, arg []rune) {
+func put(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 
-	if et == nil || et.w == nil || et.w.isdir {
+	if et == nil || et.W == nil || et.W.IsDir {
 		return
 	}
-	w := et.w
-	f := w.body.file
-	name := getname(&w.body, argt, arg, true)
+	w := et.W
+	f := w.Body.File
+	name := getname(&w.Body, argt, arg, true)
 	if name == "" {
 		alog.Printf("no file name\n")
 		return
 	}
-	if w.autoindent {
+	if w.Autoindent {
 		trimspaces(et)
 	}
 	namer := []rune(name)
@@ -737,7 +738,7 @@ func put(et, _, argt *Text, _, _ bool, arg []rune) {
 	xfidlog(w, "put")
 }
 
-func dump(_, _, argt *Text, isdump, _ bool, arg []rune) {
+func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
 	var name *string
 	if len(arg) != 0 {
 		s := string(arg)
@@ -746,13 +747,13 @@ func dump(_, _, argt *Text, isdump, _ bool, arg []rune) {
 		getbytearg(argt, false, true, &name)
 	}
 	if isdump {
-		rowdump(&row, name)
+		rowdump(&wind.TheRow, name)
 	} else {
-		rowload(&row, name, false)
+		rowload(&wind.TheRow, name, false)
 	}
 }
 
-func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
+func cut(et, t, _ *wind.Text, dosnarf, docut bool, _ []rune) {
 
 	/*
 	 * if not executing a mouse chord (et != t) and snarfing (dosnarf)
@@ -760,14 +761,14 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 	 * then use the window body selection or the tag selection
 	 * or do nothing at all.
 	 */
-	if et != t && dosnarf && et.w != nil {
-		if et.w.body.q1 > et.w.body.q0 {
-			t = &et.w.body
+	if et != t && dosnarf && et.W != nil {
+		if et.W.Body.Q1 > et.W.Body.Q0 {
+			t = &et.W.Body
 			if docut {
-				t.file.Mark() // seq has been incremented by execute
+				t.File.Mark() // seq has been incremented by execute
 			}
-		} else if et.w.tag.q1 > et.w.tag.q0 {
-			t = &et.w.tag
+		} else if et.W.Tag.Q1 > et.W.Tag.Q0 {
+			t = &et.W.Tag
 		} else {
 			t = nil
 		}
@@ -777,23 +778,23 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 	}
 
 	locked := false
-	if t.w != nil && et.w != t.w {
+	if t.W != nil && et.W != t.W {
 		locked = true
 		c := 'M'
-		if et.w != nil {
-			c = et.w.owner
+		if et.W != nil {
+			c = et.W.Owner
 		}
-		winlock(t.w, c)
+		wind.Winlock(t.W, c)
 	}
-	if t.q0 == t.q1 {
+	if t.Q0 == t.Q1 {
 		if locked {
-			winunlock(t.w)
+			wind.Winunlock(t.W)
 		}
 		return
 	}
 	if dosnarf {
-		q0 := t.q0
-		q1 := t.q1
+		q0 := t.Q0
+		q1 := t.Q1
 		snarfbuf.Delete(0, snarfbuf.Len())
 		r := bufs.AllocRunes()
 		for q0 < q1 {
@@ -801,7 +802,7 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 			if n > bufs.RuneLen {
 				n = bufs.RuneLen
 			}
-			t.file.Read(q0, r[:n])
+			t.File.Read(q0, r[:n])
 			snarfbuf.Insert(snarfbuf.Len(), r[:n])
 			q0 += n
 		}
@@ -809,26 +810,26 @@ func cut(et, t, _ *Text, dosnarf, docut bool, _ []rune) {
 		acmeputsnarf()
 	}
 	if docut {
-		textdelete(t, t.q0, t.q1, true)
-		textsetselect(t, t.q0, t.q0)
-		if t.w != nil {
-			textscrdraw(t)
-			winsettag(t.w)
+		wind.Textdelete(t, t.Q0, t.Q1, true)
+		wind.Textsetselect(t, t.Q0, t.Q0)
+		if t.W != nil {
+			wind.Textscrdraw(t)
+			wind.Winsettag(t.W)
 		}
 	} else if dosnarf { // Snarf command
-		argtext = t
+		wind.Argtext = t
 	}
 	if locked {
-		winunlock(t.w)
+		wind.Winunlock(t.W)
 	}
 }
 
-func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
+func paste(et, t, _ *wind.Text, selectall, tobody bool, _ []rune) {
 
 	// if(tobody), use body of executing window  (Paste or Send command)
-	if tobody && et != nil && et.w != nil {
-		t = &et.w.body
-		t.file.Mark() // seq has been incremented by execute
+	if tobody && et != nil && et.W != nil {
+		t = &et.W.Body
+		t.File.Mark() // seq has been incremented by execute
 	}
 	if t == nil {
 		return
@@ -838,17 +839,17 @@ func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 	if t == nil || snarfbuf.Len() == 0 {
 		return
 	}
-	if t.w != nil && et.w != t.w {
+	if t.W != nil && et.W != t.W {
 		c := 'M'
-		if et.w != nil {
-			c = et.w.owner
+		if et.W != nil {
+			c = et.W.Owner
 		}
-		winlock(t.w, c)
+		wind.Winlock(t.W, c)
 	}
 	cut(t, t, nil, false, true, nil)
 	q := 0
-	q0 := t.q0
-	q1 := t.q0 + snarfbuf.Len()
+	q0 := t.Q0
+	q1 := t.Q0 + snarfbuf.Len()
 	r := bufs.AllocRunes()
 	for q0 < q1 {
 		n := q1 - q0
@@ -856,28 +857,28 @@ func paste(et, t, _ *Text, selectall, tobody bool, _ []rune) {
 			n = bufs.RuneLen
 		}
 		snarfbuf.Read(q, r[:n])
-		textinsert(t, q0, r[:n], true)
+		wind.Textinsert(t, q0, r[:n], true)
 		q += n
 		q0 += n
 	}
 	bufs.FreeRunes(r)
 	if selectall {
-		textsetselect(t, t.q0, q1)
+		wind.Textsetselect(t, t.Q0, q1)
 	} else {
-		textsetselect(t, q1, q1)
+		wind.Textsetselect(t, q1, q1)
 	}
-	if t.w != nil {
-		textscrdraw(t)
-		winsettag(t.w)
+	if t.W != nil {
+		wind.Textscrdraw(t)
+		wind.Winsettag(t.W)
 	}
-	if t.w != nil && et.w != t.w {
-		winunlock(t.w)
+	if t.W != nil && et.W != t.W {
+		wind.Winunlock(t.W)
 	}
 }
 
-func look(et, t, argt *Text, _, _ bool, arg []rune) {
-	if et != nil && et.w != nil {
-		t = &et.w.body
+func look(et, t, argt *wind.Text, _, _ bool, arg []rune) {
+	if et != nil && et.W != nil {
+		t = &et.W.Body
 		if len(arg) > 0 {
 			search(t, arg)
 			return
@@ -885,32 +886,32 @@ func look(et, t, argt *Text, _, _ bool, arg []rune) {
 		var r []rune
 		getarg(argt, false, false, &r)
 		if r == nil {
-			r = make([]rune, t.q1-t.q0)
-			t.file.Read(t.q0, r)
+			r = make([]rune, t.Q1-t.Q0)
+			t.File.Read(t.Q0, r)
 		}
 		search(t, r)
 	}
 }
 
-func sendx(et, t, _ *Text, _, _ bool, _ []rune) {
-	if et.w == nil {
+func sendx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
+	if et.W == nil {
 		return
 	}
-	t = &et.w.body
-	if t.q0 != t.q1 {
+	t = &et.W.Body
+	if t.Q0 != t.Q1 {
 		cut(t, t, nil, true, false, nil)
 	}
-	textsetselect(t, t.Len(), t.Len())
+	wind.Textsetselect(t, t.Len(), t.Len())
 	paste(t, t, nil, true, true, nil)
 	if t.RuneAt(t.Len()-1) != '\n' {
-		textinsert(t, t.Len(), []rune("\n"), true)
-		textsetselect(t, t.Len(), t.Len())
+		wind.Textinsert(t, t.Len(), []rune("\n"), true)
+		wind.Textsetselect(t, t.Len(), t.Len())
 	}
-	t.iq1 = t.q1
-	textshow(t, t.q1, t.q1, true)
+	t.IQ1 = t.Q1
+	wind.Textshow(t, t.Q1, t.Q1, true)
 }
 
-func edit(et, _, argt *Text, _, _ bool, arg []rune) {
+func edit(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	if et == nil {
 		return
 	}
@@ -924,53 +925,53 @@ func edit(et, _, argt *Text, _, _ bool, arg []rune) {
 	}
 }
 
-func xexit(_, _, _ *Text, _, _ bool, _ []rune) {
-	if rowclean(&row) {
+func xexit(_, _, _ *wind.Text, _, _ bool, _ []rune) {
+	if wind.Rowclean(&wind.TheRow) {
 		cexit <- 0
 		runtime.Goexit() // TODO(rsc)
 	}
 }
 
-func putall(et, _, _ *Text, _, _ bool, _ []rune) {
-	for _, c := range row.col {
-		for _, w := range c.w {
-			if w.isscratch || w.isdir || len(w.body.file.Name()) == 0 {
+func putall(et, _, _ *wind.Text, _, _ bool, _ []rune) {
+	for _, c := range wind.TheRow.Col {
+		for _, w := range c.W {
+			if w.IsScratch || w.IsDir || len(w.Body.File.Name()) == 0 {
 				continue
 			}
-			if w.external {
+			if w.External {
 				continue
 			}
-			a := string(w.body.file.Name())
+			a := string(w.Body.File.Name())
 			_, e := os.Stat(a)
-			if w.body.file.Mod() || len(w.body.cache) != 0 {
+			if w.Body.File.Mod() || len(w.Body.Cache) != 0 {
 				if e != nil {
 					alog.Printf("no auto-Put of %s: %v\n", a, e)
 				} else {
-					wincommit(w, &w.body)
-					put(&w.body, nil, nil, XXX, XXX, nil)
+					wind.Wincommit(w, &w.Body)
+					put(&w.Body, nil, nil, XXX, XXX, nil)
 				}
 			}
 		}
 	}
 }
 
-func id(et, _, _ *Text, _, _ bool, _ []rune) {
-	if et != nil && et.w != nil {
-		alog.Printf("/mnt/acme/%d/\n", et.w.id)
+func id(et, _, _ *wind.Text, _, _ bool, _ []rune) {
+	if et != nil && et.W != nil {
+		alog.Printf("/mnt/acme/%d/\n", et.W.ID)
 	}
 }
 
-func local(et, _, argt *Text, _, _ bool, arg []rune) {
+func local(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	var a *string
 	aa := getbytearg(argt, true, true, &a)
-	dir := dirname(et, nil)
+	dir := wind.Dirname(et, nil)
 	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
 	run(nil, string(arg), dir, false, aa, a, false)
 }
 
-func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
+func xkill(_, _, argt *wind.Text, _, _ bool, arg []rune) {
 	var r []rune
 	getarg(argt, false, false, &r)
 	if r != nil {
@@ -987,11 +988,11 @@ func xkill(_, _, argt *Text, _, _ bool, arg []rune) {
 	}
 }
 
-func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
-	if et == nil || et.w == nil {
+func fontx(et, t, argt *wind.Text, _, _ bool, arg []rune) {
+	if et == nil || et.W == nil {
 		return
 	}
-	t = &et.w.body
+	t = &et.W.Body
 	var flag []rune
 	var file []rune
 	// loop condition: *arg is not a blank
@@ -1024,7 +1025,7 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 	} else if file == nil {
 		newfont = adraw.FindFont(false, false, false, "")
 		if newfont != nil {
-			fix = newfont.F.Name == t.fr.Font.Name
+			fix = newfont.F.Name == t.Fr.Font.Name
 		}
 	}
 	var aa string
@@ -1034,35 +1035,35 @@ func fontx(et, t, argt *Text, _, _ bool, arg []rune) {
 		newfont = adraw.FindFont(fix, false, false, "")
 	}
 	if newfont != nil {
-		adraw.Display.ScreenImage.Draw(t.w.r, adraw.TextCols[frame.BACK], nil, draw.ZP)
-		adraw.CloseFont(t.reffont)
-		t.reffont = newfont
-		t.fr.Font = newfont.F
-		t.fr.InitTick()
-		if t.w.isdir {
-			t.all.Min.X++ // force recolumnation; disgusting!
-			for i := 0; i < len(t.w.dlp); i++ {
-				dp := t.w.dlp[i]
-				aa = string(dp.r)
-				dp.wid = newfont.F.StringWidth(aa)
+		adraw.Display.ScreenImage.Draw(t.W.R, adraw.TextCols[frame.BACK], nil, draw.ZP)
+		adraw.CloseFont(t.Reffont)
+		t.Reffont = newfont
+		t.Fr.Font = newfont.F
+		t.Fr.InitTick()
+		if t.W.IsDir {
+			t.All.Min.X++ // force recolumnation; disgusting!
+			for i := 0; i < len(t.W.Dlp); i++ {
+				dp := t.W.Dlp[i]
+				aa = string(dp.R)
+				dp.Wid = newfont.F.StringWidth(aa)
 			}
 		}
 		// avoid shrinking of window due to quantization
-		colgrow(t.w.col, t.w, -1)
+		wind.Colgrow(t.W.Col, t.W, -1)
 	}
 }
 
-func incl(et, _, argt *Text, _, _ bool, arg []rune) {
-	if et == nil || et.w == nil {
+func incl(et, _, argt *wind.Text, _, _ bool, arg []rune) {
+	if et == nil || et.W == nil {
 		return
 	}
-	w := et.w
+	w := et.W
 	n := 0
 	var r []rune
 	getarg(argt, false, true, &r)
 	if r != nil {
 		n++
-		winaddincl(w, r)
+		wind.Winaddincl(w, r)
 	}
 	// loop condition: len(arg) == 0 || arg[0] is not a blank
 	for {
@@ -1071,16 +1072,16 @@ func incl(et, _, argt *Text, _, _ bool, arg []rune) {
 			break
 		}
 		r = runes.Clone(arg[:len(arg)-len(a)])
-		winaddincl(w, r)
+		wind.Winaddincl(w, r)
 		arg = runes.SkipBlank(a)
 	}
-	if n == 0 && len(w.incl) > 0 {
-		for n = len(w.incl); ; {
+	if n == 0 && len(w.Incl) > 0 {
+		for n = len(w.Incl); ; {
 			n--
 			if n < 0 {
 				break
 			}
-			alog.Printf("%s ", string(w.incl[n]))
+			alog.Printf("%s ", string(w.Incl[n]))
 		}
 		alog.Printf("\n")
 	}
@@ -1098,12 +1099,12 @@ func indentval(s []rune) int {
 		return IError
 	}
 	if runes.Equal(s, []rune("ON")) {
-		globalautoindent = true
+		wind.GlobalAutoindent = true
 		alog.Printf("Indent ON\n")
 		return IGlobal
 	}
 	if runes.Equal(s, []rune("OFF")) {
-		globalautoindent = false
+		wind.GlobalAutoindent = false
 		alog.Printf("Indent OFF\n")
 		return IGlobal
 	}
@@ -1113,14 +1114,14 @@ func indentval(s []rune) int {
 	return Ioff
 }
 
-func fixindent(w *Window, arg interface{}) {
-	w.autoindent = globalautoindent
+func fixindent(w *wind.Window, arg interface{}) {
+	w.Autoindent = wind.GlobalAutoindent
 }
 
-func indent(et, _, argt *Text, _, _ bool, arg []rune) {
-	var w *Window
-	if et != nil && et.w != nil {
-		w = et.w
+func indent(et, _, argt *wind.Text, _, _ bool, arg []rune) {
+	var w *wind.Window
+	if et != nil && et.W != nil {
+		w = et.W
 	}
 	autoindent := IError
 	var r []rune
@@ -1134,17 +1135,17 @@ func indent(et, _, argt *Text, _, _ bool, arg []rune) {
 		}
 	}
 	if autoindent == IGlobal {
-		allwindows(fixindent, nil)
+		wind.All(fixindent, nil)
 	} else if w != nil && autoindent >= 0 {
-		w.autoindent = autoindent == Ion
+		w.Autoindent = autoindent == Ion
 	}
 }
 
-func tab(et, _, argt *Text, _, _ bool, arg []rune) {
-	if et == nil || et.w == nil {
+func tab(et, _, argt *wind.Text, _, _ bool, arg []rune) {
+	if et == nil || et.W == nil {
 		return
 	}
-	w := et.w
+	w := et.W
 	var r []rune
 	getarg(argt, false, true, &r)
 	tab := 0
@@ -1163,16 +1164,16 @@ func tab(et, _, argt *Text, _, _ bool, arg []rune) {
 		}
 	}
 	if tab > 0 {
-		if w.body.tabstop != tab {
-			w.body.tabstop = tab
-			winresizeAndMouse(w, w.r, false, true)
+		if w.Body.Tabstop != tab {
+			w.Body.Tabstop = tab
+			winresizeAndMouse(w, w.R, false, true)
 		}
 	} else {
-		alog.Printf("%s: Tab %d\n", string(w.body.file.Name()), w.body.tabstop)
+		alog.Printf("%s: Tab %d\n", string(w.Body.File.Name()), w.Body.Tabstop)
 	}
 }
 
-func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *string, c *Command, cpid chan int, iseditcmd bool) {
+func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, c *Command, cpid chan int, iseditcmd bool) {
 	t := strings.TrimLeft(s, " \n\t")
 	name := t
 	if i := strings.IndexAny(name, " \n\t"); i >= 0 {
@@ -1197,16 +1198,16 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 		// end of args
 		var filename string
 		if win != nil {
-			filename = string(win.body.file.Name())
-			if len(win.incl) > 0 {
-				incl = make([][]rune, len(win.incl))
-				for i := range win.incl {
-					incl[i] = runes.Clone(win.incl[i])
+			filename = string(win.Body.File.Name())
+			if len(win.Incl) > 0 {
+				incl = make([][]rune, len(win.Incl))
+				for i := range win.Incl {
+					incl[i] = runes.Clone(win.Incl[i])
 				}
 			}
-			winid = win.id
-		} else if activewin != nil {
-			winid = activewin.id
+			winid = win.ID
+		} else if wind.Activewin != nil {
+			winid = wind.Activewin.ID
 		}
 
 		os.Setenv("winid", fmt.Sprint(winid)) // TODO(rsc)
@@ -1257,7 +1258,7 @@ func runproc(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *stri
 		goto Fail
 	}
 	if win != nil {
-		winclose(win)
+		wind.Winclose(win)
 	}
 	defer sfd[0].Close()
 	defer sfd[1].Close()
@@ -1374,7 +1375,7 @@ func runwaittask(c *Command, cpid chan int) {
 	}
 }
 
-func run(win *Window, s string, rdir []rune, newns bool, argaddr, xarg *string, iseditcmd bool) {
+func run(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, iseditcmd bool) {
 	if s == "" {
 		return
 	}

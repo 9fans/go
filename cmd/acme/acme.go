@@ -17,6 +17,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
 
@@ -50,7 +51,7 @@ func main() {
 	winsize := ""
 
 	flag.Bool("D", false, "") // ignored
-	flag.BoolVar(&globalautoindent, "a", globalautoindent, "autoindent")
+	flag.BoolVar(&wind.GlobalAutoindent, "a", wind.GlobalAutoindent, "autoindent")
 	flag.BoolVar(&bartflag, "b", bartflag, "bartflag")
 	flag.IntVar(&ncol, "c", ncol, "set number of `columns`")
 	flag.StringVar(&adraw.FontNames[0], "f", adraw.FontNames[0], "font")
@@ -73,10 +74,10 @@ func main() {
 	acmeshell = os.Getenv("acmeshell")
 	p := os.Getenv("tabstop")
 	if p != "" {
-		maxtab, _ = strconv.Atoi(p)
+		wind.MaxTab, _ = strconv.Atoi(p)
 	}
-	if maxtab == 0 {
-		maxtab = 4
+	if wind.MaxTab == 0 {
+		wind.MaxTab = 4
 	}
 	if loadfile != "" {
 		rowloadfonts(loadfile)
@@ -126,7 +127,7 @@ func main() {
 	// TODO timerinit()
 	regx.Init()
 
-	OnWinclose = func(w *Window) {
+	wind.OnWinclose = func(w *wind.Window) {
 		xfidlog(w, "del")
 	}
 
@@ -146,8 +147,8 @@ func main() {
 
 	const WPERCOL = 8
 	disk.Init()
-	if loadfile == "" || !rowload(&row, &loadfile, true) {
-		rowinit(&row, adraw.Display.ScreenImage.Clipr)
+	if loadfile == "" || !rowload(&wind.TheRow, &loadfile, true) {
+		wind.RowInit(&wind.TheRow, adraw.Display.ScreenImage.Clipr)
 		argc := flag.NArg()
 		argv := flag.Args()
 		if ncol < 0 {
@@ -163,24 +164,24 @@ func main() {
 		if ncol == 0 {
 			ncol = 2
 		}
-		var c *Column
+		var c *wind.Column
 		var i int
 		for i = 0; i < ncol; i++ {
-			c = rowadd(&row, nil, -1)
+			c = wind.RowAdd(&wind.TheRow, nil, -1)
 			if c == nil && i == 0 {
 				util.Fatal("initializing columns")
 			}
 		}
-		c = row.col[len(row.col)-1]
+		c = wind.TheRow.Col[len(wind.TheRow.Col)-1]
 		if argc == 0 {
 			readfile(c, wdir)
 		} else {
 			for i = 0; i < argc; i++ {
 				j := strings.LastIndex(argv[i], "/")
-				if j >= 0 && argv[i][j:] == "/guide" || i/WPERCOL >= len(row.col) {
+				if j >= 0 && argv[i][j:] == "/guide" || i/WPERCOL >= len(wind.TheRow.Col) {
 					readfile(c, argv[i])
 				} else {
-					readfile(row.col[i/WPERCOL], argv[i])
+					readfile(wind.TheRow.Col[i/WPERCOL], argv[i])
 				}
 			}
 		}
@@ -201,7 +202,7 @@ func main() {
 	os.Exit(0)
 }
 
-func readfile(c *Column, s string) {
+func readfile(c *wind.Column, s string) {
 	w := coladdAndMouse(c, nil, nil, -1)
 	var rb []rune
 	if !strings.HasPrefix(s, "/") {
@@ -210,14 +211,14 @@ func readfile(c *Column, s string) {
 		rb = []rune(s)
 	}
 	rs := runes.CleanPath(rb)
-	winsetname(w, rs)
-	textload(&w.body, 0, s, true)
-	w.body.file.SetMod(false)
-	w.dirty = false
-	winsettag(w)
-	winresizeAndMouse(w, w.r, false, true)
-	textscrdraw(&w.body)
-	textsetselect(&w.tag, w.tag.Len(), w.tag.Len())
+	wind.Winsetname(w, rs)
+	textload(&w.Body, 0, s, true)
+	w.Body.File.SetMod(false)
+	w.Dirty = false
+	wind.Winsettag(w)
+	winresizeAndMouse(w, w.R, false, true)
+	wind.Textscrdraw(&w.Body)
+	wind.Textsetselect(&w.Tag, w.Tag.Len(), w.Tag.Len())
 	xfidlog(w, "new")
 }
 
@@ -247,7 +248,7 @@ func shutdown(v *[0]byte, msg string) bool {
 	killprocs()
 	if !dumping && msg != "kill" && msg != "exit" {
 		dumping = true
-		rowdump(&row, nil)
+		rowdump(&wind.TheRow, nil)
 	}
 	for _, ok := range oknotes {
 		if strings.HasPrefix(msg, ok) {
@@ -335,39 +336,39 @@ func keyboardthread() {
 	var timerc <-chan time.Time
 	var r rune
 	var timer *time.Timer
-	typetext = nil
+	wind.Typetext = nil
 	for {
-		var t *Text
+		var t *wind.Text
 		bigUnlock()
 		select {
 		case <-timerc:
 			bigLock()
 			timer = nil
 			timerc = nil
-			t = typetext
-			if t != nil && t.what == Tag {
-				winlock(t.w, 'K')
-				wincommit(t.w, t)
-				winunlock(t.w)
+			t = wind.Typetext
+			if t != nil && t.What == wind.Tag {
+				wind.Winlock(t.W, 'K')
+				wind.Wincommit(t.W, t)
+				wind.Winunlock(t.W)
 				adraw.Display.Flush()
 			}
 
 		case r = <-keyboardctl.C:
 			bigLock()
 		Loop:
-			typetext = rowtype(&row, r, mouse.Point)
-			t = typetext
-			if t != nil && t.col != nil && (!(r == draw.KeyDown || r == draw.KeyLeft) && !(r == draw.KeyRight)) { // scrolling doesn't change activecol
-				activecol = t.col
+			wind.Typetext = rowtype(&wind.TheRow, r, mouse.Point)
+			t = wind.Typetext
+			if t != nil && t.Col != nil && (!(r == draw.KeyDown || r == draw.KeyLeft) && !(r == draw.KeyRight)) { // scrolling doesn't change activecol
+				wind.Activecol = t.Col
 			}
-			if t != nil && t.w != nil {
-				t.w.body.file.curtext = &t.w.body
+			if t != nil && t.W != nil {
+				t.W.Body.File.Curtext = &t.W.Body
 			}
 			if timer != nil {
 				timer.Stop()
 				timer = nil
 			}
-			if t != nil && t.what == Tag {
+			if t != nil && t.What == wind.Tag {
 				timer = time.NewTimer(500 * time.Millisecond)
 				timerc = timer.C
 			} else {
@@ -390,9 +391,9 @@ func mousethread() {
 	defer bigUnlock()
 
 	for {
-		row.lk.Lock()
+		wind.TheRow.Lk.Lock()
 		flushwarnings()
-		row.lk.Unlock()
+		wind.TheRow.Lk.Unlock()
 
 		adraw.Display.Flush()
 
@@ -405,8 +406,8 @@ func mousethread() {
 			}
 			adraw.Display.ScreenImage.Draw(adraw.Display.ScreenImage.R, adraw.Display.White, nil, draw.ZP)
 			adraw.Init()
-			scrlresize()
-			rowresize(&row, adraw.Display.ScreenImage.Clipr)
+			wind.Scrlresize()
+			wind.Rowresize(&wind.TheRow, adraw.Display.ScreenImage.Clipr)
 			clearmouse()
 
 		case pm := <-cplumb:
@@ -432,26 +433,26 @@ func mousethread() {
 		case m := <-mousectl.C:
 			bigLock()
 			mousectl.Mouse = m
-			row.lk.Lock()
-			t := rowwhich(&row, m.Point)
+			wind.TheRow.Lk.Lock()
+			t := wind.Rowwhich(&wind.TheRow, m.Point)
 
-			if (t != mousetext && t != nil && t.w != nil) && (mousetext == nil || mousetext.w == nil || t.w.id != mousetext.w.id) {
-				xfidlog(t.w, "focus")
+			if (t != wind.Mousetext && t != nil && t.W != nil) && (wind.Mousetext == nil || wind.Mousetext.W == nil || t.W.ID != wind.Mousetext.W.ID) {
+				xfidlog(t.W, "focus")
 			}
 
-			if t != mousetext && mousetext != nil && mousetext.w != nil {
-				winlock(mousetext.w, 'M')
-				mousetext.eq0 = ^0
-				wincommit(mousetext.w, mousetext)
-				winunlock(mousetext.w)
+			if t != wind.Mousetext && wind.Mousetext != nil && wind.Mousetext.W != nil {
+				wind.Winlock(wind.Mousetext.W, 'M')
+				wind.Mousetext.Eq0 = ^0
+				wind.Wincommit(wind.Mousetext.W, wind.Mousetext)
+				wind.Winunlock(wind.Mousetext.W)
 			}
-			mousetext = t
+			wind.Mousetext = t
 			var but int
-			var w *Window
+			var w *wind.Window
 			if t == nil {
 				goto Continue
 			}
-			w = t.w
+			w = t.W
 			if t == nil || m.Buttons == 0 { // TODO(rsc): just checked t above
 				goto Continue
 			}
@@ -463,8 +464,8 @@ func mousethread() {
 			} else if m.Buttons == 4 {
 				but = 3
 			}
-			barttext = t
-			if t.what == Body && m.Point.In(t.scrollr) {
+			wind.Barttext = t
+			if t.What == wind.Body && m.Point.In(t.ScrollR) {
 				if but != 0 {
 					if swapscrollbuttons {
 						if but == 1 {
@@ -473,10 +474,10 @@ func mousethread() {
 							but = 1
 						}
 					}
-					winlock(w, 'M')
-					t.eq0 = ^0
+					wind.Winlock(w, 'M')
+					t.Eq0 = ^0
 					textscroll(t, but)
-					winunlock(w)
+					wind.Winunlock(w)
 				}
 				goto Continue
 			}
@@ -488,53 +489,53 @@ func mousethread() {
 				} else {
 					ch = Kscrollonedown
 				}
-				winlock(w, 'M')
-				t.eq0 = ^0
+				wind.Winlock(w, 'M')
+				t.Eq0 = ^0
 				texttype(t, ch)
-				winunlock(w)
+				wind.Winunlock(w)
 				goto Continue
 			}
-			if m.Point.In(t.scrollr) {
+			if m.Point.In(t.ScrollR) {
 				if but != 0 {
-					if t.what == Columntag {
-						rowdragcol(&row, t.col, but)
-					} else if t.what == Tag {
-						coldragwin(t.col, t.w, but)
-						if t.w != nil {
-							barttext = &t.w.body
+					if t.What == wind.Columntag {
+						rowdragcol(&wind.TheRow, t.Col, but)
+					} else if t.What == wind.Tag {
+						coldragwin(t.Col, t.W, but)
+						if t.W != nil {
+							wind.Barttext = &t.W.Body
 						}
 					}
-					if t.col != nil {
-						activecol = t.col
+					if t.Col != nil {
+						wind.Activecol = t.Col
 					}
 				}
 				goto Continue
 			}
 			if m.Buttons != 0 {
 				if w != nil {
-					winlock(w, 'M')
+					wind.Winlock(w, 'M')
 				}
-				t.eq0 = ^0
+				t.Eq0 = ^0
 				if w != nil {
-					wincommit(w, t)
+					wind.Wincommit(w, t)
 				} else {
-					textcommit(t, true)
+					wind.Textcommit(t, true)
 				}
 				if m.Buttons&1 != 0 {
 					textselect(t)
 					if w != nil {
-						winsettag(w)
+						wind.Winsettag(w)
 					}
-					argtext = t
-					seltext = t
-					if t.col != nil {
-						activecol = t.col // button 1 only
+					wind.Argtext = t
+					wind.Seltext = t
+					if t.Col != nil {
+						wind.Activecol = t.Col // button 1 only
 					}
-					if t.w != nil && t == &t.w.body {
-						activewin = t.w
+					if t.W != nil && t == &t.W.Body {
+						wind.Activewin = t.W
 					}
 				} else if m.Buttons&2 != 0 {
-					var argt *Text
+					var argt *wind.Text
 					var q0, q1 int
 					if textselect2(t, &q0, &q1, &argt) != 0 {
 						execute(t, q0, q1, false, argt)
@@ -546,12 +547,12 @@ func mousethread() {
 					}
 				}
 				if w != nil {
-					winunlock(w)
+					wind.Winunlock(w)
 				}
 				goto Continue
 			}
 		Continue:
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 		}
 	}
 }
@@ -579,10 +580,10 @@ func waitthread() {
 		select {
 		case errb := <-cerr:
 			bigLock()
-			row.lk.Lock()
+			wind.TheRow.Lk.Lock()
 			alog.Printf("%s", errb)
 			adraw.Display.Flush()
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 
 		case cmd := <-ckill:
 			bigLock()
@@ -617,9 +618,9 @@ func waitthread() {
 				}
 				lc = c
 			}
-			row.lk.Lock()
-			t := &row.tag
-			textcommit(t, true)
+			wind.TheRow.Lk.Lock()
+			t := &wind.TheRow.Tag
+			wind.Textcommit(t, true)
 			if c == nil {
 				p := new(Pid)
 				p.pid = pid
@@ -628,15 +629,15 @@ func waitthread() {
 				pids = p
 			} else {
 				if search(t, c.name) {
-					textdelete(t, t.q0, t.q1, true)
-					textsetselect(t, 0, 0)
+					wind.Textdelete(t, t.Q0, t.Q1, true)
+					wind.Textsetselect(t, 0, 0)
 				}
 				if w.msg[0] != 0 {
 					warning(c.md, "%s: exit %s\n", string(c.name[:len(c.name)-1]), w.msg)
 				}
 				adraw.Display.Flush()
 			}
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 			goto Freecmd
 
 		case c = <-ccommand:
@@ -659,13 +660,13 @@ func waitthread() {
 			}
 			c.next = command
 			command = c
-			row.lk.Lock()
-			t := &row.tag
-			textcommit(t, true)
-			textinsert(t, 0, c.name, true)
-			textsetselect(t, 0, 0)
+			wind.TheRow.Lk.Lock()
+			t := &wind.TheRow.Tag
+			wind.Textcommit(t, true)
+			wind.Textinsert(t, 0, c.name, true)
+			wind.Textsetselect(t, 0, 0)
 			adraw.Display.Flush()
-			row.lk.Unlock()
+			wind.TheRow.Lk.Unlock()
 		}
 		continue
 
@@ -711,7 +712,7 @@ func newwindowthread() {
 		<-cnewwindow
 		bigLock()
 		w := makenewwindow(nil)
-		winsettag(w)
+		wind.Winsettag(w)
 		winmousebut(w)
 		xfidlog(w, "new")
 		bigUnlock()

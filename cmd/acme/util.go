@@ -22,13 +22,14 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
 
 var prevmouse draw.Point
-var mousew *Window
+var mousew *wind.Window
 
-func errorwin1(dir []rune, incl [][]rune) *Window {
+func errorwin1(dir []rune, incl [][]rune) *wind.Window {
 	var r []rune
 	if len(dir) > 0 {
 		r = append(r, dir...)
@@ -37,38 +38,38 @@ func errorwin1(dir []rune, incl [][]rune) *Window {
 	r = append(r, []rune("+Errors")...)
 	w := lookfile(r)
 	if w == nil {
-		if len(row.col) == 0 {
-			if rowadd(&row, nil, -1) == nil {
+		if len(wind.TheRow.Col) == 0 {
+			if wind.RowAdd(&wind.TheRow, nil, -1) == nil {
 				util.Fatal("can't create column to make error window")
 			}
 		}
-		w = coladdAndMouse(row.col[len(row.col)-1], nil, nil, -1)
-		w.filemenu = false
-		winsetname(w, r)
+		w = coladdAndMouse(wind.TheRow.Col[len(wind.TheRow.Col)-1], nil, nil, -1)
+		w.Filemenu = false
+		wind.Winsetname(w, r)
 		xfidlog(w, "new")
 	}
 	for i := len(incl) - 1; i >= 0; i-- {
-		winaddincl(w, runes.Clone(incl[i]))
+		wind.Winaddincl(w, runes.Clone(incl[i]))
 	}
-	w.autoindent = globalautoindent
+	w.Autoindent = wind.GlobalAutoindent
 	return w
 }
 
 // make new window, if necessary; return with it locked
-func errorwin(md *Mntdir, owner rune) *Window {
-	var w *Window
+func errorwin(md *Mntdir, owner rune) *wind.Window {
+	var w *wind.Window
 	for {
 		if md == nil {
 			w = errorwin1(nil, nil)
 		} else {
 			w = errorwin1(md.dir, md.incl)
 		}
-		winlock(w, owner)
-		if w.col != nil {
+		wind.Winlock(w, owner)
+		if w.Col != nil {
 			break
 		}
 		// window was deleted too fast
-		winunlock(w)
+		wind.Winunlock(w)
 	}
 	return w
 }
@@ -78,26 +79,26 @@ func errorwin(md *Mntdir, owner rune) *Window {
  * It will be unlocked and returned window
  * will be locked in its place.
  */
-func errorwinforwin(w *Window) *Window {
-	t := &w.body
-	dir := dirname(t, nil)
+func errorwinforwin(w *wind.Window) *wind.Window {
+	t := &w.Body
+	dir := wind.Dirname(t, nil)
 	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
-	incl := make([][]rune, len(w.incl))
-	for i := range w.incl {
-		incl[i] = runes.Clone(w.incl[i])
+	incl := make([][]rune, len(w.Incl))
+	for i := range w.Incl {
+		incl[i] = runes.Clone(w.Incl[i])
 	}
-	owner := w.owner
-	winunlock(w)
+	owner := w.Owner
+	wind.Winunlock(w)
 	for {
 		w = errorwin1(dir, incl)
-		winlock(w, owner)
-		if w.col != nil {
+		wind.Winlock(w, owner)
+		if w.Col != nil {
 			break
 		}
 		// window deleted too fast
-		winunlock(w)
+		wind.Winunlock(w)
 	}
 	return w
 }
@@ -136,12 +137,12 @@ func flushwarnings() {
 	var next *Warning
 	for warn := warnings; warn != nil; warn = next {
 		w := errorwin(warn.md, 'E')
-		t := &w.body
-		owner := w.owner
+		t := &w.Body
+		owner := w.Owner
 		if owner == 0 {
-			w.owner = 'E'
+			w.Owner = 'E'
 		}
-		wincommit(w, t)
+		wind.Wincommit(w, t)
 		/*
 		 * Most commands don't generate much output. For instance,
 		 * Edit ,>cat goes through /dev/cons and is already in blocks
@@ -159,14 +160,14 @@ func flushwarnings() {
 				nr = bufs.RuneLen
 			}
 			warn.buf.Read(n, r[:nr])
-			textbsinsert(t, t.Len(), r[:nr], true, &nr)
+			wind.Textbsinsert(t, t.Len(), r[:nr], true, &nr)
 		}
-		textshow(t, q0, t.Len(), true)
-		winsettag(t.w)
-		textscrdraw(t)
-		w.owner = owner
-		w.dirty = false
-		winunlock(w)
+		wind.Textshow(t, q0, t.Len(), true)
+		wind.Winsettag(t.W)
+		wind.Textscrdraw(t)
+		w.Owner = owner
+		w.Dirty = false
+		wind.Winunlock(w)
 		warn.buf.Close()
 		next = warn.next
 		if warn.md != nil {
@@ -189,19 +190,19 @@ func rgetc(v interface{}, n int) rune {
 }
 
 func tgetc(a interface{}, n int) rune {
-	t := a.(*Text)
+	t := a.(*wind.Text)
 	if n >= t.Len() {
 		return 0
 	}
 	return t.RuneAt(n)
 }
 
-func savemouse(w *Window) {
+func savemouse(w *wind.Window) {
 	prevmouse = mouse.Point
 	mousew = w
 }
 
-func restoremouse(w *Window) int {
+func restoremouse(w *wind.Window) int {
 	did := 0
 	if mousew != nil && mousew == w {
 		adraw.Display.MoveCursor(prevmouse)
@@ -218,55 +219,55 @@ func clearmouse() {
 /*
  * Heuristic city.
  */
-func makenewwindow(t *Text) *Window {
-	var c *Column
-	if activecol != nil {
-		c = activecol
-	} else if seltext != nil && seltext.col != nil {
-		c = seltext.col
-	} else if t != nil && t.col != nil {
-		c = t.col
+func makenewwindow(t *wind.Text) *wind.Window {
+	var c *wind.Column
+	if wind.Activecol != nil {
+		c = wind.Activecol
+	} else if wind.Seltext != nil && wind.Seltext.Col != nil {
+		c = wind.Seltext.Col
+	} else if t != nil && t.Col != nil {
+		c = t.Col
 	} else {
-		if len(row.col) == 0 && rowadd(&row, nil, -1) == nil {
+		if len(wind.TheRow.Col) == 0 && wind.RowAdd(&wind.TheRow, nil, -1) == nil {
 			util.Fatal("can't make column")
 		}
-		c = row.col[len(row.col)-1]
+		c = wind.TheRow.Col[len(wind.TheRow.Col)-1]
 	}
-	activecol = c
-	if t == nil || t.w == nil || len(c.w) == 0 {
+	wind.Activecol = c
+	if t == nil || t.W == nil || len(c.W) == 0 {
 		return coladdAndMouse(c, nil, nil, -1)
 	}
 
 	// find biggest window and biggest blank spot
-	emptyw := c.w[0]
+	emptyw := c.W[0]
 	bigw := emptyw
-	var w *Window
-	for i := 1; i < len(c.w); i++ {
-		w = c.w[i]
+	var w *wind.Window
+	for i := 1; i < len(c.W); i++ {
+		w = c.W[i]
 		// use >= to choose one near bottom of screen
-		if w.body.fr.MaxLines >= bigw.body.fr.MaxLines {
+		if w.Body.Fr.MaxLines >= bigw.Body.Fr.MaxLines {
 			bigw = w
 		}
-		if w.body.fr.MaxLines-w.body.fr.NumLines >= emptyw.body.fr.MaxLines-emptyw.body.fr.NumLines {
+		if w.Body.Fr.MaxLines-w.Body.Fr.NumLines >= emptyw.Body.Fr.MaxLines-emptyw.Body.Fr.NumLines {
 			emptyw = w
 		}
 	}
-	emptyb := &emptyw.body
-	el := emptyb.fr.MaxLines - emptyb.fr.NumLines
+	emptyb := &emptyw.Body
+	el := emptyb.Fr.MaxLines - emptyb.Fr.NumLines
 	var y int
 	// if empty space is big, use it
-	if el > 15 || (el > 3 && el > (bigw.body.fr.MaxLines-1)/2) {
-		y = emptyb.fr.R.Min.Y + emptyb.fr.NumLines*adraw.Font.Height
+	if el > 15 || (el > 3 && el > (bigw.Body.Fr.MaxLines-1)/2) {
+		y = emptyb.Fr.R.Min.Y + emptyb.Fr.NumLines*adraw.Font.Height
 	} else {
 		// if this window is in column and isn't much smaller, split it
-		if t.col == c && t.w.r.Dy() > 2*bigw.r.Dy()/3 {
-			bigw = t.w
+		if t.Col == c && t.W.R.Dy() > 2*bigw.R.Dy()/3 {
+			bigw = t.W
 		}
-		y = (bigw.r.Min.Y + bigw.r.Max.Y) / 2
+		y = (bigw.R.Min.Y + bigw.R.Max.Y) / 2
 	}
 	w = coladdAndMouse(c, nil, nil, y)
-	if w.body.fr.MaxLines < 2 {
-		colgrow(w.col, w, 1)
+	if w.Body.Fr.MaxLines < 2 {
+		wind.Colgrow(w.Col, w, 1)
 	}
 	return w
 }

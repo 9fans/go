@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sync"
 
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/plan9"
 )
 
@@ -139,7 +140,7 @@ func xfidlogflush(x *Xfid) {
  * op == "del" for deleted window
  *	- called from winclose
  */
-func xfidlog(w *Window, op string) {
+func xfidlog(w *wind.Window, op string) {
 	bigUnlock()
 	eventlog.lk.Lock()
 	bigLock()
@@ -161,9 +162,9 @@ func xfidlog(w *Window, op string) {
 		// Otherwise grow (in append below).
 	}
 
-	f := w.body.file
+	f := w.Body.File
 	name := string(f.Name())
-	eventlog.ev = append(eventlog.ev, fmt.Sprintf("%d %s %s\n", w.id, op, name))
+	eventlog.ev = append(eventlog.ev, fmt.Sprintf("%d %s %s\n", w.ID, op, name))
 	eventlog.r.Broadcast()
 	eventlog.lk.Unlock()
 }

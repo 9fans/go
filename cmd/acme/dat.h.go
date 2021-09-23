@@ -1,16 +1,9 @@
 package main
 
 import (
-	"os"
-	"sync"
-	"unsafe"
-
-	"9fans.net/go/cmd/acme/internal/adraw"
-	"9fans.net/go/cmd/acme/internal/bufs"
-	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
-	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
 )
@@ -45,97 +38,6 @@ type Elog struct {
 	q0  int
 	nd  int
 	r   []rune
-}
-
-// Text.what
-
-const (
-	Columntag = iota
-	Rowtag
-	Tag
-	Body
-)
-
-type Text struct {
-	file     *File
-	fr       frame.Frame
-	reffont  *adraw.RefFont
-	org      int
-	q0       int
-	q1       int
-	what     int
-	tabstop  int
-	w        *Window
-	scrollr  draw.Rectangle
-	lastsr   draw.Rectangle
-	all      draw.Rectangle
-	row      *Row
-	col      *Column
-	iq1      int
-	eq0      int
-	cq0      int
-	cache    []rune
-	nofill   bool
-	needundo bool
-}
-
-type Window struct {
-	lk          sync.Mutex
-	ref         uint32
-	tag         Text
-	body        Text
-	r           draw.Rectangle
-	isdir       bool
-	isscratch   bool
-	filemenu    bool
-	dirty       bool
-	autoindent  bool
-	showdel     bool
-	id          int
-	addr        runes.Range
-	limit       runes.Range
-	nomark      bool
-	wrselrange  runes.Range
-	rdselfd     *os.File
-	col         *Column
-	eventtag    uint16
-	eventwait   chan bool
-	events      []byte
-	owner       rune
-	maxlines    int
-	dlp         []*Dirlist
-	putseq      int
-	incl        [][]rune
-	reffont     *adraw.RefFont
-	ctllock     sync.Mutex
-	ctlfid      int
-	dumpstr     string
-	dumpdir     string
-	dumpid      int
-	utflastqid  int
-	utflastboff int64
-	utflastq    int
-	tagsafe     bool
-	tagexpand   bool
-	taglines    int
-	tagtop      draw.Rectangle
-	editoutlk   util.QLock
-	external    bool
-}
-
-type Column struct {
-	r    draw.Rectangle
-	tag  Text
-	row  *Row
-	w    []*Window
-	safe bool
-}
-
-type Row struct {
-	lk  sync.Mutex
-	r   draw.Rectangle
-	tag Text
-	col []*Column
 }
 
 type Timer struct {
@@ -175,7 +77,7 @@ type Fid struct {
 	busy   bool
 	open   bool
 	qid    plan9.Qid
-	w      *Window
+	w      *wind.Window
 	dir    []Dirtab
 	next   *Fid
 	mntdir *Mntdir
@@ -193,11 +95,6 @@ type Xfid struct {
 	flushed bool
 }
 
-type Dirlist struct {
-	r   []rune
-	wid int
-}
-
 type Expand struct {
 	q0    int
 	q1    int
@@ -210,14 +107,6 @@ type Expand struct {
 	a1    int
 }
 
-// fbufalloc() guarantees room off end of BUFSIZE
-const (
-	BUFSIZE   = 8192
-	RUNESIZE  = int(unsafe.Sizeof(rune(0)))
-	RBUFSIZE  = bufs.Len / runes.RuneSize
-	EVENTSIZE = 256
-)
-
 const XXX = false
 
 // editing
@@ -228,31 +117,18 @@ const (
 	Collecting
 )
 
-var globalincref int
-var maxtab int // size of a tab, in units of the '0' character
-
 var screen *draw.Image
 var mouse *draw.Mouse
 var mousectl *draw.Mousectl
 var keyboardctl *draw.Keyboardctl
-var row Row
 var timerpid int
-var seltext *Text
-var argtext *Text
-var mousetext *Text // global because Text.close needs to clear it
-var typetext *Text  // global because Text.close needs to clear it
-var barttext *Text  // shared between mousetask and keyboardthread
 var bartflag bool
-var activewin *Window
-var activecol *Column
 var fsyspid int
 var cputype string
 var objtype string
 var home string
 var acmeshell string
 
-// extern var wdir [unknown]C.char /* must use extern because no dimension given */
-var globalautoindent bool
 var dodollarsigns bool
 
 const (
@@ -272,7 +148,7 @@ var (
 	ckill      = make(chan []rune)
 	cxfidalloc = make(chan *Xfid) // TODO bidi
 	cxfidfree  = make(chan *Xfid)
-	cnewwindow = make(chan *Window) // TODO bidi
+	cnewwindow = make(chan *wind.Window) // TODO bidi
 	mouseexit0 chan int
 	mouseexit1 chan int
 	cexit      = make(chan int)

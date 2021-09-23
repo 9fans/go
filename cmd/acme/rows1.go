@@ -27,112 +27,11 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
 
-func rowinit(row *Row, r draw.Rectangle) {
-	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-	row.r = r
-	row.col = nil
-	r1 := r
-	r1.Max.Y = r1.Min.Y + adraw.Font.Height
-	t := &row.tag
-	textinit(t, fileaddtext(nil, t), r1, adraw.FindFont(false, false, false, ""), adraw.TagCols[:])
-	t.what = Rowtag
-	t.row = row
-	t.w = nil
-	t.col = nil
-	r1.Min.Y = r1.Max.Y
-	r1.Max.Y += adraw.Border()
-	adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
-	textinsert(t, 0, []rune("Newcol Kill Putall Dump Exit "), true)
-	textsetselect(t, t.Len(), t.Len())
-}
-
-func rowadd(row *Row, c *Column, x int) *Column {
-	var d *Column
-	r := row.r
-	r.Min.Y = row.tag.fr.R.Max.Y + adraw.Border()
-	if x < r.Min.X && len(row.col) > 0 { //steal 40% of last column by default
-		d = row.col[len(row.col)-1]
-		x = d.r.Min.X + 3*d.r.Dx()/5
-	}
-	var i int
-	// look for column we'll land on
-	for i = 0; i < len(row.col); i++ {
-		d = row.col[i]
-		if x < d.r.Max.X {
-			break
-		}
-	}
-	if len(row.col) > 0 {
-		if i < len(row.col) {
-			i++ // new column will go after d
-		}
-		r = d.r
-		if r.Dx() < 100 {
-			return nil
-		}
-		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-		r1 := r
-		r1.Max.X = util.Min(x-adraw.Border(), r.Max.X-50)
-		if r1.Dx() < 50 {
-			r1.Max.X = r1.Min.X + 50
-		}
-		colresize(d, r1)
-		r1.Min.X = r1.Max.X
-		r1.Max.X = r1.Min.X + adraw.Border()
-		adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
-		r.Min.X = r1.Max.X
-	}
-	if c == nil {
-		c = new(Column)
-		colinit(c, r)
-		util.Incref(&adraw.RefFont1.Ref)
-	} else {
-		colresize(c, r)
-	}
-	c.row = row
-	c.tag.row = row
-	row.col = append(row.col, nil)
-	copy(row.col[i+1:], row.col[i:])
-	row.col[i] = c
-	return c
-}
-
-func rowresize(row *Row, r draw.Rectangle) {
-	or := row.r
-	deltax := r.Min.X - or.Min.X
-	row.r = r
-	r1 := r
-	r1.Max.Y = r1.Min.Y + adraw.Font.Height
-	textresize(&row.tag, r1, true)
-	r1.Min.Y = r1.Max.Y
-	r1.Max.Y += adraw.Border()
-	adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
-	r.Min.Y = r1.Max.Y
-	r1 = r
-	r1.Max.X = r1.Min.X
-	for i := 0; i < len(row.col); i++ {
-		c := row.col[i]
-		r1.Min.X = r1.Max.X
-		// the test should not be necessary, but guarantee we don't lose a pixel
-		if i == len(row.col)-1 {
-			r1.Max.X = r.Max.X
-		} else {
-			r1.Max.X = (c.r.Max.X-or.Min.X)*r.Dx()/or.Dx() + deltax
-		}
-		if i > 0 {
-			r2 := r1
-			r2.Max.X = r2.Min.X + adraw.Border()
-			adraw.Display.ScreenImage.Draw(r2, adraw.Display.Black, nil, draw.ZP)
-			r1.Min.X = r2.Max.X
-		}
-		colresize(c, r1)
-	}
-}
-
-func rowdragcol(row *Row, c *Column, _0 int) {
+func rowdragcol(row *wind.Row, c *wind.Column, _0 int) {
 	clearmouse()
 	adraw.Display.SwitchCursor2(&adraw.BoxCursor, &adraw.BoxCursor2)
 	b := mouse.Buttons
@@ -148,160 +47,48 @@ func rowdragcol(row *Row, c *Column, _0 int) {
 		return
 	}
 
-	rowdragcol1(row, c, op, mouse.Point)
+	wind.Rowdragcol1(row, c, op, mouse.Point)
 	clearmouse()
 	colmousebut(c)
 }
 
-func rowdragcol1(row *Row, c *Column, op, p draw.Point) {
-	var i int
-	for i = 0; i < len(row.col); i++ {
-		if row.col[i] == c {
-			goto Found
-		}
-	}
-	util.Fatal("can't find column")
-
-Found:
-	if abs(p.X-op.X) < 5 && abs(p.Y-op.Y) < 5 {
-		return
-	}
-	if (i > 0 && p.X < row.col[i-1].r.Min.X) || (i < len(row.col)-1 && p.X > c.r.Max.X) {
-		// shuffle
-		x := c.r.Min.X
-		rowclose(row, c, false)
-		if rowadd(row, c, p.X) == nil { // whoops!
-			if rowadd(row, c, x) == nil { // WHOOPS!
-				if rowadd(row, c, -1) == nil { // shit!
-					rowclose(row, c, true)
-					return
-				}
-			}
-		}
-		return
-	}
-	if i == 0 {
-		return
-	}
-	d := row.col[i-1]
-	if p.X < d.r.Min.X+80+adraw.Scrollwid() {
-		p.X = d.r.Min.X + 80 + adraw.Scrollwid()
-	}
-	if p.X > c.r.Max.X-80-adraw.Scrollwid() {
-		p.X = c.r.Max.X - 80 - adraw.Scrollwid()
-	}
-	r := d.r
-	r.Max.X = c.r.Max.X
-	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-	r.Max.X = p.X
-	colresize(d, r)
-	r = c.r
-	r.Min.X = p.X
-	r.Max.X = r.Min.X
-	r.Max.X += adraw.Border()
-	adraw.Display.ScreenImage.Draw(r, adraw.Display.Black, nil, draw.ZP)
-	r.Min.X = r.Max.X
-	r.Max.X = c.r.Max.X
-	colresize(c, r)
-}
-
-func rowclose(row *Row, c *Column, dofree bool) {
-	var i int
-	for i = 0; i < len(row.col); i++ {
-		if row.col[i] == c {
-			goto Found
-		}
-	}
-	util.Fatal("can't find column")
-Found:
-	r := c.r
-	if dofree {
-		colcloseall(c)
-	}
-	copy(row.col[i:], row.col[i+1:])
-	row.col = row.col[:len(row.col)-1]
-	if len(row.col) == 0 {
-		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-		return
-	}
-	if i == len(row.col) { // extend last column right
-		c = row.col[i-1]
-		r.Min.X = c.r.Min.X
-		r.Max.X = row.r.Max.X
-	} else { // extend next window left
-		c = row.col[i]
-		r.Max.X = c.r.Max.X
-	}
-	adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
-	colresize(c, r)
-}
-
-func rowwhichcol(row *Row, p draw.Point) *Column {
-	for i := 0; i < len(row.col); i++ {
-		c := row.col[i]
-		if p.In(c.r) {
-			return c
-		}
-	}
-	return nil
-}
-
-func rowwhich(row *Row, p draw.Point) *Text {
-	if p.In(row.tag.all) {
-		return &row.tag
-	}
-	c := rowwhichcol(row, p)
-	if c != nil {
-		return colwhich(c, p)
-	}
-	return nil
-}
-
-func rowtype(row *Row, r rune, p draw.Point) *Text {
+func rowtype(row *wind.Row, r rune, p draw.Point) *wind.Text {
 	if r == 0 {
 		r = utf8.RuneError
 	}
 
 	clearmouse()
-	row.lk.Lock()
-	var t *Text
+	row.Lk.Lock()
+	var t *wind.Text
 	if bartflag {
-		t = barttext
+		t = wind.Barttext
 	} else {
-		t = rowwhich(row, p)
+		t = wind.Rowwhich(row, p)
 	}
-	if t != nil && (t.what != Tag || !p.In(t.scrollr)) {
-		w := t.w
+	if t != nil && (t.What != wind.Tag || !p.In(t.ScrollR)) {
+		w := t.W
 		if w == nil {
 			texttype(t, r)
 		} else {
-			winlock(w, 'K')
+			wind.Winlock(w, 'K')
 			wintype(w, t, r)
 			// Expand tag if necessary
-			if t.what == Tag {
-				t.w.tagsafe = false
+			if t.What == wind.Tag {
+				t.W.Tagsafe = false
 				if r == '\n' {
-					t.w.tagexpand = true
+					t.W.Tagexpand = true
 				}
-				winresizeAndMouse(w, w.r, true, true)
+				winresizeAndMouse(w, w.R, true, true)
 			}
-			winunlock(w)
+			wind.Winunlock(w)
 		}
 	}
-	row.lk.Unlock()
+	row.Lk.Unlock()
 	return t
 }
 
-func rowclean(row *Row) bool {
-	clean := true
-	for i := 0; i < len(row.col); i++ {
-		clean = colclean(row.col[i]) && clean
-	}
-	return clean
-}
-
-func rowdump(row *Row, file *string) {
-	if len(row.col) == 0 {
+func rowdump(row *wind.Row, file *string) {
+	if len(row.Col) == 0 {
 		return
 	}
 	// defer fbuffree(buf)
@@ -324,84 +111,84 @@ func rowdump(row *Row, file *string) {
 	fmt.Fprintf(b, "%s\n", adraw.FontNames[0])
 	fmt.Fprintf(b, "%s\n", adraw.FontNames[1])
 	var i int
-	var c *Column
-	for i = 0; i < len(row.col); i++ {
-		c = row.col[i]
-		fmt.Fprintf(b, "%11.7f", 100.0*float64(c.r.Min.X-row.r.Min.X)/float64(row.r.Dx()))
-		if i == len(row.col)-1 {
+	var c *wind.Column
+	for i = 0; i < len(row.Col); i++ {
+		c = row.Col[i]
+		fmt.Fprintf(b, "%11.7f", 100.0*float64(c.R.Min.X-row.R.Min.X)/float64(row.R.Dx()))
+		if i == len(row.Col)-1 {
 			b.WriteByte('\n')
 		} else {
 			b.WriteByte(' ')
 		}
 	}
-	dumpid := make(map[*File]int)
-	m := util.Min(bufs.RuneLen, row.tag.Len())
-	row.tag.file.Read(0, r[:m])
+	dumpid := make(map[*wind.File]int)
+	m := util.Min(bufs.RuneLen, row.Tag.Len())
+	row.Tag.File.Read(0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
 		n++
 	}
 	fmt.Fprintf(b, "w %s\n", string(r[:n]))
-	for i = 0; i < len(row.col); i++ {
-		c = row.col[i]
-		m = util.Min(bufs.RuneLen, c.tag.Len())
-		c.tag.file.Read(0, r[:m])
+	for i = 0; i < len(row.Col); i++ {
+		c = row.Col[i]
+		m = util.Min(bufs.RuneLen, c.Tag.Len())
+		c.Tag.File.Read(0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
 			n++
 		}
 		fmt.Fprintf(b, "c%11d %s\n", i, string(r[:n]))
 	}
-	for i, c := range row.col {
+	for i, c := range row.Col {
 	Windows:
-		for j, w := range c.w {
-			wincommit(w, &w.tag)
-			t := &w.body
+		for j, w := range c.W {
+			wind.Wincommit(w, &w.Tag)
+			t := &w.Body
 			// windows owned by others get special treatment
-			if w.external {
-				if w.dumpstr == "" {
+			if w.External {
+				if w.Dumpstr == "" {
 					continue
 				}
 			}
 			// zeroxes of external windows are tossed
-			if len(t.file.text) > 1 {
-				for n = 0; n < len(t.file.text); n++ {
-					w1 := t.file.text[n].w
+			if len(t.File.Text) > 1 {
+				for n = 0; n < len(t.File.Text); n++ {
+					w1 := t.File.Text[n].W
 					if w == w1 {
 						continue
 					}
-					if w1.external {
+					if w1.External {
 						continue Windows
 					}
 				}
 			}
 			fontname := ""
-			if t.reffont.F != adraw.Font {
-				fontname = t.reffont.F.Name
+			if t.Reffont.F != adraw.Font {
+				fontname = t.Reffont.F.Name
 			}
 			var a string
-			if len(t.file.Name()) != 0 {
-				a = string(t.file.Name())
+			if len(t.File.Name()) != 0 {
+				a = string(t.File.Name())
 			}
 			var dumped bool
-			if dumpid[t.file] != 0 {
+			if dumpid[t.File] != 0 {
 				dumped = false
-				fmt.Fprintf(b, "x%11d %11d %11d %11d %11.7f %s\n", i, dumpid[t.file], w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
-			} else if w.dumpstr != "" {
+				fmt.Fprintf(b, "x%11d %11d %11d %11d %11.7f %s\n", i, dumpid[t.File], w.Body.Q0, w.Body.Q1, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), fontname)
+			} else if w.Dumpstr != "" {
 				dumped = false
-				fmt.Fprintf(b, "e%11d %11d %11d %11d %11.7f %s\n", i, 0, 0, 0, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
-			} else if (!w.dirty && !exists(a)) || w.isdir {
+				fmt.Fprintf(b, "e%11d %11d %11d %11d %11.7f %s\n", i, 0, 0, 0, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), fontname)
+			} else if (!w.Dirty && !exists(a)) || w.IsDir {
 				dumped = false
-				dumpid[t.file] = w.id
-				fmt.Fprintf(b, "f%11d %11d %11d %11d %11.7f %s\n", i, w.id, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), fontname)
+				dumpid[t.File] = w.ID
+				fmt.Fprintf(b, "f%11d %11d %11d %11d %11.7f %s\n", i, w.ID, w.Body.Q0, w.Body.Q1, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), fontname)
 			} else {
 				dumped = true
-				dumpid[t.file] = w.id
-				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.body.q0, w.body.q1, 100.0*float64(w.r.Min.Y-c.r.Min.Y)/float64(c.r.Dy()), w.body.Len(), fontname)
+				dumpid[t.File] = w.ID
+				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.Body.Q0, w.Body.Q1, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), w.Body.Len(), fontname)
 			}
-			b.WriteString(winctlprint(w, false))
-			m = util.Min(bufs.RuneLen, w.tag.Len())
-			w.tag.file.Read(0, r[:m])
+			b.WriteString(wind.Winctlprint(w, false))
+			m = util.Min(bufs.RuneLen, w.Tag.Len())
+			w.Tag.File.Read(0, r[:m])
 			n = 0
 			for n < m {
 				start := n
@@ -423,16 +210,16 @@ func rowdump(row *Row, file *string) {
 					if n > bufs.Len/utf8.UTFMax {
 						n = bufs.Len / utf8.UTFMax
 					}
-					t.file.Read(q0, r[:n])
+					t.File.Read(q0, r[:n])
 					fmt.Fprintf(b, "%s", string(r[:n]))
 					q0 += n
 				}
 			}
-			if w.dumpstr != "" {
-				if w.dumpdir != "" {
-					fmt.Fprintf(b, "%s\n%s\n", w.dumpdir, w.dumpstr)
+			if w.Dumpstr != "" {
+				if w.Dumpdir != "" {
+					fmt.Fprintf(b, "%s\n%s\n", w.Dumpdir, w.Dumpstr)
 				} else {
-					fmt.Fprintf(b, "\n%s\n", w.dumpstr)
+					fmt.Fprintf(b, "\n%s\n", w.Dumpstr)
 				}
 			}
 		}
@@ -483,7 +270,7 @@ func rowloadfonts(file string) {
 	}
 }
 
-func rowload(row *Row, file *string, initing bool) bool {
+func rowload(row *wind.Row, file *string, initing bool) bool {
 	if file == nil {
 		if home == "" {
 			alog.Printf("can't find file for load: $home not defined\n")
@@ -528,8 +315,8 @@ func rowload(row *Row, file *string, initing bool) bool {
 			adraw.FindFont(i != 0, true, i == 0 && initing, l)
 		}
 	}
-	if initing && len(row.col) == 0 {
-		rowinit(row, adraw.Display.ScreenImage.Clipr)
+	if initing && len(row.Col) == 0 {
+		wind.RowInit(row, adraw.Display.ScreenImage.Clipr)
 	}
 	l, err = rdline(b, &line)
 	if err != nil {
@@ -545,15 +332,15 @@ func rowload(row *Row, file *string, initing bool) bool {
 		if percent < 0 || percent >= 100 {
 			return bad()
 		}
-		x := row.r.Min.X + int(percent*float64(row.r.Dx())/100+0.5)
-		if i < len(row.col) {
+		x := row.R.Min.X + int(percent*float64(row.R.Dx())/100+0.5)
+		if i < len(row.Col) {
 			if i == 0 {
 				continue
 			}
-			c1 := row.col[i-1]
-			c2 := row.col[i]
-			r1 := c1.r
-			r2 := c2.r
+			c1 := row.Col[i-1]
+			c2 := row.Col[i]
+			r1 := c1.R
+			r2 := c2.R
 			if x < adraw.Border() {
 				x = adraw.Border()
 			}
@@ -563,21 +350,21 @@ func rowload(row *Row, file *string, initing bool) bool {
 				continue
 			}
 			adraw.Display.ScreenImage.Draw(draw.Rpt(r1.Min, r2.Max), adraw.Display.White, nil, draw.ZP)
-			colresize(c1, r1)
-			colresize(c2, r2)
+			wind.Colresize(c1, r1)
+			wind.Colresize(c2, r2)
 			r2.Min.X = x - adraw.Border()
 			r2.Max.X = x
 			adraw.Display.ScreenImage.Draw(r2, adraw.Display.Black, nil, draw.ZP)
 		}
-		if i >= len(row.col) {
-			rowadd(row, nil, x)
+		if i >= len(row.Col) {
+			wind.RowAdd(row, nil, x)
 		}
 	}
 	var n int
 	var ns int
 	var r []rune
 	hdrdone := false
-	byDumpID := make(map[int]*Window)
+	byDumpID := make(map[int]*wind.Window)
 	for {
 		l, err = rdline(b, &line)
 		if err != nil {
@@ -598,8 +385,8 @@ func rowload(row *Row, file *string, initing bool) bool {
 						break
 					}
 				}
-				textdelete(&row.col[i].tag, 0, row.col[i].tag.Len(), true)
-				textinsert(&row.col[i].tag, 0, r[n+1:], true)
+				wind.Textdelete(&row.Col[i].Tag, 0, row.Col[i].Tag.Len(), true)
+				wind.Textinsert(&row.Col[i].Tag, 0, r[n+1:], true)
 				continue
 			case 'w':
 				l = l[:len(l)-1]
@@ -613,8 +400,8 @@ func rowload(row *Row, file *string, initing bool) bool {
 						break
 					}
 				}
-				textdelete(&row.tag, 0, row.tag.Len(), true)
-				textinsert(&row.tag, 0, r, true)
+				wind.Textdelete(&row.Tag, 0, row.Tag.Len(), true)
+				wind.Textinsert(&row.Tag, 0, r, true)
 				continue
 			}
 			hdrdone = true
@@ -688,19 +475,19 @@ func rowload(row *Row, file *string, initing bool) bool {
 		if i < 0 || i > 10 {
 			return bad()
 		}
-		if i > len(row.col) {
-			i = len(row.col)
+		if i > len(row.Col) {
+			i = len(row.Col)
 		}
-		c := row.col[i]
-		y := c.r.Min.Y + int((percent*float64(c.r.Dy()))/100+0.5)
-		if y < c.r.Min.Y || y >= c.r.Max.Y {
+		c := row.Col[i]
+		y := c.R.Min.Y + int((percent*float64(c.R.Dy()))/100+0.5)
+		if y < c.R.Min.Y || y >= c.R.Max.Y {
 			y = -1
 		}
-		var w *Window
+		var w *wind.Window
 		if dumpid == 0 {
-			w = coladd(c, nil, nil, y)
+			w = wind.Coladd(c, nil, nil, y)
 		} else {
-			w = coladd(c, nil, byDumpID[dumpid], y)
+			w = wind.Coladd(c, nil, byDumpID[dumpid], y)
 		}
 		if w == nil {
 			continue
@@ -730,15 +517,15 @@ func rowload(row *Row, file *string, initing bool) bool {
 			}
 		}
 		if dumpid == 0 {
-			winsetname(w, r[:n])
+			wind.Winsetname(w, r[:n])
 		}
 		for ; n < len(r); n++ {
 			if r[n] == '|' {
 				break
 			}
 		}
-		wincleartag(w)
-		textinsert(&w.tag, w.tag.Len(), r[n+1:], true)
+		wind.Wincleartatg(w)
+		wind.Textinsert(&w.Tag, w.Tag.Len(), r[n+1:], true)
 		if ndumped >= 0 {
 			// simplest thing is to put it in a file and load that
 			f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
@@ -762,37 +549,29 @@ func rowload(row *Row, file *string, initing bool) bool {
 			if err := f.Close(); err != nil {
 				return bad()
 			}
-			textload(&w.body, 0, tmp, true)
+			textload(&w.Body, 0, tmp, true)
 			os.Remove(tmp)
-			w.body.file.SetMod(true)
-			for n = 0; n < len(w.body.file.text); n++ {
-				w.body.file.text[n].w.dirty = true
+			w.Body.File.SetMod(true)
+			for n = 0; n < len(w.Body.File.Text); n++ {
+				w.Body.File.Text[n].W.Dirty = true
 			}
-			winsettag(w)
+			wind.Winsettag(w)
 		} else if dumpid == 0 && r[ns+1] != '+' && r[ns+1] != '-' {
-			get(&w.body, nil, nil, false, XXX, nil)
+			get(&w.Body, nil, nil, false, XXX, nil)
 		}
 		if fontr != nil {
 			fmt.Fprintf(os.Stderr, "FONTR %q\n", fontr)
-			fontx(&w.body, nil, nil, false, false, fontr)
+			fontx(&w.Body, nil, nil, false, false, fontr)
 		}
-		if q0 > w.body.Len() || q1 > w.body.Len() || q0 > q1 {
+		if q0 > w.Body.Len() || q1 > w.Body.Len() || q0 > q1 {
 			q1 = 0
 			q0 = q1
 		}
-		textshow(&w.body, q0, q1, true)
-		w.maxlines = util.Min(w.body.fr.NumLines, util.Max(w.maxlines, w.body.fr.MaxLines))
+		wind.Textshow(&w.Body, q0, q1, true)
+		w.Maxlines = util.Min(w.Body.Fr.NumLines, util.Max(w.Maxlines, w.Body.Fr.MaxLines))
 		xfidlog(w, "new")
 	}
 	return true
-}
-
-func allwindows(f func(*Window, interface{}), arg interface{}) {
-	for _, c := range row.col {
-		for _, w := range c.w {
-			f(w, arg)
-		}
-	}
 }
 
 func atoi(s string) int {

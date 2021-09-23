@@ -23,6 +23,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/util"
+	"9fans.net/go/cmd/acme/internal/wind"
 )
 
 var linex = "\n"
@@ -38,7 +39,7 @@ type Cmdtab struct {
 	defaddr Defaddr
 	count   uint8
 	token   string
-	fn      func(*Text, *Cmd) bool
+	fn      func(*wind.Text, *Cmd) bool
 }
 
 func init() { cmdtab = cmdtab1 } // break init cycle
@@ -89,7 +90,7 @@ var patset bool
 var cmdlist []*Cmd
 var addrlist []*Addr
 var stringlist []*String
-var curtext *Text
+var curtext *wind.Text
 var editing int = Inactive
 
 func editthread() {
@@ -106,23 +107,23 @@ func editthread() {
 	editerrc <- ""
 }
 
-func allelogterm(w *Window, x interface{}) {
-	if ef := elogfind(w.body.file); ef != nil {
+func allelogterm(w *wind.Window, x interface{}) {
+	if ef := elogfind(w.Body.File); ef != nil {
 		elogterm(ef)
 	}
 }
 
-func alleditinit(w *Window, x interface{}) {
-	textcommit(&w.tag, true)
-	textcommit(&w.body, true)
+func alleditinit(w *wind.Window, x interface{}) {
+	wind.Textcommit(&w.Tag, true)
+	wind.Textcommit(&w.Body, true)
 }
 
-func allupdate(w *Window, x interface{}) {
-	t := &w.body
-	if t.file.curtext != t { // do curtext only
+func allupdate(w *wind.Window, x interface{}) {
+	t := &w.Body
+	if t.File.Curtext != t { // do curtext only
 		return
 	}
-	f := elogfind(t.file)
+	f := elogfind(t.File)
 	if f == nil {
 		return
 	}
@@ -132,25 +133,25 @@ func allupdate(w *Window, x interface{}) {
 		elogapply(f)
 		if f.editclean {
 			f.SetMod(false)
-			for i := 0; i < len(f.text); i++ {
-				f.text[i].w.dirty = false
+			for i := 0; i < len(f.Text); i++ {
+				f.Text[i].W.Dirty = false
 			}
 		}
 	}
-	textsetselect(t, t.q0, t.q1)
-	textscrdraw(t)
-	winsettag(w)
+	wind.Textsetselect(t, t.Q0, t.Q1)
+	wind.Textscrdraw(t)
+	wind.Winsettag(w)
 }
 
 func editerror(format string, args ...interface{}) {
 	s := fmt.Sprintf(format, args...)
 	freecmd()
-	allwindows(allelogterm, nil) // truncate the edit logs
+	wind.All(allelogterm, nil) // truncate the edit logs
 	editerrc <- s
 	runtime.Goexit() // TODO(rsc)
 }
 
-func editcmd(ct *Text, r []rune) {
+func editcmd(ct *wind.Text, r []rune) {
 	if len(r) == 0 {
 		return
 	}
@@ -159,17 +160,17 @@ func editcmd(ct *Text, r []rune) {
 		return
 	}
 
-	allwindows(alleditinit, nil)
+	wind.All(alleditinit, nil)
 	cmdstartp = make([]rune, len(r), len(r)+1)
 	copy(cmdstartp, r)
 	if r[len(r)-1] != '\n' {
 		cmdstartp = append(cmdstartp, '\n')
 	}
 	cmdp = 0
-	if ct.w == nil {
+	if ct.W == nil {
 		curtext = nil
 	} else {
-		curtext = &ct.w.body
+		curtext = &ct.W.Body
 	}
 	resetxec()
 	if editerrc == nil {
@@ -184,7 +185,7 @@ func editcmd(ct *Text, r []rune) {
 	}
 
 	// update everyone whose edit log has data
-	allwindows(allupdate, nil)
+	wind.All(allupdate, nil)
 }
 
 func getch() rune {
