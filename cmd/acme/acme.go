@@ -16,6 +16,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	dumppkg "9fans.net/go/cmd/acme/internal/dump"
 	editpkg "9fans.net/go/cmd/acme/internal/edit"
+	"9fans.net/go/cmd/acme/internal/exec"
 	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/regx"
 	"9fans.net/go/cmd/acme/internal/runes"
@@ -32,7 +33,7 @@ var mtpt string
 
 var mainthread sync.Mutex
 
-var command *Command
+var command *exec.Command
 
 func derror(d *draw.Display, errorstr string) {
 	util.Fatal(errorstr)
@@ -68,17 +69,17 @@ func main() {
 	fileloadpkg.Ismtpt = ismtpt
 	ui.Textload = fileloadpkg.Textload
 	dumppkg.Get = func(t *wind.Text) {
-		get(t, nil, nil, false, XXX, nil)
+		exec.Get(t, nil, nil, false, exec.XXX, nil)
 	}
 	dumppkg.Run = func(s string, rdir []rune) {
-		run(nil, s, rdir, true, nil, nil, false)
+		exec.Run(nil, s, rdir, true, nil, nil, false)
 	}
 
 	cputype = os.Getenv("cputype")
 	ui.Objtype = os.Getenv("objtype")
 	home = os.Getenv("HOME")
 	dumppkg.Home = home
-	acmeshell = os.Getenv("acmeshell")
+	exec.Acmeshell = os.Getenv("acmeshell")
 	p := os.Getenv("tabstop")
 	if p != "" {
 		wind.MaxTab, _ = strconv.Atoi(p)
@@ -143,13 +144,13 @@ func main() {
 	dumppkg.OnNewWindow = ui.OnNewWindow
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
-	editpkg.Putfile = putfile
+	editpkg.Putfile = exec.Putfile
 	editpkg.Run = func(w *wind.Window, s string, rdir []rune) {
-		run(w, s, rdir, true, nil, nil, true)
+		exec.Run(w, s, rdir, true, nil, nil, true)
 	}
-	Fsysmount = fsysmount
-	Fsysdelid = fsysdelid
-	Xfidlog = xfidlog
+	exec.Fsysmount = fsysmount
+	exec.Fsysdelid = fsysdelid
+	exec.Xfidlog = xfidlog
 
 	ui.Mousectl = adraw.Display.InitMouse()
 	if ui.Mousectl == nil {
@@ -216,7 +217,7 @@ func main() {
 	go newwindowthread()
 	// threadnotify(shutdown, 1)
 	bigUnlock()
-	<-cexit
+	<-exec.Cexit
 	bigLock()
 	killprocs()
 	os.Exit(0)
@@ -300,7 +301,7 @@ func killprocs() {
 	//	if(display)
 	//		flushimage(display, 1);
 
-	for c := command; c != nil; c = c.next {
+	for c := command; c != nil; c = c.Next {
 		// TODO postnote(PNGROUP, c.pid, "hangup")
 		_ = c
 	}
@@ -558,7 +559,7 @@ func mousethread() {
 					var argt *wind.Text
 					var q0, q1 int
 					if ui.Textselect2(t, &q0, &q1, &argt) != 0 {
-						execute(t, q0, q1, false, argt)
+						exec.Execute(t, q0, q1, false, argt)
 					}
 				} else if m.Buttons&4 != 0 {
 					var q0, q1 int
@@ -595,7 +596,7 @@ func waitthread() {
 	defer bigUnlock()
 
 	for {
-		var c *Command
+		var c *exec.Command
 		bigUnlock()
 		select {
 		case errb := <-cerr:
@@ -605,12 +606,12 @@ func waitthread() {
 			adraw.Display.Flush()
 			wind.TheRow.Lk.Unlock()
 
-		case cmd := <-ckill:
+		case cmd := <-exec.Ckill:
 			bigLock()
 			found := false
-			for c = command; c != nil; c = c.next {
+			for c = command; c != nil; c = c.Next {
 				// -1 for blank
-				if runes.Equal(c.name[:len(c.name)-1], cmd) {
+				if runes.Equal(c.Name[:len(c.Name)-1], cmd) {
 					/* TODO postnote
 					if postnote(PNGROUP, c.pid, "kill") < 0 {
 						Printf("kill %S: %r\n", cmd)
@@ -626,13 +627,13 @@ func waitthread() {
 		case w := <-cwait:
 			bigLock()
 			pid := w.pid
-			var c, lc *Command
-			for c = command; c != nil; c = c.next {
-				if c.pid == pid {
+			var c, lc *exec.Command
+			for c = command; c != nil; c = c.Next {
+				if c.Pid == pid {
 					if lc != nil {
-						lc.next = c.next
+						lc.Next = c.Next
 					} else {
-						command = c.next
+						command = c.Next
 					}
 					break
 				}
@@ -648,26 +649,26 @@ func waitthread() {
 				p.next = pids
 				pids = p
 			} else {
-				if ui.Search(t, c.name) {
+				if ui.Search(t, c.Name) {
 					wind.Textdelete(t, t.Q0, t.Q1, true)
 					wind.Textsetselect(t, 0, 0)
 				}
 				if w.msg[0] != 0 {
-					warning(c.md, "%s: exit %s\n", string(c.name[:len(c.name)-1]), w.msg)
+					warning(c.Mntdir, "%s: exit %s\n", string(c.Name[:len(c.Name)-1]), w.msg)
 				}
 				adraw.Display.Flush()
 			}
 			wind.TheRow.Lk.Unlock()
 			goto Freecmd
 
-		case c = <-ccommand:
+		case c = <-exec.Ccommand:
 			bigLock()
 			// has this command already exited?
 			var lastp *Pid
 			for p := pids; p != nil; p = p.next {
-				if p.pid == c.pid {
+				if p.pid == c.Pid {
 					if p.msg[0] != 0 {
-						warning(c.md, "%s\n", p.msg)
+						warning(c.Mntdir, "%s\n", p.msg)
 					}
 					if lastp == nil {
 						pids = p.next
@@ -678,12 +679,12 @@ func waitthread() {
 				}
 				lastp = p
 			}
-			c.next = command
+			c.Next = command
 			command = c
 			wind.TheRow.Lk.Lock()
 			t := &wind.TheRow.Tag
 			wind.Textcommit(t, true)
-			wind.Textinsert(t, 0, c.name, true)
+			wind.Textinsert(t, 0, c.Name, true)
 			wind.Textsetselect(t, 0, 0)
 			adraw.Display.Flush()
 			wind.TheRow.Lk.Unlock()
@@ -692,10 +693,10 @@ func waitthread() {
 
 	Freecmd:
 		if c != nil {
-			if c.iseditcmd {
+			if c.IsEditCmd {
 				editpkg.Cedit <- 0
 			}
-			fsysdelid(c.md)
+			fsysdelid(c.Mntdir)
 		}
 	}
 }
@@ -757,8 +758,6 @@ func ismtpt(file string) bool {
 	// This is not foolproof, but it will stop a lot of them.
 	return strings.HasPrefix(file, mtpt) && (len(file) == len(mtpt) || file[len(mtpt)] == '/')
 }
-
-const timefmt = "2006/01/02 15:04:05"
 
 var big sync.Mutex
 var stk = make([]byte, 1<<20)

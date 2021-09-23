@@ -2,6 +2,7 @@ package main
 
 import (
 	"9fans.net/go/cmd/acme/internal/wind"
+	"9fans.net/go/cmd/internal/base"
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plumb"
@@ -39,29 +40,11 @@ type Timer struct {
 	next   *Timer
 }
 
-type Command struct {
-	pid       int
-	name      []rune
-	text      string
-	av        []string
-	iseditcmd bool
-	md        *Mntdir
-	next      *Command
-}
-
 type Dirtab struct {
 	name string
 	typ  uint8
 	qid  int
 	perm int
-}
-
-type Mntdir struct {
-	id   int
-	ref  int
-	dir  []rune
-	next *Mntdir
-	incl [][]rune
 }
 
 type Fid struct {
@@ -72,7 +55,7 @@ type Fid struct {
 	w      *wind.Window
 	dir    []Dirtab
 	next   *Fid
-	mntdir *Mntdir
+	mntdir *base.Mntdir
 	rpart  []byte
 	logoff int64
 }
@@ -87,16 +70,12 @@ type Xfid struct {
 	flushed bool
 }
 
-const XXX = false
-
 var screen *draw.Image
 var keyboardctl *draw.Keyboardctl
 var timerpid int
 var fsyspid int
 var cputype string
 var home string
-var acmeshell string
-
 var dodollarsigns bool
 
 type Waitmsg struct {
@@ -114,12 +93,6 @@ var (
 	mouseexit1 chan int
 	cerr       = make(chan []byte)
 	cwarn      = make(chan int, 1)
-)
-
-var (
-	ccommand   = make(chan *Command)
-	ckill      = make(chan []rune)
-	cexit      = make(chan int)
 )
 
 // #define	STACK	65536

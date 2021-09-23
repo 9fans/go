@@ -27,6 +27,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/disk"
 	editpkg "9fans.net/go/cmd/acme/internal/edit"
+	"9fans.net/go/cmd/acme/internal/exec"
 	"9fans.net/go/cmd/acme/internal/file"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
@@ -668,7 +669,7 @@ func xfidctlwrite(x *Xfid, w *wind.Window) {
 				break
 			}
 			r = r[:nr]
-			ui.Fontx(&w.Body, nil, nil, false, XXX, r)
+			ui.Fontx(&w.Body, nil, nil, false, exec.XXX, r)
 		} else if strings.HasPrefix(p, "dump ") { // set dump string
 			pp := p[5:]
 			p = p[5:]
@@ -716,10 +717,10 @@ func xfidctlwrite(x *Xfid, w *wind.Window) {
 			ui.ColcloseAndMouse(w.Col, w, true)
 			p = p[3:]
 		} else if strings.HasPrefix(p, "get") { // get file
-			get(&w.Body, nil, nil, false, XXX, nil)
+			exec.Get(&w.Body, nil, nil, false, exec.XXX, nil)
 			p = p[3:]
 		} else if strings.HasPrefix(p, "put") { // put file
-			put(&w.Body, nil, nil, XXX, XXX, nil)
+			exec.Put(&w.Body, nil, nil, exec.XXX, exec.XXX, nil)
 			p = p[3:]
 		} else if strings.HasPrefix(p, "dot=addr") { // set dot
 			wind.Textcommit(&w.Body, true)
@@ -847,7 +848,7 @@ func xfideventwrite(x *Xfid, w *wind.Window) {
 		switch c {
 		case 'x',
 			'X':
-			execute(t, q0, q1, true, nil)
+			exec.Execute(t, q0, q1, true, nil)
 		case 'l',
 			'L':
 			ui.Look3(t, q0, q1, true)

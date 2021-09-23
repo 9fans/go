@@ -23,6 +23,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
+	"9fans.net/go/cmd/internal/base"
 )
 
 func errorwin1(dir []rune, incl [][]rune) *wind.Window {
@@ -52,13 +53,13 @@ func errorwin1(dir []rune, incl [][]rune) *wind.Window {
 }
 
 // make new window, if necessary; return with it locked
-func errorwin(md *Mntdir, owner rune) *wind.Window {
+func errorwin(md *base.Mntdir, owner rune) *wind.Window {
 	var w *wind.Window
 	for {
 		if md == nil {
 			w = errorwin1(nil, nil)
 		} else {
-			w = errorwin1(md.dir, md.incl)
+			w = errorwin1(md.Dir, md.Incl)
 		}
 		wind.Winlock(w, owner)
 		if w.Col != nil {
@@ -100,14 +101,14 @@ func errorwinforwin(w *wind.Window) *wind.Window {
 }
 
 type Warning struct {
-	md   *Mntdir
+	md   *base.Mntdir
 	buf  disk.Buffer
 	next *Warning
 }
 
 var warnings *Warning
 
-func addwarningtext(md *Mntdir, r []rune) {
+func addwarningtext(md *base.Mntdir, r []rune) {
 	for warn := warnings; warn != nil; warn = warn.next {
 		if warn.md == md {
 			warn.buf.Insert(warn.buf.Len(), r)
@@ -173,7 +174,7 @@ func flushwarnings() {
 	warnings = nil
 }
 
-func warning(md *Mntdir, format string, args ...interface{}) {
+func warning(md *base.Mntdir, format string, args ...interface{}) {
 	addwarningtext(md, []rune(fmt.Sprintf(format, args...)))
 }
 

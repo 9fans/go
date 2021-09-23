@@ -26,6 +26,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
+	"9fans.net/go/cmd/internal/base"
 	"9fans.net/go/plan9"
 )
 
@@ -95,7 +96,7 @@ var dirtabw = [13]Dirtab{
 type Mnt struct {
 	lk sync.Mutex
 	id int
-	md *Mntdir
+	md *base.Mntdir
 }
 
 var mnt Mnt
@@ -168,44 +169,44 @@ func fsysproc() {
 	}
 }
 
-func fsysaddid(dir []rune, incl [][]rune) *Mntdir {
+func fsysaddid(dir []rune, incl [][]rune) *base.Mntdir {
 	mnt.lk.Lock()
 	mnt.id++
 	id := mnt.id
-	m := new(Mntdir)
-	m.id = id
-	m.dir = dir
-	m.ref = 1 // one for Command, one will be incremented in attach
-	m.next = mnt.md
-	m.incl = incl
+	m := new(base.Mntdir)
+	m.ID = id
+	m.Dir = dir
+	m.Ref = 1 // one for Command, one will be incremented in attach
+	m.Next = mnt.md
+	m.Incl = incl
 	mnt.md = m
 	mnt.lk.Unlock()
 	return m
 }
 
-func fsysincid(m *Mntdir) {
+func fsysincid(m *base.Mntdir) {
 	mnt.lk.Lock()
-	m.ref++
+	m.Ref++
 	mnt.lk.Unlock()
 }
 
-func fsysdelid(idm *Mntdir) {
+func fsysdelid(idm *base.Mntdir) {
 	if idm == nil {
 		return
 	}
 	mnt.lk.Lock()
-	idm.ref--
-	if idm.ref > 0 {
+	idm.Ref--
+	if idm.Ref > 0 {
 		mnt.lk.Unlock()
 		return
 	}
-	var prev *Mntdir
-	for m := mnt.md; m != nil; m = m.next {
+	var prev *base.Mntdir
+	for m := mnt.md; m != nil; m = m.Next {
 		if m == idm {
 			if prev != nil {
-				prev.next = m.next
+				prev.Next = m.Next
 			} else {
-				mnt.md = m.next
+				mnt.md = m.Next
 			}
 			mnt.lk.Unlock()
 			return
@@ -213,13 +214,13 @@ func fsysdelid(idm *Mntdir) {
 		prev = m
 	}
 	mnt.lk.Unlock()
-	cerr <- []byte(fmt.Sprintf("fsysdelid: can't find id %d\n", idm.id))
+	cerr <- []byte(fmt.Sprintf("fsysdelid: can't find id %d\n", idm.ID))
 }
 
 /*
  * Called only in exec.c:/^run(), from a different FD group
  */
-func fsysmount(dir []rune, incl [][]rune) *Mntdir {
+func fsysmount(dir []rune, incl [][]rune) *base.Mntdir {
 	return fsysaddid(dir, incl)
 }
 
@@ -292,11 +293,11 @@ func fsysattach(x *Xfid, f *Fid) *Xfid {
 	f.mntdir = nil
 	id, _ := strconv.Atoi(x.fcall.Aname)
 	mnt.lk.Lock()
-	var m *Mntdir
-	for m = mnt.md; m != nil; m = m.next {
-		if m.id == id {
+	var m *base.Mntdir
+	for m = mnt.md; m != nil; m = m.Next {
+		if m.ID == id {
 			f.mntdir = m
-			m.ref++
+			m.Ref++
 			break
 		}
 	}
@@ -323,7 +324,7 @@ func fsyswalk(x *Xfid, f *Fid) *Xfid {
 		nf.open = false
 		nf.mntdir = f.mntdir
 		if f.mntdir != nil {
-			f.mntdir.ref++
+			f.mntdir.Ref++
 		}
 		nf.dir = f.dir
 		nf.qid = f.qid

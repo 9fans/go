@@ -14,7 +14,7 @@
 // #include "dat.h"
 // #include "fns.h"
 
-package main
+package exec
 
 import (
 	"bufio"
@@ -28,24 +28,25 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	addrpkg "9fans.net/go/cmd/acme/internal/addr"
+	"9fans.net/go/cmd/acme/internal/addr"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
-	dumppkg "9fans.net/go/cmd/acme/internal/dump"
-	editpkg "9fans.net/go/cmd/acme/internal/edit"
+	"9fans.net/go/cmd/acme/internal/dump"
+	"9fans.net/go/cmd/acme/internal/edit"
 	"9fans.net/go/cmd/acme/internal/file"
-	fileloadpkg "9fans.net/go/cmd/acme/internal/fileload"
+	"9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
+	"9fans.net/go/cmd/internal/base"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 )
 
-var Fsysmount = func([]rune, [][]rune)*Mntdir{return nil}
-var Fsysdelid = func(*Mntdir){}
-var Xfidlog = func(*wind.Window, string){}
+var Fsysmount = func([]rune, [][]rune) *base.Mntdir { return nil }
+var Fsysdelid = func(*base.Mntdir) {}
+var Xfidlog = func(*wind.Window, string) {}
 
 /*
  * These functions get called as:
@@ -76,22 +77,22 @@ var exectab = [30]Exectab{
 	Exectab{[]rune("Del"), del, false, false, XXX},
 	Exectab{[]rune("Delcol"), delcol, false, XXX, XXX},
 	Exectab{[]rune("Delete"), del, false, true, XXX},
-	Exectab{[]rune("Dump"), dump, false, true, XXX},
-	Exectab{[]rune("Edit"), edit, false, XXX, XXX},
+	Exectab{[]rune("Dump"), dump_, false, true, XXX},
+	Exectab{[]rune("Edit"), edit_, false, XXX, XXX},
 	Exectab{[]rune("Exit"), xexit, false, XXX, XXX},
 	Exectab{[]rune("Font"), ui.Fontx, false, XXX, XXX},
-	Exectab{[]rune("Get"), get, false, true, XXX},
+	Exectab{[]rune("Get"), Get, false, true, XXX},
 	Exectab{[]rune("ID"), id, false, XXX, XXX},
 	Exectab{[]rune("Incl"), incl, false, XXX, XXX},
 	Exectab{[]rune("Indent"), indent, false, XXX, XXX},
 	Exectab{[]rune("Kill"), xkill, false, XXX, XXX},
-	Exectab{[]rune("Load"), dump, false, false, XXX},
+	Exectab{[]rune("Load"), dump_, false, false, XXX},
 	Exectab{[]rune("Local"), local, false, XXX, XXX},
 	Exectab{[]rune("Look"), look, false, XXX, XXX},
 	Exectab{[]rune("New"), ui.New, false, XXX, XXX},
 	Exectab{[]rune("Newcol"), newcol, false, XXX, XXX},
 	Exectab{[]rune("Paste"), ui.XPaste, true, true, XXX},
-	Exectab{[]rune("Put"), put, false, XXX, XXX},
+	Exectab{[]rune("Put"), Put, false, XXX, XXX},
 	Exectab{[]rune("Putall"), putall, false, XXX, XXX},
 	Exectab{[]rune("Redo"), ui.XUndo, false, false, XXX},
 	Exectab{[]rune("Send"), sendx, true, XXX, XXX},
@@ -124,7 +125,7 @@ func isexecc(c rune) bool {
 	return c == '<' || c == '|' || c == '>'
 }
 
-func execute(t *wind.Text, aq0 int, aq1 int, external bool, argt *wind.Text) {
+func Execute(t *wind.Text, aq0 int, aq1 int, external bool, argt *wind.Text) {
 	q0 := aq0
 	q1 := aq1
 	var c rune
@@ -223,7 +224,7 @@ func execute(t *wind.Text, aq0 int, aq1 int, external bool, argt *wind.Text) {
 	if t.W != nil {
 		util.Incref(&t.W.Ref)
 	}
-	run(t.W, b, dir, true, aa, a, false)
+	Run(t.W, b, dir, true, aa, a, false)
 }
 
 func getbytearg(argt *wind.Text, doaddr, dofile bool, bp **string) *string {
@@ -382,7 +383,7 @@ type TextAddr struct {
 	rq1     int
 }
 
-func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
+func Get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 	if flag1 {
 		if et == nil || et.W == nil {
 			return
@@ -404,13 +405,13 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 			return
 		}
 	}
-	addr := make([]TextAddr, len(t.File.Text))
+	addr_ := make([]TextAddr, len(t.File.Text))
 	for i := 0; i < len(t.File.Text); i++ {
-		a := &addr[i]
+		a := &addr_[i]
 		u := t.File.Text[i]
-		a.lorigin = editpkg.Nlcount(u, 0, u.Org, &a.rorigin)
-		a.lq0 = editpkg.Nlcount(u, 0, u.Q0, &a.rq0)
-		a.lq1 = editpkg.Nlcount(u, u.Q0, u.Q1, &a.rq1)
+		a.lorigin = edit.Nlcount(u, 0, u.Org, &a.rorigin)
+		a.lq0 = edit.Nlcount(u, 0, u.Q0, &a.rq0)
+		a.lq1 = edit.Nlcount(u, u.Q0, u.Q1, &a.rq1)
 	}
 	r := []rune(name)
 	for i := 0; i < len(t.File.Text); i++ {
@@ -420,7 +421,7 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 		wind.Windirfree(u.W)
 	}
 	samename := runes.Equal(r, t.File.Name())
-	fileloadpkg.Textload(t, 0, name, samename)
+	fileload.Textload(t, 0, name, samename)
 	var dirty bool
 	if samename {
 		t.File.SetMod(false)
@@ -438,12 +439,12 @@ func get(et, t, argt *wind.Text, flag1, _ bool, arg []rune) {
 		u := t.File.Text[i]
 		wind.Textsetselect(&u.W.Tag, u.W.Tag.Len(), u.W.Tag.Len())
 		if samename {
-			a := &addr[i]
+			a := &addr_[i]
 			// Printf("%d %d %d %d %d %d\n", a->lorigin, a->rorigin, a->lq0, a->rq0, a->lq1, a->rq1);
-			q0 := addrpkg.Advance(u, 0, a.lq0, a.rq0)
-			q1 := addrpkg.Advance(u, q0, a.lq1, a.rq1)
+			q0 := addr.Advance(u, 0, a.lq0, a.rq0)
+			q1 := addr.Advance(u, q0, a.lq1, a.rq1)
 			wind.Textsetselect(u, q0, q1)
-			q0 = addrpkg.Advance(u, 0, a.lorigin, a.rorigin)
+			q0 = addr.Advance(u, 0, a.lorigin, a.rorigin)
 			wind.Textsetorigin(u, q0, false)
 		}
 		wind.Textscrdraw(u)
@@ -477,7 +478,7 @@ func sameInfo(fi1, fi2 os.FileInfo) bool {
 	return fi1 != nil && fi2 != nil && os.SameFile(fi1, fi2) && fi1.ModTime().Equal(fi2.ModTime()) && fi1.Size() == fi2.Size()
 }
 
-func putfile(f *wind.File, q0 int, q1 int, namer []rune) {
+func Putfile(f *wind.File, q0 int, q1 int, namer []rune) {
 	w := f.Curtext.W
 	name := string(namer)
 	info, err := os.Stat(name)
@@ -640,7 +641,7 @@ func trimspaces(et *wind.Text) {
 	}
 }
 
-func put(et, _, argt *wind.Text, _, _ bool, arg []rune) {
+func Put(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 
 	if et == nil || et.W == nil || et.W.IsDir {
 		return
@@ -656,11 +657,11 @@ func put(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 		trimspaces(et)
 	}
 	namer := []rune(name)
-	putfile(f, 0, f.Len(), namer)
+	Putfile(f, 0, f.Len(), namer)
 	Xfidlog(w, "put")
 }
 
-func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
+func dump_(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
 	var name *string
 	if len(arg) != 0 {
 		s := string(arg)
@@ -669,9 +670,9 @@ func dump(_, _, argt *wind.Text, isdump, _ bool, arg []rune) {
 		getbytearg(argt, false, true, &name)
 	}
 	if isdump {
-		dumppkg.Dump(&wind.TheRow, name)
+		dump.Dump(&wind.TheRow, name)
 	} else {
-		dumppkg.Load(&wind.TheRow, name, false)
+		dump.Load(&wind.TheRow, name, false)
 	}
 }
 
@@ -710,7 +711,7 @@ func sendx(et, t, _ *wind.Text, _, _ bool, _ []rune) {
 	wind.Textshow(t, t.Q1, t.Q1, true)
 }
 
-func edit(et, _, argt *wind.Text, _, _ bool, arg []rune) {
+func edit_(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	if et == nil {
 		return
 	}
@@ -718,15 +719,15 @@ func edit(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	ui.Getarg(argt, false, true, &r)
 	file.Seq++
 	if r != nil {
-		editpkg.Editcmd(et, r)
+		edit.Editcmd(et, r)
 	} else {
-		editpkg.Editcmd(et, arg)
+		edit.Editcmd(et, arg)
 	}
 }
 
 func xexit(_, _, _ *wind.Text, _, _ bool, _ []rune) {
 	if wind.Rowclean(&wind.TheRow) {
-		cexit <- 0
+		Cexit <- 0
 		runtime.Goexit() // TODO(rsc)
 	}
 }
@@ -747,7 +748,7 @@ func putall(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 					alog.Printf("no auto-Put of %s: %v\n", a, e)
 				} else {
 					wind.Wincommit(w, &w.Body)
-					put(&w.Body, nil, nil, XXX, XXX, nil)
+					Put(&w.Body, nil, nil, XXX, XXX, nil)
 				}
 			}
 		}
@@ -767,7 +768,7 @@ func local(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	if len(dir) == 1 && dir[0] == '.' { // sigh
 		dir = nil
 	}
-	run(nil, string(arg), dir, false, aa, a, false)
+	Run(nil, string(arg), dir, false, aa, a, false)
 }
 
 func xkill(_, _, argt *wind.Text, _, _ bool, arg []rune) {
@@ -782,7 +783,7 @@ func xkill(_, _, argt *wind.Text, _, _ bool, arg []rune) {
 		if len(a) == len(arg) {
 			break
 		}
-		ckill <- runes.Clone(arg[:len(arg)-len(a)])
+		Ckill <- runes.Clone(arg[:len(arg)-len(a)])
 		arg = runes.SkipBlank(a)
 	}
 }
@@ -917,13 +918,13 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 		name = name[i+1:]
 	}
 	name += " " // add blank here for ease in waittask
-	c.name = []rune(name)
+	c.Name = []rune(name)
 	pipechar := '\x00'
 	if len(t) > 0 && (t[0] == '<' || t[0] == '|' || t[0] == '>') {
 		pipechar = rune(t[0])
 		t = t[1:]
 	}
-	c.iseditcmd = iseditcmd
+	c.IsEditCmd = iseditcmd
 	c.text = s
 	var sfd [3]*os.File
 	if newns {
@@ -952,13 +953,13 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 		}
 
 		var err error
-		c.md = Fsysmount(rdir, incl)
+		c.Mntdir = Fsysmount(rdir, incl)
 
-		fs, err := client.MountServiceAname("acme", fmt.Sprint(c.md.id))
+		fs, err := client.MountServiceAname("acme", fmt.Sprint(c.Mntdir.ID))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "child: can't mount acme: %v\n", err)
-			Fsysdelid(c.md)
-			c.md = nil
+			Fsysdelid(c.Mntdir)
+			c.Mntdir = nil
 			return // TODO(rsc): goto Fail?
 		}
 		if winid > 0 && (pipechar == '|' || pipechar == '>') {
@@ -1001,7 +1002,7 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 	if argaddr != nil {
 		os.Setenv("acmeaddr", *argaddr) // TODO(rsc)
 	}
-	if acmeshell != "" {
+	if Acmeshell != "" {
 		goto Hard
 	}
 	{
@@ -1072,7 +1073,7 @@ Hard:
 		if rdir != nil {
 			dir = string(rdir)
 		}
-		shell := acmeshell
+		shell := Acmeshell
 		if shell == "" {
 			shell = "rc"
 		}
@@ -1100,16 +1101,16 @@ Fail:
 }
 
 func runwaittask(c *Command, cpid chan int) {
-	c.pid = <-cpid
+	c.Pid = <-cpid
 	c.av = nil
-	if c.pid != 0 { // successful exec
-		ccommand <- c
-	} else if c.iseditcmd {
-		editpkg.Cedit <- 0
+	if c.Pid != 0 { // successful exec
+		Ccommand <- c
+	} else if c.IsEditCmd {
+		edit.Cedit <- 0
 	}
 }
 
-func run(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, iseditcmd bool) {
+func Run(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, iseditcmd bool) {
 	if s == "" {
 		return
 	}
@@ -1145,3 +1146,25 @@ func fsopenfd(fs *client.Fsys, name string, mode uint8) (*os.File, error) {
 	}()
 	return w, nil
 }
+
+type Command struct {
+	Pid       int
+	Name      []rune
+	text      string
+	av        []string
+	IsEditCmd bool
+	Mntdir    *base.Mntdir
+	Next      *Command
+}
+
+const XXX = false
+
+const timefmt = "2006/01/02 15:04:05"
+
+var Acmeshell string
+
+var (
+	Ccommand = make(chan *Command)
+	Ckill    = make(chan []rune)
+	Cexit    = make(chan int)
+)
