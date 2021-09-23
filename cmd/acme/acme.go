@@ -67,6 +67,8 @@ func main() {
 	flag.Parse()
 
 	alog.Init(func(msg string) { warning(nil, "%s", msg) })
+	Ismtpt = ismtpt
+	Textload = textload
 
 	cputype = os.Getenv("cputype")
 	objtype = os.Getenv("objtype")
@@ -129,6 +131,9 @@ func main() {
 
 	wind.OnWinclose = func(w *wind.Window) {
 		xfidlog(w, "del")
+	}
+	OnNewWindow = func(w *wind.Window) {
+		xfidlog(w, "new")
 	}
 
 	Textcomplete = textcomplete
@@ -785,6 +790,8 @@ func acmegetsnarf() {
 	snarfbuf.Reset()
 	snarfbuf.Insert(0, r[:nr])
 }
+
+var Ismtpt func(string)bool
 
 func ismtpt(file string) bool {
 	if mtpt == "" {

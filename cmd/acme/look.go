@@ -202,7 +202,7 @@ func look3(t *wind.Text, q0, q1 int, external bool) {
 		r = make([]rune, q1-q0)
 		t.File.Read(q0, r)
 		m.Data = []byte(string(r))
-		if len(m.Data) < messagesize-1024 && m.Send(plumbsendfid) == nil {
+		if len(m.Data) < 7*1024 && m.Send(plumbsendfid) == nil {
 			return
 		}
 		// plumber failed to match; fall through
@@ -296,7 +296,7 @@ func plumbshow(m *plumb.Message) {
 	wind.Winsettag(w)
 	wind.Textscrdraw(&w.Body)
 	wind.Textsetselect(&w.Tag, w.Tag.Len(), w.Tag.Len())
-	xfidlog(w, "new")
+	OnNewWindow(w)
 }
 
 func search(ct *wind.Text, r []rune) bool {
@@ -564,7 +564,7 @@ func expandfile(t *wind.Text, q0 int, q1 int, e *Expand) bool {
 			goto Isfile
 		}
 		// if it's the name of a file, it's a file
-		if ismtpt(e.bname) {
+		if Ismtpt(e.bname) {
 			e.bname = ""
 			return false
 		}
@@ -647,6 +647,9 @@ func lookid(id int) *wind.Window {
 	return nil
 }
 
+var Textload func(*wind.Text, int, string, bool) int
+var OnNewWindow func(*wind.Window)
+
 func openfile(t *wind.Text, e *Expand) *wind.Window {
 	var r runes.Range
 	r.Pos = 0
@@ -688,7 +691,7 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 		w = makenewwindow(t)
 		t = &w.Body
 		wind.Winsetname(w, e.name)
-		if textload(t, 0, e.bname, true) >= 0 {
+		if Textload(t, 0, e.bname, true) >= 0 {
 			t.File.Unread = false
 		}
 		t.File.SetMod(false)
@@ -708,7 +711,7 @@ func openfile(t *wind.Text, e *Expand) *wind.Window {
 		} else {
 			w.Autoindent = wind.GlobalAutoindent
 		}
-		xfidlog(w, "new")
+		OnNewWindow(w)
 	}
 	var eval bool
 	if e.a1 == e.a0 {
@@ -754,7 +757,7 @@ func new_(et, t, argt *wind.Text, flag1, flag2 bool, arg []rune) {
 			if ndone == 0 && et.Col != nil {
 				w := coladdAndMouse(et.Col, nil, nil, -1)
 				wind.Winsettag(w)
-				xfidlog(w, "new")
+				OnNewWindow(w)
 			}
 			break
 		}
