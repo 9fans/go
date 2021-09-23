@@ -30,6 +30,8 @@ import (
 	"9fans.net/go/cmd/acme/internal/wind"
 )
 
+var Ismtpt = func(string) bool { return false }
+
 func textload(t *wind.Text, q0 int, file string, setqid bool) int {
 	if len(t.Cache) > 0 || t.Len() != 0 || t.W == nil || t != &t.W.Body {
 		util.Fatal("text.load")
@@ -38,7 +40,7 @@ func textload(t *wind.Text, q0 int, file string, setqid bool) int {
 		alog.Printf("empty directory name")
 		return -1
 	}
-	if ismtpt(file) {
+	if Ismtpt(file) {
 		alog.Printf("will not open self mount point %s\n", file)
 		return -1
 	}

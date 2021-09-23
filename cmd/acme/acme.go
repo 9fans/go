@@ -62,6 +62,7 @@ func main() {
 
 	alog.Init(func(msg string) { warning(nil, "%s", msg) })
 	ui.Ismtpt = ismtpt
+	Ismtpt = ismtpt
 	ui.Textload = textload
 
 	cputype = os.Getenv("cputype")
