@@ -158,7 +158,7 @@ func plumbshow(m *plumb.Message) {
 
 func new_(et, t, argt *wind.Text, flag1, flag2 bool, arg []rune) {
 	var a []rune
-	getarg(argt, false, true, &a)
+	ui.Getarg(argt, false, true, &a)
 	if a != nil {
 		new_(et, t, nil, flag1, flag2, a)
 		if len(arg) == 0 {

@@ -506,7 +506,7 @@ func rowload(row *wind.Row, file *string, initing bool) bool {
 		}
 		if fontr != nil {
 			fmt.Fprintf(os.Stderr, "FONTR %q\n", fontr)
-			fontx(&w.Body, nil, nil, false, false, fontr)
+			ui.Fontx(&w.Body, nil, nil, false, false, fontr)
 		}
 		if q0 > w.Body.Len() || q1 > w.Body.Len() || q0 > q1 {
 			q1 = 0

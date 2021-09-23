@@ -667,7 +667,7 @@ func xfidctlwrite(x *Xfid, w *wind.Window) {
 				break
 			}
 			r = r[:nr]
-			fontx(&w.Body, nil, nil, false, XXX, r)
+			ui.Fontx(&w.Body, nil, nil, false, XXX, r)
 		} else if strings.HasPrefix(p, "dump ") { // set dump string
 			pp := p[5:]
 			p = p[5:]

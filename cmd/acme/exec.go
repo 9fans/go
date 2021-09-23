@@ -29,7 +29,6 @@ import (
 	"unicode/utf8"
 
 	addrpkg "9fans.net/go/cmd/acme/internal/addr"
-	"9fans.net/go/cmd/acme/internal/adraw"
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/file"
@@ -37,8 +36,6 @@ import (
 	"9fans.net/go/cmd/acme/internal/ui"
 	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
-	"9fans.net/go/draw"
-	"9fans.net/go/draw/frame"
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
 )
@@ -75,7 +72,7 @@ var exectab = [30]Exectab{
 	Exectab{[]rune("Dump"), dump, false, true, XXX},
 	Exectab{[]rune("Edit"), edit, false, XXX, XXX},
 	Exectab{[]rune("Exit"), xexit, false, XXX, XXX},
-	Exectab{[]rune("Font"), fontx, false, XXX, XXX},
+	Exectab{[]rune("Font"), ui.Fontx, false, XXX, XXX},
 	Exectab{[]rune("Get"), get, false, true, XXX},
 	Exectab{[]rune("ID"), id, false, XXX, XXX},
 	Exectab{[]rune("Incl"), incl, false, XXX, XXX},
@@ -222,52 +219,10 @@ func execute(t *wind.Text, aq0 int, aq1 int, external bool, argt *wind.Text) {
 	run(t.W, b, dir, true, aa, a, false)
 }
 
-func printarg(argt *wind.Text, q0 int, q1 int) *string {
-	if argt.What != wind.Body || argt.File.Name() == nil {
-		return nil
-	}
-	var buf string
-	if q0 == q1 {
-		buf = fmt.Sprintf("%s:#%d", string(argt.File.Name()), q0)
-	} else {
-		buf = fmt.Sprintf("%s:#%d,#%d", string(argt.File.Name()), q0, q1)
-	}
-	return &buf
-}
-
-func getarg(argt *wind.Text, doaddr, dofile bool, rp *[]rune) *string {
-	*rp = nil
-	if argt == nil {
-		return nil
-	}
-	wind.Textcommit(argt, true)
-	var e ui.Expand
-	var a *string
-	if ui.Expand_(argt, argt.Q0, argt.Q1, &e) {
-		if len(e.Name) > 0 && dofile {
-			if doaddr {
-				a = printarg(argt, e.Q0, e.Q1)
-			}
-			*rp = e.Name
-			return a
-		}
-	} else {
-		e.Q0 = argt.Q0
-		e.Q1 = argt.Q1
-	}
-	n := e.Q1 - e.Q0
-	*rp = make([]rune, n)
-	argt.File.Read(e.Q0, *rp)
-	if doaddr {
-		a = printarg(argt, e.Q0, e.Q1)
-	}
-	return a
-}
-
 func getbytearg(argt *wind.Text, doaddr, dofile bool, bp **string) *string {
 	*bp = nil
 	var r []rune
-	a := getarg(argt, doaddr, dofile, &r)
+	a := ui.Getarg(argt, doaddr, dofile, &r)
 	if r == nil {
 		return nil
 	}
@@ -334,7 +289,7 @@ func xsort(et, _, _ *wind.Text, _, _ bool, _ []rune) {
 
 func getname(t *wind.Text, argt *wind.Text, arg []rune, isput bool) string {
 	var r []rune
-	getarg(argt, false, true, &r)
+	ui.Getarg(argt, false, true, &r)
 	promote := false
 	if r == nil {
 		promote = true
@@ -721,7 +676,7 @@ func look(et, t, argt *wind.Text, _, _ bool, arg []rune) {
 			return
 		}
 		var r []rune
-		getarg(argt, false, false, &r)
+		ui.Getarg(argt, false, false, &r)
 		if r == nil {
 			r = make([]rune, t.Q1-t.Q0)
 			t.File.Read(t.Q0, r)
@@ -753,7 +708,7 @@ func edit(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 		return
 	}
 	var r []rune
-	getarg(argt, false, true, &r)
+	ui.Getarg(argt, false, true, &r)
 	file.Seq++
 	if r != nil {
 		editcmd(et, r)
@@ -810,7 +765,7 @@ func local(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 
 func xkill(_, _, argt *wind.Text, _, _ bool, arg []rune) {
 	var r []rune
-	getarg(argt, false, false, &r)
+	ui.Getarg(argt, false, false, &r)
 	if r != nil {
 		xkill(nil, nil, nil, false, false, r)
 	}
@@ -825,71 +780,6 @@ func xkill(_, _, argt *wind.Text, _, _ bool, arg []rune) {
 	}
 }
 
-func fontx(et, t, argt *wind.Text, _, _ bool, arg []rune) {
-	if et == nil || et.W == nil {
-		return
-	}
-	t = &et.W.Body
-	var flag []rune
-	var file []rune
-	// loop condition: *arg is not a blank
-	var r []rune
-	for {
-		a := runes.SkipNonBlank(arg)
-		if len(a) == len(arg) {
-			break
-		}
-		r = runes.Clone(arg[:len(arg)-len(a)])
-		if runes.Equal(r, []rune("fix")) || runes.Equal(r, []rune("var")) {
-			flag = r
-		} else {
-			file = r
-		}
-		arg = runes.SkipBlank(a)
-	}
-	getarg(argt, false, true, &r)
-	if r != nil {
-		if runes.Equal(r, []rune("fix")) || runes.Equal(r, []rune("var")) {
-			flag = r
-		} else {
-			file = r
-		}
-	}
-	fix := true
-	var newfont *adraw.RefFont
-	if flag != nil {
-		fix = runes.Equal(flag, []rune("fix"))
-	} else if file == nil {
-		newfont = adraw.FindFont(false, false, false, "")
-		if newfont != nil {
-			fix = newfont.F.Name == t.Fr.Font.Name
-		}
-	}
-	var aa string
-	if file != nil {
-		newfont = adraw.FindFont(fix, flag != nil, false, string(file))
-	} else {
-		newfont = adraw.FindFont(fix, false, false, "")
-	}
-	if newfont != nil {
-		adraw.Display.ScreenImage.Draw(t.W.R, adraw.TextCols[frame.BACK], nil, draw.ZP)
-		adraw.CloseFont(t.Reffont)
-		t.Reffont = newfont
-		t.Fr.Font = newfont.F
-		t.Fr.InitTick()
-		if t.W.IsDir {
-			t.All.Min.X++ // force recolumnation; disgusting!
-			for i := 0; i < len(t.W.Dlp); i++ {
-				dp := t.W.Dlp[i]
-				aa = string(dp.R)
-				dp.Wid = newfont.F.StringWidth(aa)
-			}
-		}
-		// avoid shrinking of window due to quantization
-		wind.Colgrow(t.W.Col, t.W, -1)
-	}
-}
-
 func incl(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	if et == nil || et.W == nil {
 		return
@@ -897,7 +787,7 @@ func incl(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	w := et.W
 	n := 0
 	var r []rune
-	getarg(argt, false, true, &r)
+	ui.Getarg(argt, false, true, &r)
 	if r != nil {
 		n++
 		wind.Winaddincl(w, r)
@@ -962,7 +852,7 @@ func indent(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	}
 	autoindent := IError
 	var r []rune
-	getarg(argt, false, true, &r)
+	ui.Getarg(argt, false, true, &r)
 	if len(r) > 0 {
 		autoindent = indentval(r)
 	} else {
@@ -984,7 +874,7 @@ func tab(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	}
 	w := et.W
 	var r []rune
-	getarg(argt, false, true, &r)
+	ui.Getarg(argt, false, true, &r)
 	tab := 0
 	if len(r) > 0 {
 		p := string(r)
