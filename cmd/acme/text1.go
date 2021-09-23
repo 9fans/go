@@ -160,6 +160,8 @@ func textconstrain(t *wind.Text, q0 int, q1 int, p0 *int, p1 *int) {
 	*p1 = util.Min(q1, t.Len())
 }
 
+var Textcomplete func(*wind.Text) []rune
+
 func textcomplete(t *wind.Text) []rune {
 	// control-f: filename completion; works back to white space or /
 	if t.Q0 < t.Len() && t.RuneAt(t.Q0) > ' ' { // must be at end of word
@@ -394,10 +396,15 @@ func texttype(t *wind.Text, r rune) {
 	case 0x06, // ^F: complete
 		draw.KeyInsert:
 		wind.Typecommit(t)
-		rp = textcomplete(t)
+		if Textcomplete == nil {
+			rp = nil
+		} else {
+			rp = Textcomplete(t)
+		}
 		if rp == nil {
 			return
 		}
+
 		// break to normal insertion case
 	case 0x1B:
 		if t.Eq0 != ^0 {

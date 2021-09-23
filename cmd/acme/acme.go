@@ -131,6 +131,8 @@ func main() {
 		xfidlog(w, "del")
 	}
 
+	Textcomplete = textcomplete
+
 	mousectl = adraw.Display.InitMouse()
 	if mousectl == nil {
 		log.Fatal("can't initialize mouse")
