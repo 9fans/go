@@ -287,9 +287,13 @@ func windirfree(w *Window) {
 	w.dlp = nil
 }
 
+var OnWinclose func(*Window)
+
 func winclose(w *Window) {
 	if util.Decref(&w.ref) == 0 {
-		xfidlog(w, "del")
+		if OnWinclose != nil {
+			OnWinclose(w)
+		}
 		windirfree(w)
 		textclose(&w.tag)
 		textclose(&w.body)

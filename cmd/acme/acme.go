@@ -126,6 +126,10 @@ func main() {
 	// TODO timerinit()
 	regx.Init()
 
+	OnWinclose = func(w *Window) {
+		xfidlog(w, "del")
+	}
+
 	mousectl = adraw.Display.InitMouse()
 	if mousectl == nil {
 		log.Fatal("can't initialize mouse")
