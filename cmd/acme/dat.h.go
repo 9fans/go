@@ -107,16 +107,19 @@ type Waitmsg struct {
 var (
 	cplumb     = make(chan *plumb.Message)
 	cwait      = make(chan *Waitmsg)
-	ccommand   = make(chan *Command)
-	ckill      = make(chan []rune)
 	cxfidalloc = make(chan *Xfid) // TODO bidi
 	cxfidfree  = make(chan *Xfid)
 	cnewwindow = make(chan *wind.Window) // TODO bidi
 	mouseexit0 chan int
 	mouseexit1 chan int
-	cexit      = make(chan int)
 	cerr       = make(chan []byte)
 	cwarn      = make(chan int, 1)
+)
+
+var (
+	ccommand   = make(chan *Command)
+	ckill      = make(chan []rune)
+	cexit      = make(chan int)
 )
 
 // #define	STACK	65536
