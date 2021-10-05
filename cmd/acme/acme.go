@@ -145,6 +145,8 @@ func main() {
 
 	ui.Textcomplete = fileloadpkg.Textcomplete
 	editpkg.Putfile = exec.Putfile
+	editpkg.BigLock = bigLock
+	editpkg.BigUnlock = bigUnlock
 	editpkg.Run = func(w *wind.Window, s string, rdir []rune) {
 		exec.Run(w, s, rdir, true, nil, nil, true)
 	}
@@ -583,14 +585,14 @@ func mousethread() {
  * This structure keeps a list of processes that have exited we haven't heard of.
  */
 
-type Pid struct {
-	pid  int
-	msg  string
-	next *Pid
+type Proc struct {
+	proc  *os.Process
+	err error
+	next *Proc
 }
 
 func waitthread() {
-	var pids *Pid
+	var pids *Proc
 
 	bigLock()
 	defer bigUnlock()
@@ -624,12 +626,13 @@ func waitthread() {
 				alog.Printf("Kill: no process %s\n", string(cmd))
 			}
 
-		case w := <-cwait:
+		case w := <-exec.Cwait:
+println("Cwait")
 			bigLock()
-			pid := w.pid
+			proc := w.Proc
 			var c, lc *exec.Command
 			for c = command; c != nil; c = c.Next {
-				if c.Pid == pid {
+				if c.Proc == proc {
 					if lc != nil {
 						lc.Next = c.Next
 					} else {
@@ -643,9 +646,9 @@ func waitthread() {
 			t := &wind.TheRow.Tag
 			wind.Textcommit(t, true)
 			if c == nil {
-				p := new(Pid)
-				p.pid = pid
-				p.msg = w.msg
+				p := new(Proc)
+				p.proc = proc
+				p.err = w.Err
 				p.next = pids
 				pids = p
 			} else {
@@ -653,8 +656,8 @@ func waitthread() {
 					wind.Textdelete(t, t.Q0, t.Q1, true)
 					wind.Textsetselect(t, 0, 0)
 				}
-				if w.msg[0] != 0 {
-					warning(c.Mntdir, "%s: exit %s\n", string(c.Name[:len(c.Name)-1]), w.msg)
+				if w.Err != nil {
+					warning(c.Mntdir, "%s: exit %s\n", string(c.Name[:len(c.Name)-1]), w.Err)
 				}
 				adraw.Display.Flush()
 			}
@@ -664,11 +667,11 @@ func waitthread() {
 		case c = <-exec.Ccommand:
 			bigLock()
 			// has this command already exited?
-			var lastp *Pid
+			var lastp *Proc
 			for p := pids; p != nil; p = p.next {
-				if p.pid == c.Pid {
-					if p.msg[0] != 0 {
-						warning(c.Mntdir, "%s\n", p.msg)
+				if p.proc == c.Proc {
+					if p.err != nil {
+						warning(c.Mntdir, "%s\n", p.err)
 					}
 					if lastp == nil {
 						pids = p.next
@@ -694,6 +697,7 @@ func waitthread() {
 	Freecmd:
 		if c != nil {
 			if c.IsEditCmd {
+println("Cedit send")
 				editpkg.Cedit <- 0
 			}
 			fsysdelid(c.Mntdir)

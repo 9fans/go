@@ -946,6 +946,7 @@ func ishtmlend(t *Text, q int, q0 *int) int {
 func fileaddtext(f *File, t *Text) *File {
 	if f == nil {
 		f = &File{File: new(file.File)}
+		f.File.SetView((*fileView)(f))
 		f.Unread = true
 	}
 	f.Text = append(f.Text, t)

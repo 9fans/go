@@ -85,7 +85,6 @@ type Waitmsg struct {
 
 var (
 	cplumb     = make(chan *plumb.Message)
-	cwait      = make(chan *Waitmsg)
 	cxfidalloc = make(chan *Xfid) // TODO bidi
 	cxfidfree  = make(chan *Xfid)
 	cnewwindow = make(chan *wind.Window) // TODO bidi

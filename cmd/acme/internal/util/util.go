@@ -17,6 +17,7 @@ package util
 import (
 	"log"
 	"sync/atomic"
+	"sync"
 )
 
 func Min(a int, b int) int {
@@ -37,28 +38,43 @@ func Fatal(s string) {
 	log.Fatalf("acme: %s\n", s)
 }
 
+var locks struct {
+	mu sync.Mutex
+	cond sync.Cond
+}
+
+func init() {
+	locks.cond.L = &locks.mu
+}
+
 type QLock struct {
-	held chan bool
+	held uint32
 }
 
 func (l *QLock) TryLock() bool {
-	if l.held == nil {
-		panic("missing held")
-	}
-	select {
-	case l.held <- true:
-		return true
-	default:
-		return false
-	}
+	return atomic.CompareAndSwapUint32(&l.held, 0, 1)
 }
 
 func (l *QLock) Unlock() {
-	<-l.held
+	v := atomic.SwapUint32(&l.held, 0)
+	if v == 0 {
+		panic("Unlock of unlocked lock")
+	}
+	if v > 1 {
+		locks.cond.Broadcast()
+	}
 }
 
 func (l *QLock) Lock() {
-	l.held <- true
+	if atomic.AddUint32(&l.held, 1) == 1 {
+		return
+	}
+	locks.mu.Lock()
+	defer locks.mu.Unlock()
+
+	for atomic.AddUint32(&l.held, 1) != 1 {
+		locks.cond.Wait()
+	}
 }
 
 func Incref(p *uint32) { atomic.AddUint32(p, 1) }

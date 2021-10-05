@@ -48,6 +48,13 @@ var Fsysmount = func([]rune, [][]rune) *base.Mntdir { return nil }
 var Fsysdelid = func(*base.Mntdir) {}
 var Xfidlog = func(*wind.Window, string) {}
 
+var Cwait = make(chan Waitmsg)
+
+type Waitmsg struct {
+	Proc *os.Process
+	Err error
+}
+
 /*
  * These functions get called as:
  *
@@ -908,7 +915,7 @@ func tab(et, _, argt *wind.Text, _, _ bool, arg []rune) {
 	}
 }
 
-func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, c *Command, cpid chan int, iseditcmd bool) {
+func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *string, c *Command, cpid chan *os.Process, iseditcmd bool) {
 	t := strings.TrimLeft(s, " \n\t")
 	name := t
 	if i := strings.IndexAny(name, " \n\t"); i >= 0 {
@@ -1056,8 +1063,11 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 		err := cmd.Start()
 		if err == nil {
 			if cpid != nil {
-				cpid <- cmd.Process.Pid // TODO(rsc): send cmd.Process
+				cpid <- cmd.Process // TODO(rsc): send cmd.Process
 			}
+			go func() {
+				Cwait <- Waitmsg{cmd.Process, cmd.Wait()}
+			}()
 			return
 		}
 		goto Fail
@@ -1086,7 +1096,7 @@ Hard:
 		err := cmd.Start()
 		if err == nil {
 			if cpid != nil {
-				cpid <- cmd.Process.Pid // TODO(rsc): send cmd.Process
+				cpid <- cmd.Process // TODO(rsc): send cmd.Process
 			}
 			return
 		}
@@ -1096,14 +1106,14 @@ Hard:
 
 Fail:
 	if cpid != nil { // TODO(rsc): is it always non-nil?
-		cpid <- 0
+		cpid <- nil
 	}
 }
 
-func runwaittask(c *Command, cpid chan int) {
-	c.Pid = <-cpid
+func runwaittask(c *Command, cproc chan *os.Process) {
+	c.Proc = <-cproc
 	c.av = nil
-	if c.Pid != 0 { // successful exec
+	if c.Proc != nil { // successful exec
 		Ccommand <- c
 	} else if c.IsEditCmd {
 		edit.Cedit <- 0
@@ -1115,10 +1125,10 @@ func Run(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg *str
 		return
 	}
 	c := new(Command)
-	cpid := make(chan int, 0)
-	go runproc(win, s, rdir, newns, argaddr, xarg, c, cpid, iseditcmd)
+	cproc := make(chan *os.Process, 0)
+	go runproc(win, s, rdir, newns, argaddr, xarg, c, cproc, iseditcmd)
 	// mustn't block here because must be ready to answer mount() call in run()
-	go runwaittask(c, cpid)
+	go runwaittask(c, cproc)
 }
 
 func fsopenfd(fs *client.Fsys, name string, mode uint8) (*os.File, error) {
@@ -1148,7 +1158,7 @@ func fsopenfd(fs *client.Fsys, name string, mode uint8) (*os.File, error) {
 }
 
 type Command struct {
-	Pid       int
+	Proc       *os.Process
 	Name      []rune
 	text      string
 	av        []string

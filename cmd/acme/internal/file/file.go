@@ -46,6 +46,8 @@ type File struct {
 	mod     bool
 }
 
+func (f *File) SetView(v View) { f.view = v }
+
 type View interface {
 	Insert(int, []rune)
 	Delete(int, int)

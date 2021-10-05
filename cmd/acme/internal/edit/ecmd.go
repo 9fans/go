@@ -31,6 +31,9 @@ import (
 	"9fans.net/go/cmd/acme/internal/wind"
 )
 
+var BigLock = func() {}
+var BigUnlock = func() {}
+
 var Glooping int
 var nest int
 var Enoname = "no file name given"
@@ -549,7 +552,9 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 		wind.Winunlock(t.W)
 	}
 	wind.TheRow.Lk.Unlock()
+	BigUnlock()
 	<-Cedit
+	BigLock()
 	var q *util.QLock
 	/*
 	 * The editoutlk exists only so that we can tell when
