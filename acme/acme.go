@@ -99,8 +99,34 @@ func New() (*Win, error) {
 }
 
 type WinInfo struct {
-	ID   int
+	ID int
+	// TagLen holds the length of the tag in runes.
+	TagLen int
+	// TagLen holds the length of the body in runes.
+	BodyLen    int
+	IsDir      bool
+	IsModified bool
+	// Name and Tag are only populated when the
+	// WinInfo has been obtained by calling the Windows
+	// function, as they're not available by reading the ctl file.
+
+	// Name holds the filename of the window.
 	Name string
+
+	// Tag holds the rest of the tag after the filename.
+	Tag string
+
+	// The Size and History fields can only be non-nil
+	// when WinInfo has been obtained by calling
+	// the Win.Info method, because that information
+	// isn't available as part of the index file.
+	Size *WinSizeInfo
+}
+
+type WinSizeInfo struct {
+	Width    int
+	Font     string
+	TabWidth int
 }
 
 // A LogReader provides read access to the acme log file.
@@ -165,16 +191,31 @@ func Windows() ([]WinInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	var info []WinInfo
+	var infos []WinInfo
 	for _, line := range strings.Split(string(data), "\n") {
-		f := strings.Fields(line)
-		if len(f) < 6 {
+		if len(line) == 0 {
 			continue
 		}
-		n, _ := strconv.Atoi(f[0])
-		info = append(info, WinInfo{n, f[5]})
+		var info WinInfo
+		tag, err := splitFields(line,
+			&info.ID,
+			&info.TagLen,
+			&info.BodyLen,
+			&info.IsDir,
+			&info.IsModified,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("invalid index line %q: %v", line, err)
+		}
+		i := strings.Index(tag, " Del Snarf ")
+		if i == -1 {
+			return nil, fmt.Errorf("cannot determine filename in tag %q", tag)
+		}
+		info.Name = tag[:i]
+		info.Tag = tag[i:]
+		infos = append(infos, info)
 	}
-	return info, nil
+	return infos, nil
 }
 
 // Show looks and causes acme to show the window with the given name,
@@ -384,6 +425,35 @@ func (w *Win) ReadAddr() (q0, q1 int, err error) {
 		return 0, 0, errors.New("invalid read from acme addr")
 	}
 	return q0, q1, nil
+}
+
+func (w *Win) Info() (WinInfo, error) {
+	f, err := w.fid("ctl")
+	if err != nil {
+		return WinInfo{}, err
+	}
+	buf := make([]byte, 8192)
+	n, err := f.ReadAt(buf, 0)
+	if err != nil && err != io.EOF {
+		return WinInfo{}, err
+	}
+	line := string(buf[:n])
+	info := WinInfo{
+		Size: new(WinSizeInfo),
+	}
+	if _, err := splitFields(line,
+		&info.ID,
+		&info.TagLen,
+		&info.BodyLen,
+		&info.IsDir,
+		&info.IsModified,
+		&info.Size.Width,
+		&info.Size.Font,
+		&info.Size.TabWidth,
+	); err != nil {
+		return WinInfo{}, fmt.Errorf("invalid ctl contents %q: %v", line, err)
+	}
+	return info, nil
 }
 
 func (w *Win) Seek(file string, offset int64, whence int) (int64, error) {
@@ -935,4 +1005,50 @@ func Err(src, msg string) {
 // Errf is like Err but accepts a printf-style formatting.
 func Errf(src, format string, args ...interface{}) {
 	Err(src, fmt.Sprintf(format, args...))
+}
+
+// splitFields parses the line into fields.
+// Each element of fields must be one of *int, *string or *bool
+// which are set to the respective field value.
+// Boolean and numeric fields are expected to numbers formatted
+// in 11 characters followed by a space.
+// String fields are expected to be space terminated.
+//
+// It returns the rest of line after all the fields have been parsed.
+func splitFields(line string, fields ...interface{}) (string, error) {
+	n := 0
+	for len(fields) > 0 {
+		switch f := fields[0].(type) {
+		case *int, *bool:
+			if len(line) < 12 {
+				return "", fmt.Errorf("field %d is too short", n)
+			}
+			if line[11] != ' ' {
+				return "", fmt.Errorf("field %d doesn't terminate in a space", n)
+			}
+			fn, err := strconv.Atoi(strings.TrimSpace(line[:11]))
+			if err != nil {
+				return "", fmt.Errorf("field %d is invalid: %v", n, err)
+			}
+			switch f := f.(type) {
+			case *int:
+				*f = fn
+			case *bool:
+				if fn != 0 && fn != 1 {
+					return "", fmt.Errorf("field %d should be either 0 or 1", n)
+				}
+				*f = fn != 0
+			}
+			line = line[12:]
+		case *string:
+			i := strings.IndexByte(line, ' ')
+			if i == -1 {
+				return "", fmt.Errorf("no space found at end of string field %d", n)
+			}
+			*f = line[:i]
+			line = line[i+1:]
+		}
+		fields = fields[1:]
+	}
+	return line, nil
 }
