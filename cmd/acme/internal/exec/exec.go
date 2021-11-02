@@ -52,7 +52,7 @@ var Cwait = make(chan Waitmsg)
 
 type Waitmsg struct {
 	Proc *os.Process
-	Err error
+	Err  error
 }
 
 /*
@@ -1030,22 +1030,7 @@ func runproc(win *wind.Window, s string, rdir []rune, newns bool, argaddr, xarg 
 			goto Fail
 		}
 
-		var av []string
-		ai := 0
-		inarg = false
-		for i, r := range t {
-			if r == ' ' || r == '\t' {
-				if inarg {
-					inarg = false
-					av[len(av)-1] = t[ai:i]
-				}
-				continue
-			}
-			if !inarg {
-				inarg = true
-				av = append(av, t[i:])
-			}
-		}
+		av := strings.Fields(t)
 		if xarg != nil {
 			av = append(av, *xarg)
 		}
@@ -1158,7 +1143,7 @@ func fsopenfd(fs *client.Fsys, name string, mode uint8) (*os.File, error) {
 }
 
 type Command struct {
-	Proc       *os.Process
+	Proc      *os.Process
 	Name      []rune
 	text      string
 	av        []string
