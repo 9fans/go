@@ -128,7 +128,7 @@ func Dump(row *wind.Row, file *string) {
 			} else if w.Dumpstr != "" {
 				dumped = false
 				fmt.Fprintf(b, "e%11d %11d %11d %11d %11.7f %s\n", i, 0, 0, 0, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), fontname)
-			} else if (!w.Dirty && !exists(a)) || w.IsDir {
+			} else if (!w.Dirty && exists(a)) || w.IsDir {
 				dumped = false
 				dumpid[t.File] = w.ID
 				fmt.Fprintf(b, "f%11d %11d %11d %11d %11.7f %s\n", i, w.ID, w.Body.Q0, w.Body.Q1, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), fontname)
