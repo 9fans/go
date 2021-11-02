@@ -1083,6 +1083,9 @@ Hard:
 			if cpid != nil {
 				cpid <- cmd.Process // TODO(rsc): send cmd.Process
 			}
+			go func() {
+				Cwait <- Waitmsg{cmd.Process, cmd.Wait()}
+			}()
 			return
 		}
 		alog.Printf("exec %s: %v\n", shell, err)

@@ -627,7 +627,6 @@ func waitthread() {
 			}
 
 		case w := <-exec.Cwait:
-println("Cwait")
 			bigLock()
 			proc := w.Proc
 			var c, lc *exec.Command
