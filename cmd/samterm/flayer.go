@@ -8,7 +8,6 @@ import (
 )
 
 var llist []*Flayer /* front to back */
-var nllist int
 var nlalloc int
 var lDrect image.Rectangle
 
@@ -335,8 +334,7 @@ func flresize(dr image.Rectangle) {
 	} else {
 		screen.Draw(lDrect, display.White, nil, draw.ZP)
 	}
-	for i := 0; i < nllist; i++ {
-		l := llist[i]
+	for _, l := range llist {
 		l.lastsr = draw.ZR
 		f := &l.f
 		var r image.Rectangle
