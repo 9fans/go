@@ -590,8 +590,8 @@ func mousethread() {
  */
 
 type Proc struct {
-	proc  *os.Process
-	err error
+	proc *os.Process
+	err  error
 	next *Proc
 }
 
@@ -634,7 +634,7 @@ func waitthread() {
 			wind.TheRow.Lk.Lock()
 			bigLock()
 			proc := w.Proc
-			var c, lc *exec.Command
+			var lc *exec.Command
 			for c = command; c != nil; c = c.Next {
 				if c.Proc == proc {
 					if lc != nil {
@@ -702,7 +702,6 @@ func waitthread() {
 	Freecmd:
 		if c != nil {
 			if c.IsEditCmd {
-println("Cedit send")
 				editpkg.Cedit <- 0
 			}
 			fsysdelid(c.Mntdir)

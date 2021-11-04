@@ -16,8 +16,8 @@ package util
 
 import (
 	"log"
-	"sync/atomic"
 	"sync"
+	"sync/atomic"
 )
 
 func Min(a int, b int) int {
@@ -39,7 +39,7 @@ func Fatal(s string) {
 }
 
 var locks struct {
-	mu sync.Mutex
+	mu   sync.Mutex
 	cond sync.Cond
 }
 

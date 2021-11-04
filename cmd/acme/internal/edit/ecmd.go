@@ -554,7 +554,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	wind.TheRow.Lk.Unlock()
 	BigUnlock()
 	<-Cedit
-	var q *util.QLock
+
 	/*
 	 * The editoutlk exists only so that we can tell when
 	 * the editout file has been closed.  It can get closed *after*
@@ -566,6 +566,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	 * 9P transactions.  This process might still have a couple
 	 * writes left to copy after the original process has exited.
 	 */
+	var q *util.QLock
 	if w != nil {
 		q = &w.Editoutlk
 	} else {

@@ -171,23 +171,22 @@ func fsysproc() {
 
 func fsysaddid(dir []rune, incl [][]rune) *base.Mntdir {
 	mnt.lk.Lock()
+	defer mnt.lk.Unlock()
 	mnt.id++
-	id := mnt.id
-	m := new(base.Mntdir)
-	m.ID = id
-	m.Dir = dir
-	m.Ref = 1 // one for Command, one will be incremented in attach
-	m.Next = mnt.md
-	m.Incl = incl
-	mnt.md = m
-	mnt.lk.Unlock()
-	return m
+	mnt.md = &base.Mntdir{
+		ID:   mnt.id,
+		Dir:  dir,
+		Ref:  1, // one for Command, one will be incremented in attach
+		Next: mnt.md,
+		Incl: incl,
+	}
+	return mnt.md
 }
 
 func fsysincid(m *base.Mntdir) {
 	mnt.lk.Lock()
+	defer mnt.lk.Unlock()
 	m.Ref++
-	mnt.lk.Unlock()
 }
 
 func fsysdelid(idm *base.Mntdir) {
@@ -217,9 +216,13 @@ func fsysdelid(idm *base.Mntdir) {
 	cerr <- []byte(fmt.Sprintf("fsysdelid: can't find id %d\n", idm.ID))
 }
 
-/*
- * Called only in exec.c:/^run(), from a different FD group
- */
+// fsysmount is called only in exec.runproc.
+//
+// In the original acme, this would mount the 9p
+// pipe onto /mnt/acme and bind -b /mnt/acme /dev
+// to make /dev/cons available to the process running
+// fsysmount (a subprocess of acme in a separate
+// fd group)
 func fsysmount(dir []rune, incl [][]rune) *base.Mntdir {
 	return fsysaddid(dir, incl)
 }
