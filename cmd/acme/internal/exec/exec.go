@@ -1104,6 +1104,7 @@ func runwaittask(c *Command, cproc chan *os.Process) {
 	if c.Proc != nil { // successful exec
 		Ccommand <- c
 	} else if c.IsEditCmd {
+		// Avoid deadlock when we can't execute the command.
 		edit.Cedit <- 0
 	}
 }

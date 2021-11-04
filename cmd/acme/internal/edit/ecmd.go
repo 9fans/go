@@ -554,6 +554,7 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	wind.TheRow.Lk.Unlock()
 	BigUnlock()
 	<-Cedit
+
 	BigLock()
 	var q *util.QLock
 	/*
@@ -572,8 +573,10 @@ func runpipe(t *wind.Text, cmd rune, cr []rune, state int) {
 	} else {
 		q = &Editoutlk
 	}
+	BigUnlock()
 	q.Lock() // wait for file to close
 	q.Unlock()
+	BigLock()
 	wind.TheRow.Lk.Lock()
 	Editing = Inactive
 	if t != nil && t.W != nil {
