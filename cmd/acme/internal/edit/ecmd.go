@@ -1212,6 +1212,11 @@ func lineaddr(l int, addr Address, sign int) Address {
 			a.r.Pos = p
 		}
 		for p < f.Len() {
+			c := f.Curtext.RuneAt(p)
+			p++
+			if c == '\n' {
+				break
+			}
 		}
 		a.r.End = p
 	} else {
