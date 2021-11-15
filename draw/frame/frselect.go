@@ -43,7 +43,7 @@ func (f *Frame) Select(mc *draw.Mousectl) {
 				p1 = f.P0
 				scrolled = true
 			} else if mp.Y > f.R.Max.Y {
-				f.Scroll(f, -(mp.Y-f.R.Max.Y)/f.Font.Height+1)
+				f.Scroll(f, (mp.Y-f.R.Max.Y)/f.Font.Height+1)
 				p0 = f.P0
 				p1 = f.P1
 				scrolled = true
