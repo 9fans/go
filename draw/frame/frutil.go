@@ -6,6 +6,8 @@ import (
 	"9fans.net/go/draw"
 )
 
+// canfit returns the number of runes from b that
+// will fit into the frame when drawn starting at pt.
 func (f *Frame) canfit(pt draw.Point, b *box) int {
 	left := f.R.Max.X - pt.X
 	if b.nrune < 0 {
@@ -30,6 +32,8 @@ func (f *Frame) canfit(pt draw.Point, b *box) int {
 	return 0
 }
 
+// cklinewrap checks whether b when drawn at p will
+// fit within f.R. If not, it updates p to the start of the next line.
 func (f *Frame) cklinewrap(p *draw.Point, b *box) {
 	w := b.wid
 	if b.nrune < 0 {
@@ -41,6 +45,9 @@ func (f *Frame) cklinewrap(p *draw.Point, b *box) {
 	}
 }
 
+// cklinewrap0 is like cklinewrap but with a weaker criterion
+// for wrapping: it only wraps if none of the text of b
+// will fit.
 func (f *Frame) cklinewrap0(p *draw.Point, b *box) {
 	if f.canfit(*p, b) == 0 {
 		p.X = f.R.Min.X

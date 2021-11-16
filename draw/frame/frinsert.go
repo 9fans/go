@@ -4,6 +4,10 @@ import (
 	"9fans.net/go/draw"
 )
 
+// bxscan splits text into boxes inside tmpf starting at *ppt,
+// and reports the position at its end.
+//
+// It updates ppt to the position of the start of the text.
 func (f *Frame) bxscan(tmpf *Frame, text []rune, ppt *draw.Point) draw.Point {
 	tmpf.R = f.R
 	tmpf.B = f.B
@@ -12,8 +16,9 @@ func (f *Frame) bxscan(tmpf *Frame, text []rune, ppt *draw.Point) draw.Point {
 	tmpf.box = nil
 	tmpf.NumChars = 0
 	tmpf.Cols = f.Cols
+	tmpf.MaxLines = f.MaxLines
 	nl := 0
-	for len(text) > 0 && nl <= f.MaxLines {
+	for len(text) > 0 && nl <= tmpf.MaxLines {
 		tmpf.box = append(tmpf.box, box{})
 		b := &tmpf.box[len(tmpf.box)-1]
 		c := text[0]
@@ -46,10 +51,20 @@ func (f *Frame) bxscan(tmpf *Frame, text []rune, ppt *draw.Point) draw.Point {
 			tmpf.NumChars += nr
 		}
 	}
+	// Adjust for line wrap before calling draw so that
+	// the starting position agrees with that of draw.
+	// TODO we could call tmpf.cklinewrap0 instead,
+	// which would arguably be clearer.
 	f.cklinewrap0(ppt, &tmpf.box[0])
 	return tmpf.draw(*ppt)
 }
 
+// chop removes any boxes in f that extend beyond
+// its bounds, starting the calculation at box index bn
+// that's at rune index p. It updates f.NumChars and f.NumLines.
+//
+// This is only called when we know that the frame needs to be
+// truncated.
 func (f *Frame) chop(pt draw.Point, p, bn int) {
 	for ; ; bn++ {
 		if bn >= len(f.box) {
@@ -79,19 +94,31 @@ func (f *Frame) Insert(text []rune, p int) {
 	if p0 > f.NumChars || len(text) == 0 || f.B == nil {
 		return
 	}
+	// Find the index of the box that starts at the insertion point,
+	// splitting the box that's there if needed.
 	n0 := f.findbox(0, 0, p0)
+	// cn0 tracks the rune index of box that's being processed.
 	cn0 := p0
+	// nn0 remembers the index of the starting box (we update
+	// n0 as we scan through during the calculations).
 	nn0 := n0
+
+	// Find the point at the end of the box just before the insertion point.
 	pt0 := f.ptofcharnb(p0, n0)
+	// ppt0 remembers the starting point.
 	ppt0 := pt0
 	opt0 := pt0
+
+	// Scan the text into a temporary frame starting at the point
+	// we know that it will be inserted. This tells us where the
+	// text will end up.
 	var tmpf Frame
 	pt1 := f.bxscan(&tmpf, text, &ppt0)
 	ppt1 := pt1
 	if n0 < len(f.box) {
 		b := &f.box[n0]
 		f.cklinewrap(&pt0, b) // for frdrawsel
-		f.cklinewrap(&ppt1, b)
+		f.cklinewrap0(&ppt1, b)
 	}
 	f.modified = true
 
@@ -102,7 +129,6 @@ func (f *Frame) Insert(text []rune, p int) {
 	if f.P0 == f.P1 {
 		f.Tick(f.PointOf(f.P0), false)
 	}
-
 	// Find point where old and new x's line up.
 	// Invariants:
 	//   - pt0 is where the next box (b, n0) is now
@@ -112,7 +138,7 @@ func (f *Frame) Insert(text []rune, p int) {
 	for pt1.X != pt0.X && pt1.Y != f.R.Max.Y && n0 < len(f.box) {
 		b := &f.box[n0]
 		f.cklinewrap(&pt0, b)
-		f.cklinewrap(&pt1, b)
+		f.cklinewrap0(&pt1, b)
 		if b.nrune > 0 {
 			n := f.canfit(pt1, b)
 			if n == 0 {
@@ -246,6 +272,8 @@ func (f *Frame) Insert(text []rune, p int) {
 	f.addbox(nn0, len(tmpf.box))
 	copy(f.box[nn0:], tmpf.box)
 	if nn0 > 0 && f.box[nn0-1].nrune >= 0 && ppt0.X-f.box[nn0-1].wid >= f.R.Min.X {
+		// There's some text just before the insertion point. Make sure we clean up from there.
+		// TODO when can the start of that box ever be outside the frame rectangle bounds?
 		nn0--
 		ppt0.X -= f.box[nn0].wid
 	}
