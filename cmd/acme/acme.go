@@ -150,6 +150,8 @@ func main() {
 	editpkg.Run = func(w *wind.Window, s string, rdir []rune) {
 		exec.Run(w, s, rdir, true, nil, nil, true)
 	}
+	ui.BigLock = bigLock
+	ui.BigUnlock = bigUnlock
 	exec.Fsysmount = fsysmount
 	exec.Fsysdelid = fsysdelid
 	exec.Xfidlog = xfidlog

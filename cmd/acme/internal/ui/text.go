@@ -467,12 +467,23 @@ func Textselect(t *wind.Text) {
 			Clearmouse()
 		}
 		adraw.Display.Flush()
+
+		// Mousectl.Read does both the Flush
+		// and the receive. We did the flush.
+		// Do just the receive, dropping biglock
+		// to let other goroutines proceed.
+		// Note that *Mouse is Mousectl.Mouse.
+		BigUnlock()
 		for Mouse.Buttons == b {
-			Mousectl.Read()
+			*Mouse = <-Mousectl.C
 		}
+		BigLock()
 		clicktext = nil
 	}
 }
+
+var BigLock = func(){}
+var BigUnlock = func(){}
 
 /*
  * Release the button in less than DELAY ms and it's considered a null selection
