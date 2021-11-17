@@ -414,7 +414,9 @@ func mousethread() {
 	defer bigUnlock()
 
 	for {
+		bigUnlock()
 		wind.TheRow.Lk.Lock()
+		bigLock()
 		flushwarnings()
 		wind.TheRow.Lk.Unlock()
 
@@ -454,9 +456,9 @@ func mousethread() {
 		 * another race; see /sys/src/libdraw/mouse.c.
 		 */
 		case m := <-ui.Mousectl.C:
+			wind.TheRow.Lk.Lock()
 			bigLock()
 			ui.Mousectl.Mouse = m
-			wind.TheRow.Lk.Lock()
 			t := wind.Rowwhich(&wind.TheRow, m.Point)
 
 			if (t != wind.Mousetext && t != nil && t.W != nil) && (wind.Mousetext == nil || wind.Mousetext.W == nil || t.W.ID != wind.Mousetext.W.ID) {
@@ -602,8 +604,8 @@ func waitthread() {
 		bigUnlock()
 		select {
 		case errb := <-cerr:
-			bigLock()
 			wind.TheRow.Lk.Lock()
+			bigLock()
 			alog.Printf("%s", errb)
 			adraw.Display.Flush()
 			wind.TheRow.Lk.Unlock()
@@ -627,6 +629,7 @@ func waitthread() {
 			}
 
 		case w := <-exec.Cwait:
+			wind.TheRow.Lk.Lock()
 			bigLock()
 			proc := w.Proc
 			var c, lc *exec.Command
@@ -641,7 +644,6 @@ func waitthread() {
 				}
 				lc = c
 			}
-			wind.TheRow.Lk.Lock()
 			t := &wind.TheRow.Tag
 			wind.Textcommit(t, true)
 			if c == nil {
@@ -683,7 +685,9 @@ func waitthread() {
 			}
 			c.Next = command
 			command = c
+			bigUnlock()
 			wind.TheRow.Lk.Lock()
+			bigLock()
 			t := &wind.TheRow.Tag
 			wind.Textcommit(t, true)
 			wind.Textinsert(t, 0, c.Name, true)
@@ -762,6 +766,13 @@ func ismtpt(file string) bool {
 	return strings.HasPrefix(file, mtpt) && (len(file) == len(mtpt) || file[len(mtpt)] == '/')
 }
 
+// big is big lock, meant to model the cooperative scheduling in Alef.
+// No blocking operations should happen while holding the big lock:
+// no channel operations and no other mutex locking.
+// If channels must be used or other mutexes must be acquired,
+// code must drop the big lock, do the blocking thing, and reacquire the big lock.
+// The big lock is always acquired last compared to any other mutexes.
+// Eventually the goal is to avoid needing it at all, but that will take some time.
 var big sync.Mutex
 var stk = make([]byte, 1<<20)
 
