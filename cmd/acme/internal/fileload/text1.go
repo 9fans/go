@@ -158,20 +158,15 @@ func Textcomplete(t *wind.Text) []rune {
 		return nil
 	}
 	nstr := wind.Textfilewidth(t, t.Q0, true)
-	str := make([]rune, nstr)
+	str := make([]rune, 0, nstr)
 	npath := wind.Textfilewidth(t, t.Q0-nstr, false)
-	path_ := make([]rune, npath)
+	path_ := make([]rune, 0, npath)
 
-	q := t.Q0 - nstr
-	var i int
-	for i = 0; i < nstr; i++ {
-		str[i] = t.RuneAt(q)
-		q++
+	for q := t.Q0 - nstr; q < t.Q0; q++ {
+		str = append(str, t.RuneAt(q))
 	}
-	q = t.Q0 - nstr - npath
-	for i = 0; i < npath; i++ {
-		path_[i] = t.RuneAt(q)
-		q++
+	for q := t.Q0 - nstr - npath; q < t.Q0-nstr; q++ {
+		path_ = append(path_, t.RuneAt(q))
 	}
 	var dir []rune
 	// is path rooted? if not, we need to make it relative to window path
@@ -179,17 +174,11 @@ func Textcomplete(t *wind.Text) []rune {
 		dir = path_
 	} else {
 		dir = wind.Dirname(t, nil)
-		tmp := make([]rune, 200)
-		if len(dir)+1+npath > len(tmp) {
-			return nil
-		}
 		if len(dir) == 0 {
-			dir = runes.Clone([]rune("."))
+			dir = []rune{'.'}
 		}
-		copy(tmp, dir)
-		tmp[len(dir)] = '/'
-		copy(tmp[len(dir)+1:], path_)
-		dir = tmp
+		dir = append(dir, '/')
+		dir = append(dir, path_...)
 		dir = runes.CleanPath(dir)
 	}
 
@@ -209,7 +198,7 @@ func Textcomplete(t *wind.Text) []rune {
 			more = ": no matches in:"
 		}
 		alog.Printf("%s%s%s*%s\n", string(dir), sep, string(str), more)
-		for i = 0; i < len(c.Files); i++ {
+		for i := 0; i < len(c.Files); i++ {
 			alog.Printf(" %s\n", c.Files[i])
 		}
 	}
