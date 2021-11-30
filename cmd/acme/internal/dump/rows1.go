@@ -140,6 +140,9 @@ func Dump(row *wind.Row, file *string) {
 			b.WriteString(wind.Winctlprint(w, false))
 			m = util.Min(bufs.RuneLen, w.Tag.Len())
 			w.Tag.File.Read(0, r[:m])
+			if !containsRune(r[:m], '|') {
+				alog.Printf("dump: window %d has no | in tag %q!", w.ID, string(r[:m]))
+			}
 			n = 0
 			for n < m {
 				start := n
@@ -178,6 +181,15 @@ func Dump(row *wind.Row, file *string) {
 	b.Flush() // TODO(rsc): err check
 	f.Close() // TODO(rsc): err check
 	bufs.FreeRunes(r)
+}
+
+func containsRune(r []rune, c rune) bool {
+	for _, rc := range r {
+		if rc == c {
+			return true
+		}
+	}
+	return false
 }
 
 func exists(file string) bool {
@@ -476,7 +488,11 @@ func Load(row *wind.Row, file *string, initing bool) bool {
 			}
 		}
 		wind.Wincleartatg(w)
-		wind.Textinsert(&w.Tag, w.Tag.Len(), r[n+1:], true)
+		if n < len(r) {
+			wind.Textinsert(&w.Tag, w.Tag.Len(), r[n+1:], true)
+		} else {
+			alog.Printf("load: found window tag with no | character (tag: %q)", string(r))
+		}
 		if ndumped >= 0 {
 			// simplest thing is to put it in a file and load that
 			f, err := ioutil.TempFile("", fmt.Sprintf("acme.%d.*", os.Getpid()))
