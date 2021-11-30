@@ -50,7 +50,9 @@ func Rowtype(row *wind.Row, r rune, p draw.Point) *wind.Text {
 	}
 
 	Clearmouse()
+	BigUnlock()
 	row.Lk.Lock()
+	BigLock()
 	var t *wind.Text
 	if Bartflag {
 		t = wind.Barttext
