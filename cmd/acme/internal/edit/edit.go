@@ -387,7 +387,7 @@ Return:
 }
 
 func cmdlookup(c rune) int {
-	for i := 0; cmdtab[i].cmdc != 0; i++ {
+	for i := 0; i < len(cmdtab); i++ {
 		if cmdtab[i].cmdc == c {
 			return i
 		}
