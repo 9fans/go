@@ -6,7 +6,7 @@ import (
 	"9fans.net/go/cmd/acme/internal/runes"
 )
 
-const Len = 8 * 1024
+const Len = 32 * 1024
 const RuneLen = Len / runes.RuneSize
 
 var runesPool = sync.Pool{
