@@ -178,7 +178,7 @@ func reformat(id int, name string, formatter []string) {
 		}
 		oldStart, oldEnd := parseSpan(line[:j])
 		newStart, newEnd := parseSpan(line[j+1:])
-		if oldStart == 0 || newStart == 0 {
+		if newStart == 0 || (oldStart == 0 && line[j] != 'a') {
 			continue
 		}
 		switch line[j] {
