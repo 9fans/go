@@ -21,6 +21,14 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
+//	.ml - ocamlformat
+//	.re - refmt
+//	.svelte - prettier
+//	.js - prettier
+//	.ts - prettier
+//	.html - prettier
+//	.json - prettier
+//	.css - prettier
 //
 package main
 
@@ -47,7 +55,15 @@ var formatters = map[string][]string{
 
 // Non-Go formatters (only loaded with -f option).
 var otherFormatters = map[string][]string{
-	".rs": []string{"rustfmt", "--emit", "stdout"},
+	".rs":     []string{"rustfmt", "--emit", "stdout"},
+	".ml":     []string{"ocamlformat"},
+	".re":     []string{"refmt"},
+	".js":     []string{"prettier", "--loglevel", "silent"},
+	".ts":     []string{"prettier", "--loglevel", "silent"},
+	".html":   []string{"prettier", "--loglevel", "silent"},
+	".json":   []string{"prettier", "--loglevel", "silent"},
+	".css":    []string{"prettier", "--loglevel", "silent"},
+	".svelte": []string{"prettier", "--loglevel", "silent"},
 }
 
 func main() {
