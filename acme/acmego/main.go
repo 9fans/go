@@ -21,6 +21,7 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
+//	.cc, .cpp, .h - clang-format
 //
 package main
 
@@ -47,7 +48,10 @@ var formatters = map[string][]string{
 
 // Non-Go formatters (only loaded with -f option).
 var otherFormatters = map[string][]string{
-	".rs": []string{"rustfmt", "--emit", "stdout"},
+	".rs":  []string{"rustfmt", "--emit", "stdout"},
+	".cpp": []string{"clang-format"},
+	".cc":  []string{"clang-format"},
+	".h":   []string{"clang-format"},
 }
 
 func main() {
