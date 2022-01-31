@@ -21,6 +21,7 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
+//	.py - yapf
 //
 package main
 
@@ -48,6 +49,7 @@ var formatters = map[string][]string{
 // Non-Go formatters (only loaded with -f option).
 var otherFormatters = map[string][]string{
 	".rs": []string{"rustfmt", "--emit", "stdout"},
+	".py": []string{"yapf"},
 }
 
 func main() {
