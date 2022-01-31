@@ -2,3 +2,6 @@
 
 This repository contains packages for interacting with Plan 9
 as well as ports of common Plan 9 libraries and tools.
+
+```
+$ go install 9fans.net/go/...@latest
