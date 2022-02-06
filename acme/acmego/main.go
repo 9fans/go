@@ -21,6 +21,7 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
+//	.cpp, .c, .cc, .cu, .cxx, .h, .hh, .hpp, .hxx, .tcc, .mm, .m - clang-format
 //
 package main
 
@@ -50,11 +51,21 @@ var otherFormatters = map[string][]string{
 	".rs": []string{"rustfmt", "--emit", "stdout"},
 }
 
+// Clang formatters (only loaded with -f option).
+var clangSuffixes = []string{
+	".cpp", ".c", ".cc", ".cu", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".tcc", ".mm", ".m",
+}
+
+var clangFormat = []string{"clang-format"}
+
 func main() {
 	flag.Parse()
 	if *gofmt {
 		for suffix, formatter := range otherFormatters {
 			formatters[suffix] = formatter
+		}
+		for _, suffix := range clangSuffixes {
+			formatters[suffix] = clangFormat
 		}
 	}
 	l, err := acme.Log()
