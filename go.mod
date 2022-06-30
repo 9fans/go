@@ -8,4 +8,4 @@ require (
 	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c
 )
 
-replace 9fans.net/go => github.com/zakkor/go
+replace 9fans.net/go v0.0.4 => github.com/zakkor/go v0.0.4
