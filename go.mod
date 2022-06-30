@@ -7,3 +7,5 @@ require (
 	golang.org/x/mobile v0.0.0-20210220033013-bdb1ca9a1e08
 	golang.org/x/sys v0.0.0-20210415045647-66c3f260301c
 )
+
+replace 9fans.net/go => github.com/zakkor/go
