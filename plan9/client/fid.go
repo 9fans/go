@@ -171,6 +171,9 @@ func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err error) {
 }
 
 func (fid *Fid) readAt(b []byte, offset int64) (n int, err error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
 	conn, err := fid.conn()
 	if err != nil {
 		return 0, err
