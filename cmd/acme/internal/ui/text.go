@@ -473,17 +473,23 @@ func Textselect(t *wind.Text) {
 		// Do just the receive, dropping biglock
 		// to let other goroutines proceed.
 		// Note that *Mouse is Mousectl.Mouse.
+		// We also need to release the window lock, or else other code
+		// will deadlock with us by acquiring the big lock and _then_ acquiring
+		// the window lock
+		o := t.W.Owner
+		wind.Winunlock(t.W)
 		BigUnlock()
 		for Mouse.Buttons == b {
 			*Mouse = <-Mousectl.C
 		}
 		BigLock()
+		wind.Winlock(t.W, o)
 		clicktext = nil
 	}
 }
 
-var BigLock = func(){}
-var BigUnlock = func(){}
+var BigLock = func() {}
+var BigUnlock = func() {}
 
 /*
  * Release the button in less than DELAY ms and it's considered a null selection
