@@ -78,7 +78,7 @@ func removeextern() {
 	os.Remove(exname)
 }
 
-func extproc(c chan string, fd init) {
+func extproc(c chan string, fd int) {
 	buf := make([]byte, READBUFSIZE)
 	for {
 		n, err := syscall.Read(fd,buf)
