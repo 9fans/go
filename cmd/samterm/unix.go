@@ -59,7 +59,7 @@ func extstart() {
 	}
 
 	plumbc = make(chan string)
-	go extproc(plumbc, fd)
+	go extproc(plumbc, os.NewFile(uintptr(fd), exname))
 	// atexit(removeextern)
 	return
 
