@@ -84,7 +84,7 @@ func main() {
 
 	needrun <- true
 	go events()
-	go runner()
+	go runner(pwd)
 
 	r, err := acme.Log()
 	if err != nil {
@@ -152,7 +152,7 @@ var run struct {
 	kill bool
 }
 
-func runner() {
+func runner(dir string) {
 	for range needrun {
 		run.Lock()
 		run.id++
@@ -167,7 +167,7 @@ func runner() {
 		lastcmd = nil
 
 		runSetup(id)
-		go runBackground(id)
+		go runBackground(id, dir)
 	}
 }
 
@@ -206,7 +206,7 @@ func runSetup(id int) {
 	win.Addr("#0")
 }
 
-func runBackground(id int) {
+func runBackground(id int, dir string) {
 	buf := make([]byte, 4096)
 	run.Lock()
 	for {
@@ -259,6 +259,7 @@ func runBackground(id int) {
 		}
 
 		cmd := exec.Command(rc, "-c", string(line))
+		cmd.Dir = dir
 		r, w, err := os.Pipe()
 		if err != nil {
 			log.Fatal(err)
