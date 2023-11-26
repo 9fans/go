@@ -453,6 +453,15 @@ func (w *Win) Info() (WinInfo, error) {
 	); err != nil {
 		return WinInfo{}, fmt.Errorf("invalid ctl contents %q: %v", line, err)
 	}
+	f, err = w.fid("tag")
+	if err != nil {
+		return WinInfo{}, err
+	}
+	tag := make([]byte, info.TagLen)
+	if _, err := f.ReadFull(tag); err != nil {
+		return WinInfo{}, err
+	}
+	info.Tag = string(tag)
 	return info, nil
 }
 
