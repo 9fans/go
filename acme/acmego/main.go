@@ -22,6 +22,10 @@
 //
 //	.rs - rustfmt
 //
+// Alternatively, if the window tag contains text between "[[" and "]]"
+// then the enclosed text is executed with rc -c and the window body as
+// stdin. For example: [[clang-format]] will run clang-format /path/to/file to
+// replace the window body with its stdout.
 package main
 
 import (
@@ -70,23 +74,19 @@ func main() {
 		if event.Name == "" || event.Op != "put" {
 			continue
 		}
-		for suffix, formatter := range formatters {
-			if strings.HasSuffix(event.Name, suffix) {
-				reformat(event.ID, event.Name, formatter)
-				break
-			}
+		w, err := acme.Open(event.ID, nil)
+		if err != nil {
+			log.Print(err)
+			continue
 		}
+		if fm := findFormatter(w, event.Name); len(fm) > 0 {
+			reformat(w, event.Name, fm)
+		}
+		w.CloseFiles()
 	}
 }
 
-func reformat(id int, name string, formatter []string) {
-	w, err := acme.Open(id, nil)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer w.CloseFiles()
-
+func reformat(w *acme.Win, name string, formatter []string) {
 	old, err := ioutil.ReadFile(name)
 	if err != nil {
 		//log.Print(err)
@@ -255,4 +255,41 @@ func findLines(text []byte, start, end int) []byte {
 	}
 	endByte := i
 	return text[startByte:endByte]
+}
+
+func findFormatter(w *acme.Win, name string) []string {
+	if f := findFilter(w); f != "" {
+		return []string{"rc", "-c", f + " $1"}
+	}
+	for suffix, fm := range formatters {
+		if strings.HasSuffix(name, suffix) {
+			return fm
+		}
+	}
+	return nil
+}
+
+func findFilter(w *acme.Win) string {
+	wi, err := w.Info()
+	if err != nil {
+		return ""
+	}
+	tag := wi.Tag
+	const (
+		tOpen  = "[["
+		tClose = "]]"
+	)
+	t0 := strings.Index(tag, tOpen)
+	if t0 == -1 {
+		return ""
+	}
+	if e := strings.Index(tag, "Edit"); e >= 0 && e < t0 {
+		// Err on the side of caution in case "[[" is part of an Edit command.
+		return ""
+	}
+	t1 := strings.Index(tag, tClose)
+	if t1 < t0 {
+		return ""
+	}
+	return tag[t0+len(tOpen) : t1]
 }
