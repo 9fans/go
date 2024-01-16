@@ -21,7 +21,6 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
-//
 package main
 
 import (
@@ -32,6 +31,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -41,13 +41,36 @@ import (
 
 var gofmt = flag.Bool("f", false, "format the entire file after Put")
 
-var formatters = map[string][]string{
-	".go": []string{"goimports"},
+type formatter struct {
+	cmd     []string
+	enabled func(string) bool
+}
+
+func enabledAlways(string) bool { return true }
+
+var formatters = map[string]formatter{
+	".go": {[]string{"goimports"}, enabledAlways},
+}
+
+func findClangFormatFile(path string) bool {
+	for {
+		newpath := filepath.Clean(filepath.Join(path, ".."))
+		if path == newpath {
+			break
+		}
+		path = newpath
+		if fi, err := os.Stat(filepath.Join(path, ".clang-format")); err == nil {
+			return !fi.IsDir()
+		}
+	}
+	return false
 }
 
 // Non-Go formatters (only loaded with -f option).
-var otherFormatters = map[string][]string{
-	".rs": []string{"rustfmt", "--emit", "stdout"},
+var otherFormatters = map[string]formatter{
+	".rs": {[]string{"rustfmt", "--emit", "stdout"}, enabledAlways},
+	".c":  {[]string{"clang-format"}, findClangFormatFile},
+	".h":  {[]string{"clang-format"}, findClangFormatFile},
 }
 
 func main() {
@@ -71,8 +94,8 @@ func main() {
 			continue
 		}
 		for suffix, formatter := range formatters {
-			if strings.HasSuffix(event.Name, suffix) {
-				reformat(event.ID, event.Name, formatter)
+			if strings.HasSuffix(event.Name, suffix) && formatter.enabled(event.Name) {
+				reformat(event.ID, event.Name, formatter.cmd)
 				break
 			}
 		}
