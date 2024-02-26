@@ -21,7 +21,6 @@
 // The other known extensions and formatters are:
 //
 //	.rs - rustfmt
-//
 package main
 
 import (
@@ -42,15 +41,19 @@ import (
 var gofmt = flag.Bool("f", false, "format the entire file after Put")
 
 var formatters = map[string][]string{
-	".go": []string{"goimports"},
+	// currently useing acmelsp for go
+	// ".go": []string{"goimports"},
 }
 
-// Non-Go formatters (only loaded with -f option).
+// Non-Go formatters
 var otherFormatters = map[string][]string{
 	".rs": []string{"rustfmt", "--emit", "stdout"},
+	".py": []string{"yapf"},
+	".jl": []string{"/Users/ilanpillemer/Repos/github/acme-jl/cmd/jlfmt2/bin/juliafmt"},
 }
 
 func main() {
+	log.Printf("starting patch version with [%v]\n", otherFormatters)
 	flag.Parse()
 	if *gofmt {
 		for suffix, formatter := range otherFormatters {
@@ -98,8 +101,8 @@ func reformat(id int, name string, formatter []string) {
 		// Formatter not installed.
 		return
 	}
-
-	new, err := exec.Command(exe, append(formatter[1:], name)...).CombinedOutput()
+	new, err := exec.Command(exe, append(formatter[1:], name)...).Output()
+	//new, err := exec.Command(exe, append(formatter[1:], name)...).CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(new), "fatal error") {
 			fmt.Fprintf(os.Stderr, "goimports %s: %v\n%s", name, err, new)
@@ -144,8 +147,8 @@ func reformat(id int, name string, formatter []string) {
 	tmp := f.Name()
 	f.Close()
 	defer os.Remove(tmp)
-
-	diff, _ := exec.Command("9", "diff", name, tmp).CombinedOutput()
+	diff, _ := exec.Command("9", "diff", name, tmp).Output()
+	//diff, _ := exec.Command("9", "diff", name, tmp).CombinedOutput()
 
 	latest, err := w.ReadAll("body")
 	if err != nil {
