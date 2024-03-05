@@ -259,6 +259,16 @@ func runBackground(id int) {
 		}
 
 		cmd := exec.Command(rc, "-c", string(line))
+		windows, err := acme.Windows()
+		if err == nil {
+			// TODO at least log it
+			for _, w := range windows {
+				if win.ID() == w.ID {
+					cmd.Dir = path.Dir(w.Name)
+					break
+				}
+			}
+		}
 		r, w, err := os.Pipe()
 		if err != nil {
 			log.Fatal(err)
