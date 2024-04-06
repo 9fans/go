@@ -357,7 +357,7 @@ func edit(f *File, cmd rune) {
 	if cmd == 'e' || cmd == 'I' {
 		logdelete(f, Posn(0), f.b.nc)
 		addr.r.p2 = f.b.nc
-	} else if f.b.nc != 0 || (f.name.s[0] != 0 && Strcmp(&genstr, &f.name) != 0) {
+	} else if f.b.nc != 0 || (f.name.s != nil && Strcmp(&genstr, &f.name) != 0) {
 		empty = false
 	}
 	var err error
