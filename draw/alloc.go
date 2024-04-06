@@ -2,7 +2,9 @@ package draw
 
 import (
 	"fmt"
+	"os"
 	"runtime"
+	"strings"
 )
 
 // AllocImage allocates a new Image on display d.
@@ -28,7 +30,6 @@ import (
 // used to paint a region red:
 //
 //	red, err := display.AllocImage(draw.Rect(0, 0, 1, 1), draw.RGB24, true, draw.Red)
-//
 func (d *Display) AllocImage(r Rectangle, pix Pix, repl bool, color Color) (*Image, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -104,11 +105,68 @@ func allocImage(d *Display, ai *Image, r Rectangle, pix Pix, repl bool, val Colo
 	return i, nil
 }
 
-/*
-func namedimage(d *Display, name string) (*Image, nil) {
-	panic("namedimage")
+func namedImage(d *Display, ai *Image, name string) (i *Image, err error) {
+	n := len(name)
+	if n >= 256 {
+		return nil, fmt.Errorf("namedImage: name too long")
+	}
+	// flush pending data so we don't get error allocating the image
+	d.flush(false)
+	a := d.bufimage(1 + 4 + 1 + n)
+	d.imageid++
+	id := d.imageid
+	a[0] = 'n'
+	bplong(a[1:], id)
+	a[5] = byte(n)
+	copy(a[6:], name)
+	if err := d.flush(false); err != nil {
+		fmt.Fprintf(os.Stderr, "namedImage: %v\n", err)
+		return nil, err
+	}
+
+	a = d.bufimage(1)
+	a[0] = 'I'
+	if err := d.flush(false); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot read image info: %v\n", err)
+		return nil, err
+	}
+	info := make([]byte, 12*12)
+	n, err = d.conn.ReadDraw(info)
+	if err != nil {
+		return nil, err
+	}
+	if n < len(info) {
+		return nil, fmt.Errorf("short info from rddraw")
+	}
+
+	pix, err := ParsePix(strings.TrimSpace(string(info[2*12 : 3*12])))
+	if err != nil {
+		a := d.bufimage(1 + 4)
+		a[0] = 'f'
+		bplong(a[1:], id)
+		d.flush(false)
+		return nil, fmt.Errorf("bad channel %q from devdraw", info[2*12:3*12])
+	}
+	i = ai
+	if i == nil {
+		i = new(Image)
+	}
+	*i = Image{
+		Display: d,
+		id:      id,
+		Pix:     pix,
+		Depth:   pix.Depth(),
+		Repl:    atoi(info[3*12:]) > 0,
+		R:       ator(info[4*12:]),
+		Clipr:   ator(info[8*12:]),
+		Screen:  nil,
+		next:    nil,
+	}
+	runtime.SetFinalizer(i, (*Image).Free)
+	return i, nil
 }
 
+/*
 func nameimage(i *Image, name string, in bool) error {
 	a := i.Display.bufimage(1+4+1+1+len(name))
 	a[0] = 'N'

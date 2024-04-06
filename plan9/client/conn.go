@@ -1,3 +1,6 @@
+//go:build !plan9
+// +build !plan9
+
 package client // import "9fans.net/go/plan9/client"
 
 import (
@@ -137,7 +140,7 @@ func (c *conn) newFid(fid uint32, qid plan9.Qid) *Fid {
 func (c *conn) newfidnum() (uint32, error) {
 	c.x.Lock()
 	defer c.x.Unlock()
-	for fidnum, _ := range c.freefid {
+	for fidnum := range c.freefid {
 		delete(c.freefid, fidnum)
 		return fidnum, nil
 	}
@@ -159,7 +162,7 @@ func (c *conn) newtag(ch chan *plan9.Fcall) (uint16, error) {
 	c.x.Lock()
 	defer c.x.Unlock()
 	var tagnum uint16
-	for tagnum, _ = range c.freetag {
+	for tagnum = range c.freetag {
 		delete(c.freetag, tagnum)
 		goto found
 	}

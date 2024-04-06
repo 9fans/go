@@ -39,10 +39,6 @@ var fsys *client.Fsys
 var fsysErr error
 var fsysOnce sync.Once
 
-func mountPlumb() {
-	fsys, fsysErr = client.MountService("plumb")
-}
-
 // Open opens the plumbing file with the given name and open mode.
 func Open(name string, mode int) (*client.Fid, error) {
 	fsysOnce.Do(mountPlumb)
