@@ -188,7 +188,7 @@ func writememimage(fd *os.File, i *Image) error {
 			return fmt.Errorf("no data")
 		}
 		n = loutp
-		hdr := []byte(fmt.Sprintf("%11d %11ld ", r.Max.Y, n))
+		hdr := []byte(fmt.Sprintf("%11d %11d ", r.Max.Y, n))
 		fd.Write(hdr)
 		fd.Write(outbuf[:n])
 		r.Min.Y = r.Max.Y

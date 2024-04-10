@@ -23,9 +23,9 @@ var tablesbuilt int
 
 /* perfect approximation to NTSC = .299r+.587g+.114b when 0 ≤ r,g,b < 256 */
 func _RGB2K(r, g, b uint8) uint8 {
-//	fmt.Printf("RGB2K %#x %#x %#x -> %#x\n%s", r, g, b,
-//		uint8((156763*int(r) + 307758*int(g) + 59769*int(b)) >> 19),
-//		string(debug.Stack()))
+	//	fmt.Printf("RGB2K %#x %#x %#x -> %#x\n%s", r, g, b,
+	//		uint8((156763*int(r) + 307758*int(g) + 59769*int(b)) >> 19),
+	//		string(debug.Stack()))
 	return uint8((156763*int(r) + 307758*int(g) + 59769*int(b)) >> 19)
 }
 
@@ -2239,7 +2239,7 @@ func memoptdraw(par *memDrawParam) int {
 		dp := byteaddr(dst, par.r.Min)
 		v := par.sdval
 		if _DBG {
-			fmt.Fprintf(os.Stderr, "sdval %lud, depth %d\n", v, dst.Depth)
+			fmt.Fprintf(os.Stderr, "sdval %d, depth %d\n", v, dst.Depth)
 		}
 		switch dst.Depth {
 		case 1, 2, 4:
