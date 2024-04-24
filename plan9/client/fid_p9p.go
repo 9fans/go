@@ -97,7 +97,7 @@ func (fid *Fid) Qid() plan9.Qid {
 }
 
 func (fid *Fid) Read(b []byte) (n int, err error) {
-	return fid.ReadAt(b, -1)
+	return fid.readAt(b, -1)
 }
 
 func (fid *Fid) ReadAt(b []byte, offset int64) (n int, err error) {
