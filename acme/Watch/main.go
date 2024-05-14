@@ -74,11 +74,6 @@ func main() {
 	win.Name(pwdSlash + "+watch")
 	win.Ctl("clean")
 	win.Ctl("dumpdir " + pwd)
-	cmd := "dump Watch"
-	if *recursive {
-		cmd += " -r"
-	}
-	win.Ctl(cmd)
 	win.Fprintf("tag", "Get Kill Quit ")
 	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
@@ -183,6 +178,13 @@ func runSetup(id int) {
 		win.Addr(",")
 		win.Write("data", nil)
 		win.Write("body", []byte(fmt.Sprintf("%% %s\n", strings.Join(args, " "))))
+
+		prefix := "dump Watch"
+		if *recursive {
+			prefix += " -r"
+		}
+		cmd := fmt.Sprintf("%s %s", prefix, strings.Join(args, " "))
+		win.Ctl(cmd)
 	} else {
 		end, endByte := utf8.RuneCount(data), len(data)
 		for i := len(matches) - 1; i >= 0; i-- {
@@ -197,6 +199,17 @@ func runSetup(id int) {
 				win.Write("data", nil)
 			}
 			end, endByte = mStart, m[0]
+
+			// Remember first command only
+			if i == 0 {
+				c := strings.TrimSpace(string(data[m[0]+1 : m[1]])) // skip %
+				prefix := "dump Watch"
+				if *recursive {
+					prefix += " -r"
+				}
+				cmd := fmt.Sprintf("prefix %s", prefix, c)
+				win.Ctl(cmd)
+			}
 		}
 		if end > 0 {
 			win.Addr(",#%d", end)
