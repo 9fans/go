@@ -37,6 +37,8 @@ type Win struct {
 	event      *client.Fid
 	data       *client.Fid
 	xdata      *client.Fid
+	rdsel      *client.Fid
+	wrsel      *client.Fid
 	errors     *client.Fid
 	ebuf       *bufio.Reader
 	c          chan *Event
@@ -295,6 +297,12 @@ func (w *Win) CloseFiles() {
 	w.xdata.Close()
 	w.xdata = nil
 
+	w.rdsel.Close()
+	w.rdsel = nil
+
+	w.wrsel.Close()
+	w.wrsel = nil
+
 	w.errors.Close()
 	w.errors = nil
 }
@@ -343,6 +351,12 @@ func (w *Win) fid(name string) (*client.Fid, error) {
 		f = &w.tag
 	case "xdata":
 		f = &w.xdata
+	case "rdsel":
+		f = &w.rdsel
+		mode = plan9.OREAD
+	case "wrsel":
+		f = &w.wrsel
+		mode = plan9.OWRITE
 	case "errors":
 		f = &w.errors
 		mode = plan9.OWRITE
@@ -943,8 +957,7 @@ func (w *Win) execute(h EventHandler, cmd string) bool {
 }
 
 func (w *Win) Selection() string {
-	w.Ctl("addr=dot")
-	data, err := w.ReadAll("xdata")
+	data, err := w.ReadAll("rdsel")
 	if err != nil {
 		w.Err(err.Error())
 	}
