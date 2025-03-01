@@ -34,7 +34,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
+    "path"
 	"9fans.net/go/acme"
 )
 
@@ -50,6 +50,8 @@ var otherFormatters = map[string][]string{
 	".rs": []string{"rustfmt", "--emit", "stdout"},
 	".py": []string{"yapf"},
 	".jl": []string{"/Users/ilanpillemer/Repos/github/acme-jl/cmd/jlfmt2/bin/juliafmt"},
+	".gleam": []string{"gleam", "format"},
+	//".gleam": []string{"cat", "|", "gleam","format","--stdin"},
 }
 
 func main() {
@@ -101,7 +103,14 @@ func reformat(id int, name string, formatter []string) {
 		// Formatter not installed.
 		return
 	}
-	new, err := exec.Command(exe, append(formatter[1:], name)...).Output()
+	var new []byte
+	if path.Base(exe) == "gleam" {
+	    hmmph := fmt.Sprintf("cat %s | %s format --stdin",name,exe)
+	  	new, err = exec.Command("bash","-c",hmmph).Output()
+	} else {
+	    new, err = exec.Command(exe, append(formatter[1:], name)...).Output()
+    }
+
 	//new, err := exec.Command(exe, append(formatter[1:], name)...).CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(new), "fatal error") {
