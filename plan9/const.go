@@ -55,4 +55,6 @@ const (
 	MREPL   = 0x0000
 	MBEFORE = 0x0001
 	MAFTER  = 0x0002
+	MCREATE = 0x0004
+	MCACHE  = 0x0010
 )

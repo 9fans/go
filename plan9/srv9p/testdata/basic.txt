@@ -1,0 +1,76 @@
+serve tree
+Tversion msize 8192 version 9P2025.u
+Rversion msize 8192 version 9P2000
+Tauth tag 1 afid 1 uname rsc
+Rerror tag 1 ename 'srv9p.test: authentication not required'
+# from now on, implicitly using tag 0
+Tattach fid 1 afid NOFID uname rsc
+Rattach qid 0x0.0.d
+Tstat fid 1
+Rstat stat (name / uid glenda gid bunny muid glenda qid 0x0.0.d mode d-rwxr-xr-x mtime 123456789 atime 200000000 length 0 type 0 dev 0)
+Twalk fid 1 newfid 2 wname hello
+Rwalk wqid 0x1.0
+Tstat fid 2
+Rstat stat (name hello uid gopher gid bunny muid gopher qid 0x1.0 mode --rw-r--r-- mtime 123456789 atime 200000000 length 0 type 0 dev 0)
+Twalk fid 2 newfid 3
+Rwalk
+Topen fid 3 mode OREAD
+Ropen qid 0x1.0
+Tread fid 3 count 1
+Rread data h
+Tread fid 3 offset 1 count 100
+Rread data 'ello, go nuts'
+Tread fid 3 count 100
+Rread data 'hello, go nuts'
+Tclunk fid 3
+Rclunk
+Tread fid 3 count 100
+Rerror ename 'unknown fid'
+Tflush
+Rflush
+Tflush oldtag 2
+Rflush
+Twalk fid 1 newfid 3 wname slang
+Rwalk wqid 0x2.0.d
+Twalk fid 3 newfid 3 wname hi
+Rwalk wqid 0x3.0
+Tclunk fid 3
+Rclunk
+Twalk fid 1 newfid 2
+Rerror ename 'duplicate fid'
+Tclunk fid 2
+Rclunk
+Twalk fid 1 newfid 2 wname [slang hi]
+Rwalk wqid [0x2.0.d 0x3.0]
+Tclunk fid 2
+Rclunk
+Twalk fid 1 newfid 2
+Rwalk
+Topen fid 2 mode OWRITE
+Rerror ename 'is a directory'
+Topen fid 2 mode ORDWR
+Rerror ename 'is a directory'
+Topen fid 2 mode OREAD|OTRUNC
+Rerror ename 'is a directory'
+Topen fid 2 mode OREAD
+Ropen qid 0x0.0.d
+Tread fid 2 count 1000
+Rread data [(name hello uid gopher gid bunny muid gopher qid 0x1.0 mode --rw-r--r-- atime 200000000 mtime 123456789 length 0 type 0 dev 0) (name slang uid gopher gid bunny muid gopher qid 0x2.0.d mode d-r-xr-xr-x atime 200000000 mtime 123456789 length 0 type 0 dev 0)]
+Tread fid 2 offset 142 count 1000
+Rread data ''
+Tread fid 2 offset 140 count 1000
+Rerror ename 'bad offset'
+Twrite fid 2
+Rerror ename 'not open for write'
+Tremove fid 2
+Rerror ename 'permission denied'
+Tremove fid 2
+Rerror ename 'unknown fid'
+Twalk fid 1 newfid 2 wname [slang hi]
+Rwalk wqid [0x2.0.d 0x3.0]
+Twstat fid 2 stat (name yo)
+Rerror ename 'wstat prohibited'
+Tclunk fid 2
+Rclunk
+Tclunk fid 1
+Rclunk

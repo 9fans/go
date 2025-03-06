@@ -1,8 +1,10 @@
 package plan9
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type ProtocolError string
@@ -41,6 +43,10 @@ var nullDir = Dir{
 	"",
 	"",
 	"",
+}
+
+func (d *Dir) IsNull() bool {
+	return *d == nullDir
 }
 
 func (d *Dir) Null() {
@@ -102,12 +108,96 @@ func UnmarshalDir(b []byte) (d *Dir, err error) {
 }
 
 func (d *Dir) String() string {
-	return fmt.Sprintf("'%s' '%s' '%s' '%s' q %v m %#o at %d mt %d l %d t %d d %d",
+	return fmt.Sprintf("name '%s' uid '%s' gid '%s' muid '%s' qid %v mode %v atime %d mtime %d length %d type %d dev %d",
 		d.Name, d.Uid, d.Gid, d.Muid, d.Qid, d.Mode,
 		d.Atime, d.Mtime, d.Length, d.Type, d.Dev)
 }
 
+func parseDir(s string) (*Dir, error) {
+	d := new(Dir)
+	d.Null()
+	for s != "" {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			break
+		}
+		var name string
+		name, s, _ = strings.Cut(s, " ")
+		s = strings.TrimSpace(s)
+		var arg string
+		if strings.HasPrefix(s, "'") {
+			i := strings.Index(s[1:], "'")
+			if i < 0 {
+				return nil, fmt.Errorf("missing closing quote")
+			}
+			arg, s = s[1:1+i], s[1+i+1:]
+		} else {
+			arg, s, _ = strings.Cut(s, " ")
+		}
+		switch name {
+		default:
+			return nil, fmt.Errorf("unknown field %q", name)
+		case "type":
+			n, err := strconv.ParseUint(arg, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid type: %v", err)
+			}
+			d.Type = uint16(n)
+		case "dev":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid dev: %v", err)
+			}
+			d.Dev = uint32(n)
+		case "qid":
+			q, err := parseQid(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid qid: %v", err)
+			}
+			d.Qid = q
+		case "mode":
+			m, err := parsePerm(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid mode: %v", err)
+			}
+			d.Mode = m
+		case "atime":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid atime: %v", err)
+			}
+			d.Atime = uint32(n)
+		case "mtime":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid mtime: %v", err)
+			}
+			d.Mtime = uint32(n)
+		case "length":
+			n, err := strconv.ParseUint(arg, 0, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid length: %v", err)
+			}
+			d.Length = n
+		case "name":
+			d.Name = arg
+		case "uid":
+			d.Uid = arg
+		case "gid":
+			d.Gid = arg
+		case "muid":
+			d.Muid = arg
+		}
+	}
+	return d, nil
+}
+
 func dumpsome(b []byte) string {
+	// Is this all directories?
+	if s, ok := dumpDirs(b); ok {
+		return s
+	}
+
 	if len(b) > 64 {
 		b = b[0:64]
 	}
@@ -124,6 +214,38 @@ func dumpsome(b []byte) string {
 		return strconv.Quote(string(b))
 	}
 	return fmt.Sprintf("%x", b)
+}
+
+func dumpDirs(b []byte) (string, bool) {
+	var dirs []*Dir
+	for len(b) > 0 {
+		if len(b) < 2 {
+			return "", false
+		}
+		n, _ := gbit16(b)
+		m := int(n) + 2
+		if len(b) < m {
+			return "", false
+		}
+		d, err := UnmarshalDir(b[:m])
+		if err != nil {
+			return "", false
+		}
+		dirs = append(dirs, d)
+		b = b[m:]
+	}
+	var out bytes.Buffer
+	out.WriteString("[")
+	for i, d := range dirs {
+		if i > 0 {
+			out.WriteString(" ")
+		}
+		out.WriteString("(")
+		out.WriteString(d.String())
+		out.WriteString(")")
+	}
+	out.WriteString("]")
+	return out.String(), true
 }
 
 type Perm uint32
@@ -162,6 +284,32 @@ var permChars = []permChar{
 	permChar{0, '-'},
 	permChar{0001, 'x'},
 	permChar{0, '-'},
+}
+
+func parsePerm(s string) (Perm, error) {
+	orig := s
+	did := false
+	var p Perm
+	for _, pc := range permChars {
+		if pc.bit == 0 && did {
+			did = false
+			continue
+		}
+		if s == "" {
+			return Perm(0), fmt.Errorf("perm too short: %q", orig)
+		}
+		if s[0] == byte(pc.c) {
+			s = s[1:]
+			p |= pc.bit
+			if pc.bit != 0 {
+				did = true
+			}
+		}
+	}
+	if s != "" {
+		return Perm(0), fmt.Errorf("perm too long: %q", orig)
+	}
+	return p, nil
 }
 
 func (p Perm) String() string {
@@ -211,7 +359,39 @@ func (q Qid) String() string {
 	if q.Type&QTAUTH != 0 {
 		t += "A"
 	}
-	return fmt.Sprintf("(%.16x %d %s)", q.Path, q.Vers, t)
+	if t != "" {
+		t = "." + t
+	}
+	return fmt.Sprintf("%#x.%d%s", q.Path, q.Vers, t)
+}
+
+func parseQid(s string) (Qid, error) {
+	orig := s
+	var q Qid
+	var ok bool
+	ps, vs, _ := strings.Cut(s, ".")
+	vs, ts, _ := strings.Cut(vs, ".")
+	pn, err1 := strconv.ParseUint(ps, 0, 64)
+	vn, err2 := strconv.ParseUint(vs, 0, 32)
+	if ts, ok = strings.CutPrefix(ts, "d"); ok {
+		q.Type |= QTDIR
+	}
+	if ts, ok = strings.CutPrefix(ts, "a"); ok {
+		q.Type |= QTAPPEND
+	}
+	if ts, ok = strings.CutPrefix(ts, "l"); ok {
+		q.Type |= QTEXCL
+	}
+	if ts, ok = strings.CutPrefix(ts, "A"); ok {
+		q.Type |= QTAUTH
+	}
+	if err1 != nil || err2 != nil || ts != "" {
+		return Qid{}, fmt.Errorf("invalid qid %q", orig)
+	}
+	q.Path = pn
+	q.Vers = uint32(vn)
+
+	return q, nil
 }
 
 func gqid(b []byte) (Qid, []byte) {

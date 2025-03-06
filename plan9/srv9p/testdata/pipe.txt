@@ -1,0 +1,31 @@
+serve pipe
+Tversion msize 8192 version 9P2000
+Rversion msize 8192 version 9P2000
+Tattach fid 1 afid NOFID
+Rattach qid 0x0.0.d
+Tstat fid 1
+Rstat stat (name / uid pipe gid band muid '' qid 0x0.0.d mode d-r-xr-xr-x mtime 0 atime 0 length 0 type 0 dev 0)
+Twalk fid 1 newfid 2
+Rwalk
+Topen fid 2 mode OREAD
+Ropen qid 0x0.0.d
+Tread fid 2 count 1000
+Rread data [(name read uid pipe gid band muid '' qid 0x1.0 mode --r--r--r-- atime 0 mtime 0 length 0 type 0 dev 0) (name write uid pipe gid band muid '' qid 0x2.0 mode ---w--w--w- atime 0 mtime 0 length 0 type 0 dev 0)]
+Tclunk fid 2
+Rclunk
+Twalk tag 1 fid 1 newfid 2 wname read
+Twalk tag 2 fid 1 newfid 3 wname write
+Rwalk tag 1 wqid 0x1.0
+Rwalk tag 2 wqid 0x2.0
+Topen fid 2 mode OREAD
+Ropen qid 0x1.0
+Topen fid 3 mode OWRITE
+Ropen qid 0x2.0
+Twrite tag 1 fid 3 data 'hello world'
+Tread tag 2 fid 2 count 100
+Rread tag 2 data 'hello world'
+Rwrite tag 1 count 11
+Twrite tag 1 fid 3 data 'hello world'
+Tflush tag 2 oldtag 1
+Rerror tag 1 ename flushed
+Rflush tag 2

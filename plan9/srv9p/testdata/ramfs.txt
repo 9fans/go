@@ -1,0 +1,24 @@
+serve ramfs
+Tversion msize 8192 version 9P2000
+Rversion msize 8192 version 9P2000
+Tattach fid 1 afid NOFID
+Rattach qid 0x0.0.d
+Twalk fid 1 newfid 2
+Rwalk
+Tcreate fid 2 name hello perm --rw-rw-rw- mode ORDWR
+Rcreate qid 0x1.0
+Twrite fid 2 data 'hello world'
+Rwrite count 11
+Tclunk fid 2
+Rclunk
+Twalk fid 1 newfid 2 wname hello
+Rwalk wqid 0x1.1
+Topen fid 2 mode OREAD
+Ropen qid 0x1.1
+Tread fid 2 count 100 offset 0
+Rread data 'hello world'
+Tread fid 2 count 100 offset 11
+Rread data ''
+Tclunk fid 2
+Rclunk
+

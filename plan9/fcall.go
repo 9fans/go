@@ -1,8 +1,11 @@
 package plan9
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -296,7 +299,9 @@ func UnmarshalFcall(b []byte) (f *Fcall, err error) {
 		if n > MAXWELEM {
 			panic(1)
 		}
-		f.Wqid = make([]Qid, n)
+		if n > 0 {
+			f.Wqid = make([]Qid, n)
+		}
 		for i := range f.Wqid {
 			f.Wqid[i], b = gqid(b)
 		}
@@ -368,12 +373,12 @@ func (f *Fcall) String() string {
 	case Topen:
 		return fmt.Sprintf("Topen tag %d fid %d mode %d", f.Tag, f.Fid, f.Mode)
 	case Ropen:
-		return fmt.Sprintf("Ropen tag %d qid %v iouint %d", f.Tag, f.Qid, f.Iounit)
+		return fmt.Sprintf("Ropen tag %d qid %v iounit %d", f.Tag, f.Qid, f.Iounit)
 	case Tcreate:
 		return fmt.Sprintf("Tcreate tag %d fid %d name %s perm %v mode %d",
 			f.Tag, f.Fid, f.Name, f.Perm, f.Mode)
 	case Rcreate:
-		return fmt.Sprintf("Rcreate tag %d qid %v iouint %d", f.Tag, f.Qid, f.Iounit)
+		return fmt.Sprintf("Rcreate tag %d qid %v iounit %d", f.Tag, f.Qid, f.Iounit)
 	case Tread:
 		return fmt.Sprintf("Tread tag %d fid %d offset %d count %d",
 			f.Tag, f.Fid, f.Offset, f.Count)
@@ -397,9 +402,9 @@ func (f *Fcall) String() string {
 		return fmt.Sprintf("Tstat tag %d fid %d", f.Tag, f.Fid)
 	case Rstat:
 		d, err := UnmarshalDir(f.Stat)
-		if err == nil {
-			return fmt.Sprintf("Rstat tag %d stat(%d bytes)",
-				f.Tag, len(f.Stat))
+		if err != nil {
+			return fmt.Sprintf("Rstat tag %d stat (%d bytes; %v)",
+				f.Tag, len(f.Stat), err)
 		}
 		return fmt.Sprintf("Rstat tag %d stat %v", f.Tag, d)
 	case Twstat:
@@ -410,7 +415,7 @@ func (f *Fcall) String() string {
 		}
 		return fmt.Sprintf("Twstat tag %d fid %d stat %v", f.Tag, f.Fid, d)
 	case Rwstat:
-		return fmt.Sprintf("FidRwstat tag %d", f.Tag)
+		return fmt.Sprintf("Rwstat tag %d", f.Tag)
 	}
 	return fmt.Sprintf("unknown type %d", f.Type)
 }
@@ -450,4 +455,256 @@ func WriteFcall(w io.Writer, f *Fcall) error {
 	}
 	_, err = w.Write(b)
 	return err
+}
+
+var types = map[string]uint8{
+	"Tversion": Tversion,
+	"Rversion": Rversion,
+	"Tauth":    Tauth,
+	"Rauth":    Rauth,
+	"Tattach":  Tattach,
+	"Rattach":  Rattach,
+	"Rerror":   Rerror,
+	"Tflush":   Tflush,
+	"Rflush":   Rflush,
+	"Twalk":    Twalk,
+	"Rwalk":    Rwalk,
+	"Topen":    Topen,
+	"Ropen":    Ropen,
+	"Tcreate":  Tcreate,
+	"Rcreate":  Rcreate,
+	"Tread":    Tread,
+	"Rread":    Rread,
+	"Twrite":   Twrite,
+	"Rwrite":   Rwrite,
+	"Tclunk":   Tclunk,
+	"Rclunk":   Rclunk,
+	"Tremove":  Tremove,
+	"Rremove":  Rremove,
+	"Tstat":    Tstat,
+	"Rstat":    Rstat,
+	"Twstat":   Twstat,
+	"Rwstat":   Rwstat,
+}
+
+var modes = map[string]uint8{
+	"OREAD":   OREAD,
+	"OWRITE":  OWRITE,
+	"ORDWR":   ORDWR,
+	"OEXEC":   OEXEC,
+	"OTRUNC":  OTRUNC,
+	"OCEXEC":  OCEXEC,
+	"ORCLOSE": ORCLOSE,
+}
+
+func ParseFcall(s string) (*Fcall, error) {
+	f := new(Fcall)
+	s = strings.TrimSpace(s)
+	typ, s, _ := strings.Cut(s, " ")
+	var ok bool
+	if f.Type, ok = types[typ]; !ok {
+		return nil, fmt.Errorf("unknown type %q", typ)
+	}
+
+	for {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			break
+		}
+		var name string
+		name, s, _ = strings.Cut(s, " ")
+		s = strings.TrimSpace(s)
+		var arg string
+		if strings.HasPrefix(s, "(") {
+			i := strings.Index(s, ")")
+			if i < 0 {
+				return nil, fmt.Errorf("missing closing paren")
+			}
+			arg, s = s[1:i], s[i+1:]
+		} else if strings.HasPrefix(s, "[") {
+			i := strings.Index(s, "]")
+			if i < 0 {
+				return nil, fmt.Errorf("missing closing paren")
+			}
+			arg, s = s[:i+1], s[i+1:]
+		} else if strings.HasPrefix(s, "'") {
+			i := strings.Index(s[1:], "'")
+			if i < 0 {
+				return nil, fmt.Errorf("missing closing quote")
+			}
+			arg, s = s[1:1+i], s[1+i+1:]
+		} else {
+			arg, s, _ = strings.Cut(s, " ")
+		}
+		switch name {
+		default:
+			return nil, fmt.Errorf("unknown fcall field %q", name)
+		case "afid":
+			if arg == "NOFID" {
+				f.Afid = NOFID
+				break
+			}
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid afid: %v", err)
+			}
+			f.Afid = uint32(n)
+		case "aname":
+			f.Aname = arg
+		case "aqid":
+			q, err := parseQid(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid qid: %v", err)
+			}
+			f.Aqid = q
+		case "count":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid count: %v", err)
+			}
+			f.Count = uint32(n)
+		case "data":
+			f.Data = parseData(arg)
+		case "ename":
+			f.Ename = arg
+		case "fid":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid fid: %v", err)
+			}
+			f.Fid = uint32(n)
+		case "iounit":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid iounit: %v", err)
+			}
+			f.Iounit = uint32(n)
+		case "mode":
+			if strings.HasPrefix(arg, "O") {
+				f.Mode = 0
+				for _, name := range strings.Split(arg, "|") {
+					if m, ok := modes[name]; ok {
+						f.Mode |= m
+					} else {
+						return nil, fmt.Errorf("invalid mode: unknown %s", name)
+					}
+				}
+			} else {
+				n, err := strconv.ParseUint(arg, 0, 8)
+				if err != nil {
+					return nil, fmt.Errorf("invalid mode: %v", err)
+				}
+				f.Mode = uint8(n)
+			}
+		case "msize":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid msize: %v", err)
+			}
+			f.Msize = uint32(n)
+		case "name":
+			f.Name = arg
+		case "newfid":
+			n, err := strconv.ParseUint(arg, 0, 32)
+			if err != nil {
+				return nil, fmt.Errorf("invalid newfid: %v", err)
+			}
+			f.Newfid = uint32(n)
+		case "offset":
+			n, err := strconv.ParseUint(arg, 0, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid offset: %v", err)
+			}
+			f.Offset = n
+		case "oldtag":
+			n, err := strconv.ParseUint(arg, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid oldtag: %v", err)
+			}
+			f.Oldtag = uint16(n)
+		case "perm":
+			p, err := parsePerm(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid perm: %v", err)
+			}
+			f.Perm = p
+		case "qid":
+			q, err := parseQid(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid qid: %v", err)
+			}
+			f.Qid = q
+		case "stat":
+			d, err := parseDir(arg)
+			if err != nil {
+				return nil, fmt.Errorf("invalid stat: %v", err)
+			}
+			b, err := d.Bytes()
+			if err != nil {
+				return nil, fmt.Errorf("invalid stat: %v", err)
+			}
+			f.Stat = b
+		case "tag":
+			n, err := strconv.ParseUint(arg, 0, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid tag: %v", err)
+			}
+			f.Tag = uint16(n)
+		case "uname":
+			f.Uname = arg
+		case "version":
+			f.Version = arg
+		case "wname":
+			if strings.HasPrefix(arg, "[") {
+				f.Wname = strings.Fields(arg[1 : len(arg)-1])
+			} else {
+				f.Wname = []string{arg}
+			}
+		case "wqid":
+			if strings.HasPrefix(arg, "[") {
+				for _, qs := range strings.Fields(arg[1 : len(arg)-1]) {
+					q, err := parseQid(qs)
+					if err != nil {
+						return nil, fmt.Errorf("invalid wqid: %v", err)
+					}
+					f.Wqid = append(f.Wqid, q)
+				}
+			} else {
+				q, err := parseQid(arg)
+				if err != nil {
+					return nil, fmt.Errorf("invalid wqid: %v", err)
+				}
+				f.Wqid = []Qid{q}
+			}
+		}
+	}
+	return f, nil
+}
+
+func parseData(s string) []byte {
+	// Try parsing as directories
+	if strings.HasPrefix(s, "[(") && strings.HasSuffix(s, ")]") {
+		var data []byte
+		for _, ds := range strings.Split(s[2:len(s)-2], ") (") {
+			d, err := parseDir(ds)
+			if err != nil {
+				goto NotDir
+			}
+			b, err := d.Bytes()
+			if err != nil {
+				goto NotDir
+			}
+			data = append(data, b...)
+		}
+		return data
+	}
+NotDir:
+
+	// Try parsing as hex.
+	if data, err := hex.DecodeString(s); err == nil {
+		return data
+	}
+
+	// Fall back to literal string.
+	return []byte(s)
 }
