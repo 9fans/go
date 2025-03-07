@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -51,7 +52,7 @@ func init() {
 
 func main() {
 	log.SetFlags(0)
-	log.SetPrefix("consfs: ")
+	log.SetPrefix("netshell: ")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -183,7 +184,8 @@ func (r rendez) Sleep(ctx context.Context) {
 	}
 }
 
-// Wakeup wakes up one call to r.Sleep.
+// Wakeup wakes up one call to r.Sleep or returns immediately if
+// there are no calls sleeping.
 func (r rendez) Wakeup() {
 	select {
 	default:
@@ -196,7 +198,8 @@ const (
 	maxBuf  = 8192 // max read/write buffer
 )
 
-// A console
+// A console implements a simple terminal-like device reading from
+// r and writing to w.
 type console struct {
 	r io.Reader // reader connected to network
 	w io.Writer // writer connected to network
@@ -218,8 +221,8 @@ type console struct {
 // newConsole creates a new console reading from r and writing to w.
 func newConsole(r io.Reader, w io.Writer) *console {
 	c := &console{
-		r:          os.Stdin,
-		w:          os.Stdout,
+		r:          r,
+		w:          w,
 		notefd:     -1,
 		readEmpty:  newRendez(),
 		readFull:   newRendez(),
@@ -236,8 +239,8 @@ func newConsole(r io.Reader, w io.Writer) *console {
 // consctlClose handles a close of /dev/consctl; it turns raw mode off.
 func (c *console) consctlClose() {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.raw = false
-	c.mu.Unlock()
 }
 
 // consctlWrite handles writes to /dev/consctl.
@@ -245,22 +248,21 @@ func (c *console) consctlWrite(data []byte) (int, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	s := string(data)
+	s := strings.TrimSpace(string(data))
 	switch s {
-	case "rawon", "rawon\n": // turn raw mode on
+	case "rawon": // turn raw mode on
 		c.raw = true
 		c.read = append(c.read, c.line...)
 		c.line = nil
 		return len(data), nil
 
-	case "rawoff", "rawoff\n": // turn raw mode off
+	case "rawoff": // turn raw mode off
 		c.raw = false
 		return len(data), nil
 	}
 
-	if strings.HasPrefix(s, "notepg") { // notepg n means send interrupt notes to /proc/n/notepg
-		s = strings.TrimSpace(strings.TrimPrefix(s, "notepg"))
-		if s == "" {
+	if s, ok := strings.CutPrefix(s, "notepg"); ok { // notepg n means send interrupt notes to /proc/n/notepg
+		if _, err := strconv.ParseUint(s, 10, 64); err != nil {
 			return 0, fmt.Errorf("bad notepg")
 		}
 		fd, err := syscall.Open("/proc/"+s+"/notepg", syscall.O_WRONLY)
@@ -280,7 +282,9 @@ func (c *console) readNet(ctx context.Context) {
 	buf := make([]byte, 4096)
 	for context.Cause(ctx) == nil {
 		n, err := c.r.Read(buf)
-		c.consType(ctx, buf[:n], err)
+		if n > 0 {
+			c.consType(ctx, buf[:n])
+		}
 		if err != nil {
 			return
 		}
@@ -297,7 +301,7 @@ const (
 )
 
 // consType processes typed characters, adding them to the console.
-func (c *console) consType(ctx context.Context, data []byte, err error) {
+func (c *console) consType(ctx context.Context, data []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
