@@ -69,10 +69,11 @@ func findClangFormatFile(path string) bool {
 
 // Non-Go formatters (only loaded with -f option).
 var otherFormatters = map[string]formatter{
-	".py": {[]string{"yapf"}, enabledAlways},
-	".rs": {[]string{"rustfmt", "--emit", "stdout"}, enabledAlways},
-	".c":  {[]string{"clang-format"}, findClangFormatFile},
-	".h":  {[]string{"clang-format"}, findClangFormatFile},
+	".py":  {[]string{"yapf"}, enabledAlways},
+	".rs":  {[]string{"rustfmt", "--emit", "stdout"}, enabledAlways},
+	".c":   {[]string{"clang-format"}, findClangFormatFile},
+	".h":   {[]string{"clang-format"}, findClangFormatFile},
+	".cpp": {[]string{"clang-format"}, findClangFormatFile},
 }
 
 func main() {
