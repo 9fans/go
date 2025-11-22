@@ -54,7 +54,7 @@ func drawrefreshscreen(l *DImage, client *Client) {
 	}
 }
 
-func drawrefresh(m *memdraw.Image, r draw.Rectangle, v interface{}) {
+func drawrefresh(m *memdraw.Image, r draw.Rectangle, v any) {
 	if v == nil {
 		return
 	}
@@ -1513,9 +1513,9 @@ type eface struct {
 	data  unsafe.Pointer
 }
 
-func funcPC(f interface{}) uintptr {
+func funcPC(f any) uintptr {
 	return *(*uintptr)(efaceOf(&f).data)
 }
-func efaceOf(ep *interface{}) *eface {
+func efaceOf(ep *any) *eface {
 	return (*eface)(unsafe.Pointer(ep))
 }

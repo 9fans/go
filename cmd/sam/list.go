@@ -1,5 +1,6 @@
 // #include "sam.h"
 
+//go:build ignore
 // +build ignore
 
 package main
@@ -41,7 +42,7 @@ func dellist(l *List, i int) {
 /*
  * Add a new element, whose position is i, to the list
  */
-func inslist(l *List, i int, args ...interface{}) {
+func inslist(l *List, i int, args ...any) {
 	var list va_list
 
 	va_start(list, i)

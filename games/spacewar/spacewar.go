@@ -80,13 +80,6 @@ type SpacewarPDP1 struct {
 	oldpix    [][]uint8
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func (m *SpacewarPDP1) Init(d *draw.Display) {
 	m.disp = d
 	m.mc = d.InitMouse()

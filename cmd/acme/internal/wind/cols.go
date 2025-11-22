@@ -88,10 +88,10 @@ func Coladd(c *Column, w *Window, clone *Window, y int) *Window {
 		}
 
 		// new window must start after v's tag ends
-		y = util.Max(y, v.tagtop.Max.Y+adraw.Border())
+		y = max(y, v.tagtop.Max.Y+adraw.Border())
 
 		// new window must start early enough to end before ymax
-		y = util.Min(y, ymax-minht)
+		y = min(y, ymax-minht)
 
 		// if y is too small, too many windows in column
 		if y < v.tagtop.Max.Y+adraw.Border() {
@@ -105,8 +105,8 @@ func Coladd(c *Column, w *Window, clone *Window, y int) *Window {
 		r.Max.Y = ymax
 		adraw.Display.ScreenImage.Draw(r, adraw.TextCols[frame.BACK], nil, draw.ZP)
 		r1 := r
-		y = util.Min(y, ymax-(v.Tag.Fr.Font.Height*v.Taglines+v.Body.Fr.Font.Height+adraw.Border()+1))
-		r1.Max.Y = util.Min(y, v.Body.Fr.R.Min.Y+v.Body.Fr.NumLines*v.Body.Fr.Font.Height)
+		y = min(y, ymax-(v.Tag.Fr.Font.Height*v.Taglines+v.Body.Fr.Font.Height+adraw.Border()+1))
+		r1.Max.Y = min(y, v.Body.Fr.R.Min.Y+v.Body.Fr.NumLines*v.Body.Fr.Font.Height)
 		r1.Min.Y = Winresize(v, r1, false, false)
 		r1.Max.Y = r1.Min.Y + adraw.Border()
 		adraw.Display.ScreenImage.Draw(r1, adraw.Display.Black, nil, draw.ZP)
@@ -217,7 +217,7 @@ func Colresize(c *Column, r draw.Rectangle) {
 				r1.Max.Y += (w.R.Dy()-adraw.Border()-adraw.Font.Height)*new_/old + adraw.Border() + adraw.Font.Height
 			}
 		}
-		r1.Max.Y = util.Max(r1.Max.Y, r1.Min.Y+adraw.Border()+adraw.Font.Height)
+		r1.Max.Y = max(r1.Max.Y, r1.Min.Y+adraw.Border()+adraw.Font.Height)
 		r2 := r1
 		r2.Max.Y = r2.Min.Y + adraw.Border()
 		adraw.Display.ScreenImage.Draw(r2, adraw.Display.Black, nil, draw.ZP)
@@ -326,7 +326,7 @@ Found:
 			nl[i] = 0
 		}
 	} else {
-		nnl := util.Min(onl+util.Max(util.Min(5, w.Taglines-1+w.Maxlines), onl/2), tot)
+		nnl := min(onl+max(min(5, w.Taglines-1+w.Maxlines), onl/2), tot)
 		if nnl < w.Taglines-1+w.Maxlines {
 			nnl = (w.Taglines - 1 + w.Maxlines + nnl) / 2
 		}
@@ -339,7 +339,7 @@ Found:
 			// prune from later window
 			j = i + k
 			if j < len(c.W) && nl[j] != 0 {
-				l = util.Min(dnl, util.Max(1, nl[j]/2))
+				l = min(dnl, max(1, nl[j]/2))
 				nl[j] -= l
 				nl[i] += l
 				dnl -= l
@@ -347,7 +347,7 @@ Found:
 			// prune from earlier window
 			j = i - k
 			if j >= 0 && nl[j] != 0 {
-				l = util.Min(dnl, util.Max(1, nl[j]/2))
+				l = min(dnl, max(1, nl[j]/2))
 				nl[j] -= l
 				nl[i] += l
 				dnl -= l

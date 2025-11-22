@@ -19,7 +19,7 @@ type _Draw struct {
 	op       draw.Op
 }
 
-func ldrawop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc interface{}, insave int) {
+func ldrawop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc any, insave int) {
 	d := etc.(*_Draw)
 	if insave != 0 && d.dstlayer.save == nil {
 		return

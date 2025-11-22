@@ -849,7 +849,7 @@ type Looper struct {
 
 var loopstruct Looper // only one; X and Y can't nest
 
-func alllooper(w *wind.Window, v interface{}) {
+func alllooper(w *wind.Window, v any) {
 	lp := v.(*Looper)
 	cp := lp.cp
 	//	if(w->isscratch || w->isdir)
@@ -870,7 +870,7 @@ func alllooper(w *wind.Window, v interface{}) {
 	}
 }
 
-func alllocker(w *wind.Window, v interface{}) {
+func alllocker(w *wind.Window, v any) {
 	if v.(bool) {
 		util.Incref(&w.Ref)
 	} else {
@@ -1073,7 +1073,7 @@ type Tofile struct {
 	r *String
 }
 
-func alltofile(w *wind.Window, v interface{}) {
+func alltofile(w *wind.Window, v any) {
 	tp := v.(*Tofile)
 	if tp.f != nil {
 		return
@@ -1106,7 +1106,7 @@ func tofile(r *String) *wind.File {
 	return t.f
 }
 
-func allmatchfile(w *wind.Window, v interface{}) {
+func allmatchfile(w *wind.Window, v any) {
 	tp := v.(*Tofile)
 	if w.IsScratch || w.IsDir {
 		return
@@ -1256,7 +1256,7 @@ type Filecheck struct {
 	r []rune
 }
 
-func allfilecheck(w *wind.Window, v interface{}) {
+func allfilecheck(w *wind.Window, v any) {
 	fp := v.(*Filecheck)
 	f := w.Body.File
 	if w.Body.File == fp.f {

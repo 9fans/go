@@ -29,8 +29,8 @@ import (
 var Textcomplete func(*wind.Text) []rune
 
 func Textconstrain(t *wind.Text, q0 int, q1 int, p0 *int, p1 *int) {
-	*p0 = util.Min(q0, t.Len())
-	*p1 = util.Min(q1, t.Len())
+	*p0 = min(q0, t.Len())
+	*p1 = min(q1, t.Len())
 }
 
 func Texttype(t *wind.Text, r rune) {
@@ -482,8 +482,8 @@ func Textselect(t *wind.Text) {
 	}
 }
 
-var BigLock = func(){}
-var BigUnlock = func(){}
+var BigLock = func() {}
+var BigUnlock = func() {}
 
 /*
  * Release the button in less than DELAY ms and it's considered a null selection

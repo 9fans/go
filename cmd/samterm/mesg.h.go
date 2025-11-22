@@ -2,7 +2,9 @@ package main
 
 import "unicode/utf8"
 
-/* VERSION 1 introduces plumbing
+/*
+	VERSION 1 introduces plumbing
+
 2 increases SNARFSIZE from 4096 to 32000
 */
 const VERSION = 2

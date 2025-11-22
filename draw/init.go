@@ -44,7 +44,6 @@ import (
 // Various routines flush automatically, notably Mousectl.Read.
 // Programs that receive directly from Mousectl.C should typically
 // Flush the display explicitly before the receive.
-//
 type Display struct {
 	Image       *Image
 	Screen      *Screen
@@ -321,7 +320,6 @@ func (d *Display) getimage0(i *Image) (*Image, error) {
 // response to a DPI change, meaning the caller should expect that
 // a Font's Height may be different after calling Attach as well.
 // The Font pointers themselves do not change.
-//
 func (d *Display) Attach(ref int) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()

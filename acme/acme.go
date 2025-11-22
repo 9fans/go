@@ -266,7 +266,7 @@ func Open(id int, ctl *client.Fid) (*Win, error) {
 }
 
 // Addr writes format, ... to the window's addr file.
-func (w *Win) Addr(format string, args ...interface{}) error {
+func (w *Win) Addr(format string, args ...any) error {
 	return w.Fprintf("addr", format, args...)
 }
 
@@ -300,7 +300,7 @@ func (w *Win) CloseFiles() {
 }
 
 // Ctl writes the command format, ... to the window's ctl file.
-func (w *Win) Ctl(format string, args ...interface{}) error {
+func (w *Win) Ctl(format string, args ...any) error {
 	return w.Fprintf("ctl", format+"\n", args...)
 }
 
@@ -373,7 +373,7 @@ func (w *Win) ID() int {
 	return w.id
 }
 
-func (w *Win) Name(format string, args ...interface{}) error {
+func (w *Win) Name(format string, args ...any) error {
 	name := fmt.Sprintf(format, args...)
 	if err := w.Ctl("name %s", name); err != nil {
 		return err
@@ -382,7 +382,7 @@ func (w *Win) Name(format string, args ...interface{}) error {
 	return nil
 }
 
-func (w *Win) Fprintf(file, format string, args ...interface{}) error {
+func (w *Win) Fprintf(file, format string, args ...any) error {
 	f, err := w.fid(file)
 	if err != nil {
 		return err
@@ -962,7 +962,7 @@ func (w *Win) Err(msg string) {
 	Err(w.errorPrefix, msg)
 }
 
-func (w *Win) Errf(format string, args ...interface{}) {
+func (w *Win) Errf(format string, args ...any) {
 	w.Err(fmt.Sprintf(format, args...))
 }
 
@@ -999,7 +999,7 @@ func Err(src, msg string) {
 }
 
 // Errf is like Err but accepts a printf-style formatting.
-func Errf(src, format string, args ...interface{}) {
+func Errf(src, format string, args ...any) {
 	Err(src, fmt.Sprintf(format, args...))
 }
 
@@ -1011,7 +1011,7 @@ func Errf(src, format string, args ...interface{}) {
 // String fields are expected to be space terminated.
 //
 // It returns the rest of line after all the fields have been parsed.
-func splitFields(line string, fields ...interface{}) (string, error) {
+func splitFields(line string, fields ...any) (string, error) {
 	n := 0
 	for len(fields) > 0 {
 		switch f := fields[0].(type) {

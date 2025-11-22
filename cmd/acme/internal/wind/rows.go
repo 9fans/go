@@ -62,7 +62,7 @@ func RowAdd(row *Row, c *Column, x int) *Column {
 		}
 		adraw.Display.ScreenImage.Draw(r, adraw.Display.White, nil, draw.ZP)
 		r1 := r
-		r1.Max.X = util.Min(x-adraw.Border(), r.Max.X-50)
+		r1.Max.X = min(x-adraw.Border(), r.Max.X-50)
 		if r1.Dx() < 50 {
 			r1.Max.X = r1.Min.X + 50
 		}
@@ -231,7 +231,7 @@ func Rowwhich(row *Row, p draw.Point) *Text {
 	return nil
 }
 
-func All(f func(*Window, interface{}), arg interface{}) {
+func All(f func(*Window, any), arg any) {
 	for _, c := range TheRow.Col {
 		for _, w := range c.W {
 			f(w, arg)

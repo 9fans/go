@@ -14,7 +14,7 @@ import (
 	"9fans.net/go/draw"
 )
 
-func allocmemimaged(r draw.Rectangle, chan_ draw.Pix, md *_Memdata, X interface{}) (*Image, error) {
+func allocmemimaged(r draw.Rectangle, chan_ draw.Pix, md *_Memdata, X any) (*Image, error) {
 	if r.Dx() <= 0 || r.Dy() <= 0 {
 		return nil, fmt.Errorf("bad rectangle %v", r)
 	}

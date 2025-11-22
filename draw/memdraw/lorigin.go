@@ -103,5 +103,5 @@ func LOrigin(i *Image, log draw.Point, scr draw.Point) (int, error) {
 	return 1, nil
 }
 
-func LNoRefresh(l *Image, r draw.Rectangle, v interface{}) {
+func LNoRefresh(l *Image, r draw.Rectangle, v any) {
 }

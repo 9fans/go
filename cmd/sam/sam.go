@@ -181,7 +181,7 @@ func rescue() {
 	}
 }
 
-func panic_(format string, args ...interface{}) {
+func panic_(format string, args ...any) {
 	if panicking++; panicking == 1 {
 		s := fmt.Sprintf(format, args...)
 		func() {

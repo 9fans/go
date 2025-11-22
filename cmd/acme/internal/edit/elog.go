@@ -26,7 +26,6 @@ import (
 	"9fans.net/go/cmd/acme/internal/disk"
 	"9fans.net/go/cmd/acme/internal/runes"
 	"9fans.net/go/cmd/acme/internal/ui"
-	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 )
 
@@ -359,8 +358,8 @@ func elogapply(f *elogFile) {
 		if !warned {
 			alog.Printf("elogapply: can't happen %d %d %d\n", t.Q0, t.Q1, f.Len())
 		}
-		t.Q1 = util.Min(t.Q1, f.Len())
-		t.Q0 = util.Min(t.Q0, t.Q1)
+		t.Q1 = min(t.Q1, f.Len())
+		t.Q0 = min(t.Q0, t.Q1)
 	}
 
 	if t.W != nil {

@@ -35,10 +35,3 @@ func fbufalloc() []rune {
 func fbuffree(f []rune) {
 	// free(f)
 }
-
-func min(a int, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

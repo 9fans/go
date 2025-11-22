@@ -12,7 +12,7 @@ import (
 
 var memlalloc_paint *Image
 
-func LAlloc(s *Screen, screenr draw.Rectangle, refreshfn Refreshfn, refreshptr interface{}, val draw.Color) (*Image, error) {
+func LAlloc(s *Screen, screenr draw.Rectangle, refreshfn Refreshfn, refreshptr any, val draw.Color) (*Image, error) {
 	if memlalloc_paint == nil {
 		var err error
 		memlalloc_paint, err = AllocImage(draw.Rect(0, 0, 1, 1), draw.RGBA32)

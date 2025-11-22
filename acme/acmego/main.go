@@ -22,7 +22,6 @@
 //
 //	.rs - rustfmt
 //	.py - yapf
-//
 package main
 
 import (

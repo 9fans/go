@@ -3,12 +3,12 @@
 // Plan 9 from User Space (http://swtch.com/plan9port/).
 // All graphics operations are done in the remote server.
 //
-// Displays
+// # Displays
 //
 // Graphics operations are mediated through a Display, obtained by calling Init.
 // See the Display documentation for details.
 //
-// Colors and Pixel Formats
+// # Colors and Pixel Formats
 //
 // This package represents colors as RGBA values, 8 bits per channel,
 // packed into a uint32 type called Color. Color implements the image/color
@@ -48,21 +48,21 @@
 // See https://9fans.github.io/plan9port/man/man7/color.html
 // for the details.
 //
-// Image Format
+// # Image Format
 //
 // Fonts and images as used by Image.Load, Image.Unload, Display.ReadImage,
 // and so on are stored in a machine-independent format defined by Plan 9.
 // See https://9fans.github.io/plan9port/man/man7/image.html
 // for the details.
 //
-// Fonts
+// # Fonts
 //
 // External bitmap fonts are described by a plain text file that can be
 // read using Display.OpenFont.
 // See https://9fans.github.io/plan9port/man/man7/font.html
 // for the details.
 //
-// Font Names
+// # Font Names
 //
 // Font names in this package (following Plan 9 from User Space) are a
 // small language describing a font. The most basic form is the name of
@@ -129,7 +129,7 @@
 //
 //	/lib/font/bit/lucsans/euro.8.font,/mnt/font/LucidaGrande/30a/font
 //
-// Libdraw Cheat Sheet
+// # Libdraw Cheat Sheet
 //
 // The mapping from the Plan 9 C libdraw names defined in <draw.h>
 // to names in this package (omitting unchanged names) is:
@@ -338,5 +338,4 @@
 // but since Point and Rectangle are aliases for the types in package image,
 // the formats have changed: Points and Rectangles format as
 // (1,2) and (1,2)-(3,4) instead of [1 2] and [[1 2] [3 4]].
-//
 package draw

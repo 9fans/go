@@ -93,7 +93,7 @@ func startplumbing() {
 	go plumbthread()
 }
 
-func plumbgetc(a interface{}, n int) rune {
+func plumbgetc(a any, n int) rune {
 	r := a.([]rune)
 	if n > len(r) {
 		return 0

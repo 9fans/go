@@ -109,7 +109,7 @@ func (b *Buffer) Read(q0 int, s []rune) {
 
 	for n > 0 {
 		b.setCache(q0)
-		m := util.Min(n, len(b.c)-(q0-b.cq))
+		m := min(n, len(b.c)-(q0-b.cq))
 		copy(s[:m], b.c[q0-b.cq:])
 		q0 += m
 		s = s[m:]
@@ -150,7 +150,7 @@ func (b *Buffer) Insert(q0 int, s []rune) {
 			if b.cdirty {
 				b.flushCache()
 			}
-			m = util.Min(n, maxblock)
+			m = min(n, maxblock)
 			var i int
 			if b.bl == nil { /* allocate */
 				if len(b.c) != 0 {
@@ -184,7 +184,7 @@ func (b *Buffer) Insert(q0 int, s []rune) {
 			 * Now at end of block.  Take as much input
 			 * as possible and tack it on end of block.
 			 */
-			m = util.Min(n, maxblock-len(b.c))
+			m = min(n, maxblock-len(b.c))
 			n := len(b.c)
 			b.resizeCache(n + m)
 			copy(b.c[n:], s)

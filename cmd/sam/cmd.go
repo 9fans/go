@@ -122,7 +122,7 @@ Again:
 
 var Dflag bool
 
-func debug(format string, args ...interface{}) {
+func debug(format string, args ...any) {
 	if !Dflag {
 		return
 	}

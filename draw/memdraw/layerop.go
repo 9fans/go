@@ -4,7 +4,7 @@ import (
 	"9fans.net/go/draw"
 )
 
-func _layerop(fn func(*Image, draw.Rectangle, draw.Rectangle, interface{}, int), i *Image, r draw.Rectangle, clipr draw.Rectangle, etc interface{}, front *Image) {
+func _layerop(fn func(*Image, draw.Rectangle, draw.Rectangle, any, int), i *Image, r draw.Rectangle, clipr draw.Rectangle, etc any, front *Image) {
 	RECUR := func(a, b, c, d draw.Point) {
 		_layerop(fn, i, draw.Rect(a.X, b.Y, c.X, d.Y), clipr, etc, front.Layer.rear)
 	}
@@ -45,7 +45,7 @@ Top:
 /*
  * Assumes incoming rectangle has already been clipped to i's logical r and clipr
  */
-func _memlayerop(fn func(*Image, draw.Rectangle, draw.Rectangle, interface{}, int), i *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc interface{}) {
+func _memlayerop(fn func(*Image, draw.Rectangle, draw.Rectangle, any, int), i *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc any) {
 	l := i.Layer
 	if !draw.RectClip(&screenr, l.Screenr) {
 		return

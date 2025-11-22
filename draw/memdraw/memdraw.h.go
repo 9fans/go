@@ -38,7 +38,7 @@ type Image struct {
 	Width     uint32    /* width in words of a single scan line */
 	Layer     *Layer    /* nil if not a layer*/
 	Flags     uint32
-	X         interface{}
+	X         any
 	ScreenRef int /* reference count if this is a screen */
 
 	shift [draw.NChan]uint
