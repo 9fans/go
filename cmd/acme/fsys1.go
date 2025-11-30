@@ -526,7 +526,7 @@ func fsysread(x *Xfid, f *Fid) *Xfid {
 		d = d[1:] // first entry is '.'
 		var w int
 		var i int
-		for i = 0; len(d) > 0 && int64(i) < e; i += w {
+		for i = 0; len(d) > 0 && d[0].name != "" && int64(i) < e; i += w {
 			buf, err := dostat(WIN(x.f.qid), &d[0], clock)
 			if err != nil {
 				break
@@ -546,37 +546,33 @@ func fsysread(x *Xfid, f *Fid) *Xfid {
 		}
 		if id == 0 {
 			wind.TheRow.Lk.Lock()
-			nids := 0
-			var ids []int
-			var j int
-			var k int
-			for j = 0; j < len(wind.TheRow.Col); j++ {
-				c := wind.TheRow.Col[j]
-				for k = 0; k < len(c.W); k++ {
-					ids = append(ids, c.W[k].ID)
+			ids := make([]int, 0, len(wind.TheRow.Col))
+			for _, c := range wind.TheRow.Col {
+				for _, w := range c.W {
+					ids = append(ids, w.ID)
 				}
 			}
 			wind.TheRow.Lk.Unlock()
 			sort.Ints(ids)
-			j = 0
 			var dt Dirtab
-			var nn int
-			for ; j < nids && int64(i) < e; i += nn {
-				k = ids[j]
-				dt.name = fmt.Sprintf("%d", k)
-				dt.qid = int(QID(k, Qdir)) // TODO(rsc)
+			for _, winID := range ids {
+				if int64(i) >= e {
+					break
+				}
+				dt.name = fmt.Sprintf("%d", winID)
+				dt.qid = int(QID(winID, Qdir)) // TODO(rsc)
 				dt.typ = plan9.QTDIR
 				dt.perm = plan9.DMDIR | 0700
-				buf, err := dostat(k, &dt, clock)
-				if err != nil || len(b) > int(x.fcall.Count)-n {
+				buf, err := dostat(winID, &dt, clock)
+				if err != nil || n+len(buf) > int(x.fcall.Count) {
 					break
 				}
 				copy(b[n:], buf)
-				nn = len(buf)
+				nn := len(buf)
 				if int64(i) >= o {
 					n += nn
 				}
-				j++
+				i += nn
 			}
 		}
 		t.Data = b[:n]
