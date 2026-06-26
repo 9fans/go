@@ -1,4 +1,4 @@
-// +build !plan9
+//go:build !plan9
 
 package drawfcall
 
@@ -250,10 +250,7 @@ func (c *Conn) ReadSnarf(b []byte) (int, int, error) {
 		return 0, 0, err
 	}
 	n := copy(b, rx.Snarf)
-	if n < len(rx.Snarf) {
-		return 0, len(rx.Snarf), nil
-	}
-	return n, n, nil
+	return n, len(rx.Snarf), nil
 }
 
 func (c *Conn) WriteSnarf(snarf []byte) error {
