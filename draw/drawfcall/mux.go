@@ -1,4 +1,4 @@
-// +build !plan9
+//go:build !plan9
 
 package drawfcall
 
@@ -26,6 +26,20 @@ type Conn struct {
 
 func New() (*Conn, error) {
 	devdraw := os.Getenv("DEVDRAW")
+
+	if devdraw == "-" {
+		c := &Conn{
+			rd:      os.Stdin,
+			wr:      os.Stdout,
+			freetag: make(map[byte]bool),
+			tagmap:  make(map[byte]chan []byte),
+		}
+		for i := 1; i <= 254; i++ {
+			c.freetag[byte(i)] = true
+		}
+		return c, nil
+	}
+
 	r1, w1, _ := os.Pipe()
 	r2, w2, _ := os.Pipe()
 	if devdraw == "" {
