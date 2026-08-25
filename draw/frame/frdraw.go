@@ -147,7 +147,7 @@ func (f *Frame) Tick(pt draw.Point, ticked bool) {
 }
 
 func (f *Frame) drawTick(pt draw.Point, ticked bool) {
-	if f.Ticked == ticked || f.tick == nil && !pt.In(f.R) {
+	if f.Ticked == ticked || f.tick == nil || !pt.In(f.R) {
 		return
 	}
 	pt.X -= f.tickscale // looks best just left of where requested
