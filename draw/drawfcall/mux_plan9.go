@@ -128,7 +128,7 @@ func (c *Conn) ReadMouse() (m Mouse, resized bool, err error) {
 	}
 	m.Point = image.Pt(atoi(f[1]), atoi(f[2]))
 	m.Buttons = atoi(f[3])
-	m.Msec = atoi(f[4])
+	m.Msec = uint32(atoi(f[4]))
 	if f[0] == "r" {
 		resized = true
 	}
@@ -151,16 +151,21 @@ func (c *Conn) Cursor(cursor *Cursor) error {
 		_, err := c.cursor.Write([]byte{0})
 		return err
 	}
-	b := make([]byte, 2*4+len(cursor.Clr)+len(cursor.Set))
+	b := make([]byte, 2*4+len(cursor.White)+len(cursor.Black))
 	i := 0
 	binary.LittleEndian.PutUint32(b[i:], uint32(cursor.Point.X))
 	i += 4
 	binary.LittleEndian.PutUint32(b[i:], uint32(cursor.Point.Y))
 	i += 4
-	i += copy(b[i:], cursor.Clr[:])
-	i += copy(b[i:], cursor.Set[:])
+	i += copy(b[i:], cursor.White[:])
+	i += copy(b[i:], cursor.Black[:])
 	_, err := c.cursor.Write(b)
 	return err
+}
+
+// Cursor2 on Plan 9: gracefully degrade to legacy Cursor.
+func (c *Conn) Cursor2(cur *Cursor, cur2 *Cursor2) error {
+	return c.Cursor(cur)
 }
 
 func (c *Conn) BounceMouse(m *Mouse) error {
