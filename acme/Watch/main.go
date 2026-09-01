@@ -47,6 +47,8 @@ import (
 	"9fans.net/go/acme"
 )
 
+const rcspecial = "#;&|^$=`'{}()<> \t\n"
+
 var args []string
 var win *acme.Win
 var needrun = make(chan bool, 1)
@@ -64,6 +66,8 @@ func main() {
 	flag.Parse()
 	args = flag.Args()
 
+	escaped := rcquote(args)
+
 	var err error
 	win, err = acme.New()
 	if err != nil {
@@ -80,7 +84,7 @@ func main() {
 	}
 	win.Ctl(cmd)
 	win.Fprintf("tag", "Get Kill Quit ")
-	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
+	win.Fprintf("body", "%% %s\n", escaped)
 
 	needrun <- true
 	go events()
@@ -328,4 +332,19 @@ func runBackground(id int, dir string) {
 		}
 		// Continue loop with lock held
 	}
+}
+
+func rcquote(args []string) string {
+	var b strings.Builder
+	for i, arg := range args {
+		if i != 0 {
+			b.WriteRune(' ')
+		}
+		if strings.ContainsAny(arg, rcspecial) {
+			fmt.Fprintf(&b, "'%s'", strings.ReplaceAll(arg, "'", "''"))
+		} else {
+			b.WriteString(arg)
+		}
+	}
+	return b.String()
 }
