@@ -22,7 +22,7 @@ func extstart() {
 	} else {
 		exname = fmt.Sprintf("/tmp/.sam.%s", user)
 	}
-	err := syscall.Mkfifo(exname, 0600)
+	err := unix.Mkfifo(exname, 0600)
 	if err != nil {
 		if !os.IsExist(err) {
 			return
@@ -33,7 +33,7 @@ func extstart() {
 		}
 		if st.Mode()&fs.ModeNamedPipe == 0 {
 			removeextern()
-			if err := syscall.Mkfifo(exname, 0600); err != nil {
+			if err := unix.Mkfifo(exname, 0600); err != nil {
 				return
 			}
 		}
