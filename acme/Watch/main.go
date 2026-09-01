@@ -74,11 +74,6 @@ func main() {
 	win.Name(pwdSlash + "+watch")
 	win.Ctl("clean")
 	win.Ctl("dumpdir " + pwd)
-	cmd := "dump Watch"
-	if *recursive {
-		cmd += " -r"
-	}
-	win.Ctl(cmd)
 	win.Fprintf("tag", "Get Kill Quit ")
 	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
@@ -178,11 +173,14 @@ func runSetup(id int) {
 	// Running synchronously in runner, so no need to watch run.id.
 	data, _ := win.ReadAll("body")
 	matches := cmdRE.FindAllIndex(data, -1)
+	var dumpcmd string
 	if len(matches) == 0 {
 		// reset window
 		win.Addr(",")
 		win.Write("data", nil)
 		win.Write("body", []byte(fmt.Sprintf("%% %s\n", strings.Join(args, " "))))
+
+		dumpcmd = strings.Join(args, " ")
 	} else {
 		end, endByte := utf8.RuneCount(data), len(data)
 		for i := len(matches) - 1; i >= 0; i-- {
@@ -197,6 +195,11 @@ func runSetup(id int) {
 				win.Write("data", nil)
 			}
 			end, endByte = mStart, m[0]
+
+			// Remember first command only
+			if i == 0 {
+				dumpcmd = strings.TrimSpace(string(data[m[0]+1 : m[1]])) // skip %
+			}
 		}
 		if end > 0 {
 			win.Addr(",#%d", end)
@@ -204,6 +207,13 @@ func runSetup(id int) {
 		}
 	}
 	win.Addr("#0")
+
+	prefix := "dump Watch"
+	if *recursive {
+		prefix += " -r"
+	}
+	cmd := fmt.Sprintf("%s %s", prefix, dumpcmd)
+	win.Ctl(cmd)
 }
 
 func runBackground(id int, dir string) {
