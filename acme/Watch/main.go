@@ -6,12 +6,16 @@
 //
 // Usage:
 //
-//	Watch cmd [args...]
+//	Watch [-r | -X regexp] cmd [args...]
 //
 // Watch opens a new acme window named for the current directory
 // with a suffix of /+watch. The window shows the execution of the given
-// command. Each time any file in that directory is Put from within acme,
-// Watch reexecutes the command and updates the window.
+// command. Each time any file in that directory (or any subdirectory
+// when the -r flag is given) is Put from within acme, Watch reexecutes
+// the command and updates the window. With the -r flag
+//
+// There's also the -X flag which makes Watch reexecute every time a
+// file matching the pattern specified by -X is Put.
 //
 // The command and arguments are joined by spaces and passed to rc(1)
 // to be interpreted as a shell command line.
@@ -51,9 +55,10 @@ var args []string
 var win *acme.Win
 var needrun = make(chan bool, 1)
 var recursive = flag.Bool("r", false, "watch all subdirectories recursively")
+var filePattern = flag.String("X", "", "watch all acme files matching `regexp`")
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "usage: Watch [-r] cmd args...\n")
+	fmt.Fprintf(os.Stderr, "usage: Watch [-r | -X regexp] cmd args...\n")
 	os.Exit(2)
 }
 
@@ -82,6 +87,20 @@ func main() {
 	win.Fprintf("tag", "Get Kill Quit ")
 	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
+	matches := func(name string) bool {
+		return path.Dir(name) == pwd || *recursive && strings.HasPrefix(name, pwdSlash)
+	}
+	if *filePattern != "" {
+		if *recursive {
+			log.Fatal("cannot use both -r and -X flags")
+		}
+		re, err := regexp.Compile(*filePattern)
+		if err != nil {
+			log.Fatal(err)
+		}
+		matches = func(name string) bool { return re.MatchString(name) }
+	}
+
 	needrun <- true
 	go events()
 	go runner(pwd)
@@ -95,7 +114,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if ev.Op == "put" && (path.Dir(ev.Name) == pwd || *recursive && strings.HasPrefix(ev.Name, pwdSlash)) {
+		if ev.Op == "put" && matches(ev.Name) {
 			select {
 			case needrun <- true:
 			default:
