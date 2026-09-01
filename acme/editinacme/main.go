@@ -6,7 +6,7 @@
 //
 // Usage:
 //
-//	editinacme <file>
+//	editinacme <file1> [<file2>...]
 //
 // Editinacme uses the plumber to ask acme to open the file,
 // waits until the file's acme window is deleted, and exits.
@@ -27,41 +27,38 @@ func main() {
 	log.SetFlags(0)
 	log.SetPrefix("editinacme: ")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: editinacme file\n")
+		fmt.Fprintf(os.Stderr, "usage: editinacme file1 [file2]...\n")
 		os.Exit(2)
 	}
 	flag.Parse()
-	if flag.NArg() != 1 {
-		flag.Usage()
-	}
 
-	file := flag.Arg(0)
-
-	fullpath, err := filepath.Abs(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	file = fullpath
-
-	r, err := acme.Log()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("editing %s", file)
-
-	out, err := exec.Command("plumb", "-d", "edit", file).CombinedOutput()
-	if err != nil {
-		log.Fatalf("executing plumb: %v\n%s", err, out)
-	}
-
-	for {
-		ev, err := r.Read()
+	for _, file := range flag.Args() {
+		fullpath, err := filepath.Abs(file)
 		if err != nil {
-			log.Fatalf("reading acme log: %v", err)
+			log.Fatal(err)
 		}
-		if ev.Op == "del" && ev.Name == file {
-			break
+		file = fullpath
+
+		r, err := acme.Log()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Printf("editing %s", file)
+
+		out, err := exec.Command("plumb", "-d", "edit", file).CombinedOutput()
+		if err != nil {
+			log.Fatalf("executing plumb: %v\n%s", err, out)
+		}
+
+		for {
+			ev, err := r.Read()
+			if err != nil {
+				log.Fatalf("reading acme log: %v", err)
+			}
+			if ev.Op == "del" && ev.Name == file {
+				break
+			}
 		}
 	}
 }
