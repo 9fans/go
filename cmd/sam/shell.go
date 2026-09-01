@@ -155,25 +155,22 @@ func plan9(f *File, type_ rune, s *String, nest bool) int {
 
 func checkerrs() {
 	if info, err := os.Stat(errfile); err == nil && info.Size() > 0 {
-		f, err := os.Open(errfile)
-		if err == nil {
-			buf := make([]byte, BLOCKSIZE-10)
-			n, err := io.ReadFull(f, buf)
-			if err == nil && n > 0 {
-				nl := 0
-				p := 0
+		if f, err := os.Open(errfile); err == nil {
+			defer f.Close()
+			lr := &io.LimitedReader{R: f, N: int64(BLOCKSIZE - 10)}
+			buf, _ := io.ReadAll(lr)
+			if len(buf) > 0 {
+				nl, p := 0, 0
 				for ; nl < 25 && p < len(buf); p++ {
 					if buf[p] == '\n' {
 						nl++
 					}
 				}
-				buf = buf[:p]
-				dprint("%s", buf)
+				dprint("%s", buf[:p])
 				if int64(len(buf)) < info.Size()-1 { // TODO(rsc): Why -1
 					dprint("(sam: more in %s)\n", errfile)
 				}
 			}
-			f.Close()
 		}
 	} else {
 		os.Remove(errfile)
