@@ -49,7 +49,7 @@ import (
 
 var args []string
 var win *acme.Win
-var needrun = make(chan bool, 1)
+var needrun = make(chan string, 1)
 var recursive = flag.Bool("r", false, "watch all subdirectories recursively")
 
 func usage() {
@@ -82,7 +82,7 @@ func main() {
 	win.Fprintf("tag", "Get Kill Quit ")
 	win.Fprintf("body", "%% %s\n", strings.Join(args, " "))
 
-	needrun <- true
+	needrun <- ""
 	go events()
 	go runner(pwd)
 
@@ -97,7 +97,7 @@ func main() {
 		}
 		if ev.Op == "put" && (path.Dir(ev.Name) == pwd || *recursive && strings.HasPrefix(ev.Name, pwdSlash)) {
 			select {
-			case needrun <- true:
+			case needrun <- ev.Name:
 			default:
 			}
 			// slow down any runaway loops
@@ -112,7 +112,7 @@ func events() {
 		case 'x', 'X': // execute
 			if string(e.Text) == "Get" {
 				select {
-				case needrun <- true:
+				case needrun <- "":
 				default:
 				}
 				continue
@@ -153,7 +153,7 @@ var run struct {
 }
 
 func runner(dir string) {
-	for range needrun {
+	for path := range needrun {
 		run.Lock()
 		run.id++
 		id := run.id
@@ -167,7 +167,7 @@ func runner(dir string) {
 		lastcmd = nil
 
 		runSetup(id)
-		go runBackground(id, dir)
+		go runBackground(id, dir, path)
 	}
 }
 
@@ -206,7 +206,7 @@ func runSetup(id int) {
 	win.Addr("#0")
 }
 
-func runBackground(id int, dir string) {
+func runBackground(id int, dir, path string) {
 	buf := make([]byte, 4096)
 	run.Lock()
 	for {
@@ -260,6 +260,7 @@ func runBackground(id int, dir string) {
 
 		cmd := exec.Command(rc, "-c", string(line))
 		cmd.Dir = dir
+		cmd.Env = append(cmd.Environ(), "SAVED_PATH="+path)
 		r, w, err := os.Pipe()
 		if err != nil {
 			log.Fatal(err)
