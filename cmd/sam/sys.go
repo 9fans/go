@@ -82,7 +82,7 @@ var (
 	RXPATH  = "ssh"
 )
 
-func dprint(z string, args ...interface{}) {
+func dprint(z string, args ...any) {
 	termwrite(fmt.Sprintf(z, args...))
 }
 

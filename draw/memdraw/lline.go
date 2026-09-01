@@ -91,7 +91,7 @@ Top:
 	_memlayerop(llineop, dst, r, r, &ll)
 }
 
-func llineop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc interface{}, insave int) {
+func llineop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc any, insave int) {
 	ll := etc.(*lline)
 	if insave != 0 && ll.dstlayer.save == nil {
 		return

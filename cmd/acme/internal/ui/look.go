@@ -26,7 +26,6 @@ import (
 	"9fans.net/go/cmd/acme/internal/alog"
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/runes"
-	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 	"9fans.net/go/plan9/client"
@@ -179,7 +178,7 @@ func Search(ct *wind.Text, r []rune) bool {
 		alog.Printf("string too long\n") // TODO(rsc): why???????
 		return false
 	}
-	maxn := util.Max(2*len(r), bufs.RuneLen)
+	maxn := max(2*len(r), bufs.RuneLen)
 	s := bufs.AllocRunes()
 	b := s[:0]
 	around := 0
@@ -525,13 +524,13 @@ type Expand struct {
 	Name  []rune
 	Bname string
 	Jump  bool
-	Arg   interface{}
-	Agetc func(interface{}, int) rune
+	Arg   any
+	Agetc func(any, int) rune
 	A0    int
 	A1    int
 }
 
-func tgetc(a interface{}, n int) rune {
+func tgetc(a any, n int) rune {
 	t := a.(*wind.Text)
 	if n >= t.Len() {
 		return 0

@@ -156,7 +156,7 @@ func textredraw(t *Text, r draw.Rectangle, f *draw.Font, b *draw.Image, odx int)
 	maxt := MaxTab
 	if t.What == Body {
 		if t.W.IsDir {
-			maxt = util.Min(TABDIR, MaxTab)
+			maxt = min(TABDIR, MaxTab)
 		} else {
 			maxt = t.Tabstop
 		}
@@ -246,7 +246,7 @@ func Textcolumnate(t *Text, dlp []*Dirlist) {
 	}
 	mint := t.Fr.Font.StringWidth("0")
 	// go for narrower tabs if set more than 3 wide
-	t.Fr.MaxTab = util.Min(MaxTab, TABDIR) * mint
+	t.Fr.MaxTab = min(MaxTab, TABDIR) * mint
 	maxt := t.Fr.MaxTab
 	colw := 0
 	var i int
@@ -269,7 +269,7 @@ func Textcolumnate(t *Text, dlp []*Dirlist) {
 	if colw == 0 {
 		ncol = 1
 	} else {
-		ncol = util.Max(1, t.Fr.R.Dx()/colw)
+		ncol = max(1, t.Fr.R.Dx()/colw)
 	}
 	nrow := (len(dlp) + ncol - 1) / ncol
 
@@ -382,13 +382,13 @@ func Textdelete(t *Text, q0 int, q1 int, tofile bool) {
 		}
 	}
 	if q0 < t.IQ1 {
-		t.IQ1 -= util.Min(n, t.IQ1-q0)
+		t.IQ1 -= min(n, t.IQ1-q0)
 	}
 	if q0 < t.Q0 {
-		t.Q0 -= util.Min(n, t.Q0-q0)
+		t.Q0 -= min(n, t.Q0-q0)
 	}
 	if q0 < t.Q1 {
-		t.Q1 -= util.Min(n, t.Q1-q0)
+		t.Q1 -= min(n, t.Q1-q0)
 	}
 	if q1 <= t.Org {
 		t.Org -= n

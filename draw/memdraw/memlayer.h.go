@@ -2,7 +2,7 @@ package memdraw
 
 import "9fans.net/go/draw"
 
-type Refreshfn func(*Image, draw.Rectangle, interface{})
+type Refreshfn func(*Image, draw.Rectangle, any)
 
 type Screen struct {
 	Frontmost *Image /* frontmost layer on screen */
@@ -20,5 +20,5 @@ type Layer struct {
 	clear      bool           /* layer is fully visible */
 	save       *Image         /* save area for obscured parts */
 	Refreshfn  Refreshfn      /* function to call to refresh obscured parts if save==nil */
-	Refreshptr interface{}    /* argument to refreshfn */
+	Refreshptr any            /* argument to refreshfn */
 }

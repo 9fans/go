@@ -856,7 +856,7 @@ func indentval(s []rune) int {
 	return Ioff
 }
 
-func fixindent(w *wind.Window, arg interface{}) {
+func fixindent(w *wind.Window, arg any) {
 	w.Autoindent = wind.GlobalAutoindent
 }
 

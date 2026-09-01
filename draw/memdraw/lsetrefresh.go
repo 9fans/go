@@ -1,6 +1,6 @@
 package memdraw
 
-func LSetRefresh(i *Image, fn Refreshfn, ptr interface{}) bool {
+func LSetRefresh(i *Image, fn Refreshfn, ptr any) bool {
 	l := i.Layer
 	if l.Refreshfn != nil && fn != nil { /* just change functions */
 		l.Refreshfn = fn

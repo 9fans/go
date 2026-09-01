@@ -61,7 +61,7 @@ type Fid struct {
 }
 
 type Xfid struct {
-	arg   interface{}
+	arg   any
 	fcall *plan9.Fcall
 	next  *Xfid
 	c     chan func(*Xfid)

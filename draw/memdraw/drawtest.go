@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -63,7 +64,7 @@ var savedstbits []uint8
 func rdb() {
 }
 
-func iprint(format string, args ...interface{}) {
+func iprint(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 }
 

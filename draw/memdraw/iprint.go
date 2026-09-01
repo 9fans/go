@@ -5,5 +5,5 @@
 
 package memdraw
 
-func iprint(format string, args ...interface{}) {
+func iprint(format string, args ...any) {
 }

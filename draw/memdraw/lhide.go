@@ -20,7 +20,7 @@ import (
 	"9fans.net/go/draw"
 )
 
-func lhideop(src *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc interface{}, insave int) {
+func lhideop(src *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc any, insave int) {
 	l := etc.(*Layer)
 	if src != l.save { /* do nothing if src is already in save area */
 		r := screenr.Sub(l.Delta)
@@ -38,7 +38,7 @@ func memlhide(i *Image, screenr draw.Rectangle) {
 	_memlayerop(lhideop, i, screenr, screenr, i.Layer)
 }
 
-func lexposeop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc interface{}, insave int) {
+func lexposeop(dst *Image, screenr draw.Rectangle, clipr draw.Rectangle, etc any, insave int) {
 	if insave != 0 { /* if dst is save area, don't bother */
 		return
 	}

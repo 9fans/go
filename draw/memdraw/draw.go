@@ -831,14 +831,14 @@ type eface struct {
 	data  unsafe.Pointer
 }
 
-func funcPC(f interface{}) uintptr {
+func funcPC(f any) uintptr {
 	return *(*uintptr)(efaceOf(&f).data)
 }
-func efaceOf(ep *interface{}) *eface {
+func efaceOf(ep *any) *eface {
 	return (*eface)(unsafe.Pointer(ep))
 }
 
-func nameof(x interface{}) string {
+func nameof(x any) string {
 	f := runtime.FuncForPC(funcPC(x))
 	i := strings.LastIndex(f.Name(), ".")
 	return f.Name()[i+1:]

@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 // #include <u.h>
@@ -45,7 +46,7 @@ func main(argc int, argv []*int8) {
 func rdb() {
 }
 
-func iprint(fmt_ *int8, args ...interface{}) int {
+func iprint(fmt_ *int8, args ...any) int {
 	var va va_list
 	va_start(va, fmt_)
 	var buf [1024]int8

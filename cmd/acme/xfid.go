@@ -264,7 +264,7 @@ func xfidclose(x *Xfid) {
 			w.Nomark = false
 			t = &w.Body
 			// before: only did this if !w->noscroll, but that didn't seem right in practice
-			wind.Textshow(t, util.Min(w.Wrselrange.Pos, t.Len()), util.Min(w.Wrselrange.End, t.Len()), true)
+			wind.Textshow(t, min(w.Wrselrange.Pos, t.Len()), min(w.Wrselrange.End, t.Len()), true)
 			wind.Textscrdraw(t)
 		case QWeditout:
 			w.Editoutlk.Unlock()
@@ -1057,7 +1057,7 @@ func xfidindexread(x *Xfid) {
 				continue
 			}
 			buf.WriteString(wind.Winctlprint(w, false))
-			m := util.Min(bufs.RuneLen, w.Tag.Len())
+			m := min(bufs.RuneLen, w.Tag.Len())
 			w.Tag.File.Read(0, r[:m])
 			for i := 0; i < m && r[i] != '\n'; i++ {
 				buf.WriteRune(r[i])

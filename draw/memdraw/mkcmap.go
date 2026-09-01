@@ -3,6 +3,7 @@
 // #include <draw.h>
 // #include <memdraw.h>
 
+//go:build ignore
 // +build ignore
 
 /*

@@ -158,7 +158,7 @@ func regexp(showerr bool, t runes.Text, lim runes.Range, r runes.Range, pat []ru
 	return sel.R[0]
 }
 
-func Eval(showerr bool, t runes.Text, lim runes.Range, ar runes.Range, a interface{}, q0 int, q1 int, getc func(interface{}, int) rune, evalp *bool, qp *int) runes.Range {
+func Eval(showerr bool, t runes.Text, lim runes.Range, ar runes.Range, a any, q0 int, q1 int, getc func(any, int) rune, evalp *bool, qp *int) runes.Range {
 	r := ar
 	q := q0
 	dir := None

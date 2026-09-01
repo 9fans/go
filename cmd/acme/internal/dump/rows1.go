@@ -28,7 +28,6 @@ import (
 	"9fans.net/go/cmd/acme/internal/bufs"
 	"9fans.net/go/cmd/acme/internal/fileload"
 	"9fans.net/go/cmd/acme/internal/ui"
-	"9fans.net/go/cmd/acme/internal/util"
 	"9fans.net/go/cmd/acme/internal/wind"
 	"9fans.net/go/draw"
 )
@@ -73,7 +72,7 @@ func Dump(row *wind.Row, file *string) {
 		}
 	}
 	dumpid := make(map[*wind.File]int)
-	m := util.Min(bufs.RuneLen, row.Tag.Len())
+	m := min(bufs.RuneLen, row.Tag.Len())
 	row.Tag.File.Read(0, r[:m])
 	n := 0
 	for n < m && r[n] != '\n' {
@@ -82,7 +81,7 @@ func Dump(row *wind.Row, file *string) {
 	fmt.Fprintf(b, "w %s\n", string(r[:n]))
 	for i = 0; i < len(row.Col); i++ {
 		c = row.Col[i]
-		m = util.Min(bufs.RuneLen, c.Tag.Len())
+		m = min(bufs.RuneLen, c.Tag.Len())
 		c.Tag.File.Read(0, r[:m])
 		n = 0
 		for n < m && r[n] != '\n' {
@@ -138,7 +137,7 @@ func Dump(row *wind.Row, file *string) {
 				fmt.Fprintf(b, "F%11d %11d %11d %11d %11.7f %11d %s\n", i, j, w.Body.Q0, w.Body.Q1, 100.0*float64(w.R.Min.Y-c.R.Min.Y)/float64(c.R.Dy()), w.Body.Len(), fontname)
 			}
 			b.WriteString(wind.Winctlprint(w, false))
-			m = util.Min(bufs.RuneLen, w.Tag.Len())
+			m = min(bufs.RuneLen, w.Tag.Len())
 			w.Tag.File.Read(0, r[:m])
 			if !containsRune(r[:m], '|') {
 				alog.Printf("dump: window %d has no | in tag %q!", w.ID, string(r[:m]))
@@ -535,7 +534,7 @@ func Load(row *wind.Row, file *string, initing bool) bool {
 			q0 = q1
 		}
 		wind.Textshow(&w.Body, q0, q1, true)
-		w.Maxlines = util.Min(w.Body.Fr.NumLines, util.Max(w.Maxlines, w.Body.Fr.MaxLines))
+		w.Maxlines = min(w.Body.Fr.NumLines, max(w.Maxlines, w.Body.Fr.MaxLines))
 		OnNewWindow(w)
 	}
 	return true

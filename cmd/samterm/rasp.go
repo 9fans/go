@@ -5,7 +5,7 @@ func rinit(r *Rasp) {
 	r.sect = nil
 }
 
-func free(interface{}) {}
+func free(any) {}
 
 func rclear(r *Rasp) {
 	var ns *Section

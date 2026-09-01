@@ -174,11 +174,11 @@ func flushwarnings() {
 	warnings = nil
 }
 
-func warning(md *base.Mntdir, format string, args ...interface{}) {
+func warning(md *base.Mntdir, format string, args ...any) {
 	addwarningtext(md, []rune(fmt.Sprintf(format, args...)))
 }
 
-func rgetc(v interface{}, n int) rune {
+func rgetc(v any, n int) rune {
 	r := v.([]rune)
 	if n >= len(r) {
 		return 0

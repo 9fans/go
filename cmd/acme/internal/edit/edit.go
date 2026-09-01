@@ -107,18 +107,18 @@ func editthread() {
 	editerrc <- ""
 }
 
-func allelogterm(w *wind.Window, x interface{}) {
+func allelogterm(w *wind.Window, x any) {
 	if ef := elogfind(w.Body.File); ef != nil {
 		elogterm(ef)
 	}
 }
 
-func alleditinit(w *wind.Window, x interface{}) {
+func alleditinit(w *wind.Window, x any) {
 	wind.Textcommit(&w.Tag, true)
 	wind.Textcommit(&w.Body, true)
 }
 
-func allupdate(w *wind.Window, x interface{}) {
+func allupdate(w *wind.Window, x any) {
 	t := &w.Body
 	if t.File.Curtext != t { // do curtext only
 		return
@@ -143,7 +143,7 @@ func allupdate(w *wind.Window, x interface{}) {
 	wind.Winsettag(w)
 }
 
-func editerror(format string, args ...interface{}) {
+func editerror(format string, args ...any) {
 	s := fmt.Sprintf(format, args...)
 	freecmd()
 	wind.All(allelogterm, nil) // truncate the edit logs
