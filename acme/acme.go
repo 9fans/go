@@ -1048,3 +1048,40 @@ func splitFields(line string, fields ...interface{}) (string, error) {
 	}
 	return line, nil
 }
+
+type WindowWriter struct {
+	dest string
+	win *Win
+}
+
+func (win *Win) NewWriter(dest string) *WindowWriter {
+	return &WindowWriter{
+		dest: dest,
+		win: win,
+	}
+}
+
+func (w *WindowWriter) Write(p []byte) (n int, err error) {
+	return w.win.Write(w.dest, p)
+}
+
+type WindowReader struct {
+	src string
+	win *Win
+}
+
+func (win *Win) NewReader(src string) *WindowReader {
+	return &WindowReader{
+		src: src,
+		win: win,
+	}
+}
+
+func (w *WindowReader) Read(p []byte) (n int, err error) {
+	return w.win.Read(w.src, p)
+}
+
+// Prove that I've implemented the correct interfaces.
+var _ io.Reader = (*WindowReader)(nil)
+var _ io.Writer = (*WindowWriter)(nil)
+
