@@ -236,27 +236,15 @@ func (c *conn) rpc(tx *plan9.Fcall, clunkFid *Fid) (rx *plan9.Fcall, err error) 
 	if err != nil {
 		return nil, err
 	}
-	c.w.Lock()
-	err = c.write(tx)
-	// Mark the fid as clunked inside the write lock so that we're
-	// sure that we don't reuse it after the sending the message
-	// that will clunk it, even in the presence of concurrent method
-	// calls on Fid.
 	if clunkFid != nil {
-		// Closing the Fid might release the conn, which
-		// would close the underlying rwc connection,
-		// which would prevent us from being able to receive the
-		// reply, so make sure that doesn't happen until the end
-		// by acquiring a reference for the duration of the call.
+		// Closing the Fid might release the conn, which would close the
+		// underlying rwc connection and prevent us from receiving the
+		// reply, so hold a reference for the duration of this call.
 		c.acquire()
 		defer c.release()
-		if err := clunkFid.clunked(); err != nil {
-			// This can happen if two clunking operations
-			// (e.g. Close and Remove) are invoked concurrently
-			c.w.Unlock()
-			return nil, err
-		}
 	}
+	c.w.Lock()
+	err = c.write(tx)
 	c.w.Unlock()
 	if err != nil {
 		return nil, err
@@ -275,6 +263,21 @@ func (c *conn) rpc(tx *plan9.Fcall, clunkFid *Fid) (rx *plan9.Fcall, err error) 
 
 	if rx == nil {
 		return nil, c.getErr()
+	}
+	if clunkFid != nil {
+		// Recycle the fid number only after the server has responded
+		// to the Tclunk.  Proxy servers (e.g. 9pserve/acme) keep the
+		// fid in their table until the back-end replies; recycling the
+		// number earlier causes spurious "duplicate fid" errors when a
+		// concurrent Walk reuses it before Rclunk arrives.
+		// We recycle on both Rclunk and Rerror: some servers (e.g.
+		// acme) return Rerror for a flush-on-close failure yet still
+		// free the fid, so the number is safe to reuse either way.
+		if err := clunkFid.clunked(); err != nil {
+			// Can happen if two clunking operations (e.g. Close and
+			// Remove) are invoked concurrently on the same Fid.
+			return nil, err
+		}
 	}
 	if rx.Type == plan9.Rerror {
 		return nil, Error(rx.Ename)
