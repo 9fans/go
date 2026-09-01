@@ -1,0 +1,9 @@
+# binaries
+/editinacme
+
+# clutter
+.DS_Store
+.localized
+
+# Everybody has their own so don't check in by accident.
+guide
