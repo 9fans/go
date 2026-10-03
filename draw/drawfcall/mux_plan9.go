@@ -128,7 +128,7 @@ func (c *Conn) ReadMouse() (m Mouse, resized bool, err error) {
 	}
 	m.Point = image.Pt(atoi(f[1]), atoi(f[2]))
 	m.Buttons = atoi(f[3])
-	m.Msec = atoi(f[4])
+	m.Msec = uint32(atoi(f[4]))
 	if f[0] == "r" {
 		resized = true
 	}
@@ -151,14 +151,14 @@ func (c *Conn) Cursor(cursor *Cursor) error {
 		_, err := c.cursor.Write([]byte{0})
 		return err
 	}
-	b := make([]byte, 2*4+len(cursor.Clr)+len(cursor.Set))
+	b := make([]byte, 2*4+len(cursor.White)+len(cursor.Black))
 	i := 0
 	binary.LittleEndian.PutUint32(b[i:], uint32(cursor.Point.X))
 	i += 4
 	binary.LittleEndian.PutUint32(b[i:], uint32(cursor.Point.Y))
 	i += 4
-	i += copy(b[i:], cursor.Clr[:])
-	i += copy(b[i:], cursor.Set[:])
+	i += copy(b[i:], cursor.White[:])
+	i += copy(b[i:], cursor.Black[:])
 	_, err := c.cursor.Write(b)
 	return err
 }
@@ -261,4 +261,10 @@ Loop:
 	}
 	n, err := c.data.Write(b[i:])
 	return n + i, err
+}
+
+// Cursor2 sets the cursor from the 16x16 image.  Plan 9's /dev/cursor takes
+// only that size, so the 32x32 one is not used here.
+func (c *Conn) Cursor2(cursor *Cursor, cursor2 *Cursor2) error {
+	return c.Cursor(cursor)
 }
